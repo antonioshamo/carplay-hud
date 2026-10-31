@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+Requires waze-on-cluster 0.6.1 (the map at 15 frames a second and a 3000 KB/s
+cluster upload, so the cluster's own widgets stay smooth).
+
 ## 0.4.0
 
 The page says to set Instrument cluster > Central display area to Map view:
