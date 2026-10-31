@@ -162,9 +162,11 @@ target are drawn in that target's scene (`src/stack.h`, `src/slots.h`).
 ## Upload budget
 
 Every layer of every client writes within one budget (`src/governor.h`,
-`kit/upload_pacer.h`). Its ceiling, `upload_kb_per_s`, is 6000 KB/s: the
-rate waze-on-cluster ran stably on the car. At 8000 KB/s the cluster
-flashed black. The cap follows what the link shows while writes go (64 KB
+`kit/upload_pacer.h`). Its ceiling, `upload_kb_per_s`, is 3000 KB/s in
+`cluster-render.conf`. waze-on-cluster ran stably at 6000 KB/s, but at that
+rate the cluster's own widgets (the consumption display) lagged on a G05 X5;
+at 8000 KB/s the cluster flashed black. Real Waze transitions peak at about
+3.2 MB/s, so 3000 costs little more than the occasional packed frame. The cap follows what the link shows while writes go (64 KB
 or more written within the last second, whether or not the flush went);
 evidence at other times is logged, not counted:
 
