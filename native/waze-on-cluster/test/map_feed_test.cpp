@@ -37,6 +37,7 @@
 #include "test/fake_graph.h"
 #include "test/fake_port.h"
 #include "../src/map_feed.h"
+#include "../src/map_feeds.h"
 
 using namespace woc;
 
@@ -60,13 +61,16 @@ struct Rig {
     int64_t now = 200000;
     std::vector<uint8_t> spare;   /* the buffer handed to the feed, as the producer's */
 
-    Rig()
+    explicit Rig(bool hud = false)
     {
-        crs::TargetSpec m, p;
+        crs::TargetSpec m, p, u;
         m.name = "map"; m.slot = 0x100; m.scene_id = 0x010004f0; m.width = 1088; m.height = 480; m.linger_ms = 1500;
         m.take_over_stock = true;   /* as cluster-render.conf ships it */
         p.name = "panel"; p.slot = 0x203; p.scene_id = 0x01000400; p.width = 1920; p.height = 720; p.linger_ms = 3000;
+        u.name = "hud"; u.slot = 0x323; u.scene_id = 0x01000400; u.width = 800; u.height = 480; u.linger_ms = 3000;
         sc.targets = {m, p};
+        if (hud)
+            sc.targets.push_back(u);
         sc.socket_path = path;
         sc.backend = "fake";
         start();
@@ -276,6 +280,85 @@ int main()
     ok("status log: a reason alone", sl.due(a));
     a.target = "panel";
     ok("status log: a target alone", sl.due(a));
+
+    /* ---- MapFeeds: the cluster, the HUD, or both ---- */
+    std::vector<std::string> tl;
+    std::string terr;
+    ok("targets: map", parse_targets("map", &tl, &terr) && tl == std::vector<std::string>{"map"});
+    ok("targets: both is map+hud, the cluster first", parse_targets("both", &tl, &terr) && join_targets(tl) == "map+hud");
+    ok("targets: hud+sail is map+hud", parse_targets("hud+sail", &tl, &terr) && join_targets(tl) == "map+hud");
+    ok("targets: hud alone", parse_targets("hud", &tl, &terr) && join_targets(tl) == "hud");
+    ok("targets: unknown, repeated, map+panel and panel+hud are refused",
+       !parse_targets("dash", &tl, &terr) && !parse_targets("map+map", &tl, &terr) &&
+           !parse_targets("map+panel", &tl, &terr) && !parse_targets("panel,hud", &tl, &terr) &&
+           !parse_targets("", &tl, &terr));
+
+    Rig b(true);
+    b.feed.reset();   /* the rig's single feed is not used here */
+    FeedConfig bfc;
+    bfc.socket = b.path;
+    bfc.video.level_bits = 0;
+    bfc.target = "map+hud";
+    MapFeeds feeds(bfc);
+    feeds.set_stream(true, false);
+    std::vector<uint8_t> bspare;
+    const auto bpump = [&](int64_t ms, const std::vector<uint8_t> *frame) {
+        for (int64_t t = 0; t < ms; t += 5) {
+            b.now += 5;
+            if (frame && t % 65 == 0) {
+                bspare.assign(frame->begin(), frame->end());
+                feeds.offer(&bspare, (uint64_t)b.now, b.now);
+            }
+            for (int round = 0; round < 400; round++) {
+                std::vector<pollfd> fds;
+                const size_t first = b.svc->poll_fds(&fds);
+                const int n = ::poll(fds.data(), fds.size(), 0);
+                b.port.tick(b.now);
+                b.svc->after_poll(fds, first, b.now);
+                bool pending = false;
+                for (size_t i = 0; i < feeds.size(); i++)
+                    pending = pending || feeds.feed(i).wants_write();
+                feeds.poll(b.now);
+                if (round > 0 && n <= 0 && !pending)
+                    break;
+            }
+        }
+    };
+    const auto layer_on = [&](int target) -> const crs::Layer * {
+        for (const crs::Layer *x : b.svc->compositor().layers())
+            if (x->target() == target)
+                return x;
+        return nullptr;
+    };
+    bpump(1500, &f1);
+    const crs::Layer *bm = layer_on(0), *bh = layer_on(2);
+    crs::FakeGraph *gm = b.gpu.graph("map"), *gh = b.gpu.graph("hud");
+    bool on_map = false, on_hud = false;
+    if (gm)
+        for (const auto &kv : gm->shown.buffers)
+            on_map = on_map || (kv.second.f == crs::TexFormat::R8 && kv.second.px == f1);
+    if (gh)
+        for (const auto &kv : gh->shown.buffers)
+            on_hud = on_hud || (kv.second.f == crs::TexFormat::R8 && kv.second.px == f1);
+    ok("map+hud: a layer on each target, the same frame drawn in both, showing",
+       bm && bh && on_map && on_hud && feeds.status("decode").state == "showing" &&
+           feeds.status("decode").target == "map+hud");
+    ok("map+hud: the HUD's map is fitted inside its 800x480 scene",
+       bh && bh->params.rect.w <= 800 && bh->params.rect.h <= 480 && bh->params.rect.x + bh->params.rect.w <= 800);
+
+    ok("set_targets: an invalid spec changes nothing", !feeds.set_targets("map+panel") && feeds.size() == 2);
+    ok("set_targets: hud alone keeps the HUD's feed and drops the cluster's", feeds.set_targets("hud") && feeds.size() == 1 &&
+                                                                               feeds.feed(0).target() == "hud");
+    bpump(2500, &f2);
+    ok("hud alone: no layer on the map target, the HUD showing",
+       !layer_on(0) && layer_on(2) && feeds.status("decode").state == "showing" && feeds.status("decode").target == "hud");
+    ok("set_targets: back to the cluster", feeds.set_targets("map") && feeds.size() == 1 && feeds.feed(0).target() == "map");
+    bpump(2500, &f2);
+    ok("map alone: the cluster showing, the HUD's layer gone", layer_on(0) && !layer_on(2) &&
+                                                               feeds.status("decode").state == "showing");
+    feeds.set_stream(false, false);
+    bpump(200, &f2);
+    ok("the stream not live reaches every feed: idle", feeds.status("decode").state == "idle");
 
     std::printf(failures ? "%d FAILED\n" : "all ok\n", failures);
     return failures ? 1 : 0;

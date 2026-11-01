@@ -153,6 +153,10 @@ class FakeRender extends LineServer {
         this.received.push(msg);
         this.emit('command', msg);
         this.log(`control: ${JSON.stringify(msg)}`);
+        /* start moves the map: the next status carries the new target */
+        if (msg.cmd === 'start' && msg.target) {
+            this._set(this.state, msg.target, this.page, this.reason);
+        }
     }
 }
 

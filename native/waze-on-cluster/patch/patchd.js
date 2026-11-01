@@ -34,6 +34,12 @@
  *                                   carplay. reboot-reply carries ok/reason.
  *                  {"cmd":"logs"}   carplay + marker + avb log lines, dlt-receive health, patchd log
  *                                   (to the asker, read-only)
+ *                  {"cmd":"target","target":"map"|"hud"|"map+hud"}
+ *                                   where the map goes from the next start of the
+ *                                   render on: written as "target = ..." into
+ *                                   waze-on-cluster.local.conf (the app moves the
+ *                                   running render itself with its start command).
+ *                                   target-reply carries ok/target/reason
  *                  {"cmd":"capture-start"|"capture-stop"|"capture-status"}
  *                                   (capture-reply to the asker; every client gets
  *                                   ev capture, also once a second)
@@ -103,6 +109,26 @@ var quitting = false;        /* SIGTERM: finish the active patch operation */
  * carplay start from the patched binary. Never a systemctl stop/restart of
  * carplay (that power-cycles the unit via the crash handler). */
 var REBOOT_CMD = (process.env.WOC_REBOOT_CMD || 'systemctl reboot').split(' ');
+/* The unit's own render settings, which updates keep: the display choice
+ * (Cluster, HUD, both) is saved there as the render's "target". */
+var LOCAL_CONF = process.env.WOC_LOCAL_CONF || '/var/opt/waze-on-cluster/waze-on-cluster.local.conf';
+var DISPLAY_TARGETS = ['map', 'hud', 'map+hud'];
+
+/* Writes target = <t> into the local conf, replacing any target line; the
+ * other lines stay as they are. Atomic: a temporary file renamed over it. */
+function saveTarget(t, done) {
+    var lines = [];
+    try { lines = fs.readFileSync(LOCAL_CONF, 'utf8').split('\n'); } catch (e) { if (e.code !== 'ENOENT') { done(e); return; } }
+    lines = lines.filter(function (l) { return !/^\s*target\s*=/.test(l); });
+    while (lines.length && lines[lines.length - 1] === '') lines.pop();
+    lines.push('target = ' + t);
+    var tmp = LOCAL_CONF + '.tmp';
+    try {
+        fs.writeFileSync(tmp, lines.join('\n') + '\n', { mode: 420 });
+        fs.renameSync(tmp, LOCAL_CONF);
+    } catch (e) { done(e); return; }
+    done(null);
+}
 var statusInFlight = false;  /* coalesce the carplay_patch status spawns */
 var MAX_LINE = 64 * 1024;    /* drop a client that floods without a newline */
 
@@ -926,6 +952,22 @@ function handle(line, sock) {
         captureCommand(msg.cmd.slice(8), function (state) {
             try { sock.write(JSON.stringify({ ev: 'capture-reply', capture: state }) + '\n'); } catch (e) {}
             send({ ev: 'capture', capture: state });
+        });
+        return;
+    }
+    if (msg.cmd === 'target') {
+        /* Only a known display choice, and only the target line: the render
+         * reads it at its next start. Not an operation on carplay, so it is
+         * not held back by one. */
+        var t = String(msg.target || '');
+        if (DISPLAY_TARGETS.indexOf(t) < 0) {
+            try { sock.write(JSON.stringify({ ev: 'target-reply', ok: false, reason: 'unknown target ' + t }) + '\n'); } catch (e) {}
+            return;
+        }
+        saveTarget(t, function (err) {
+            if (err) log('saving the display choice failed: ' + err.message);
+            else log('display: ' + t + ' (saved for the next start)');
+            try { sock.write(JSON.stringify({ ev: 'target-reply', ok: !err, target: t, reason: err ? err.message : undefined }) + '\n'); } catch (e) {}
         });
         return;
     }

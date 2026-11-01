@@ -71,6 +71,9 @@ public:
      * native central-map slot. False for a name the renderer has not got
      * (known once connected). */
     bool set_target(const std::string &name);
+    const std::string &target() const { return cfg_.target; }
+    /* Whether the renderer has target `name` (true until connected). */
+    bool knows(const std::string &name) const;
 
     int fd() const { return client_.fd(); }
     bool wants_write() const { return client_.wants_write(); }

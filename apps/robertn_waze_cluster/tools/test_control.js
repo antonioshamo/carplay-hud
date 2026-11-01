@@ -138,6 +138,28 @@ test('the map follows the stream; the app sends the render nothing', async (rend
     c.close();
 });
 
+test('Show map on steps Cluster, HUD, Cluster + HUD: the render moves, patchd saves it', async (render, patch) => {
+    const c = control();
+    c.open();
+    await until('connected', () => c.connectedRender() && c.connectedPatch());
+    render.stream(true);
+    await until('showing on the cluster', () => c.renderStatus && c.renderStatus.state === 'showing' &&
+        c.displayText() === 'Show map on: Cluster');
+    assert(c.canChangeDisplay());
+    c.cycleDisplay();
+    assert.strictEqual(c.displayText(), 'Show map on: HUD', 'shown at once, before the render answers');
+    await until('render on the HUD', () => render.target === 'hud' && c.renderStatus.target === 'hud');
+    c.cycleDisplay();
+    await until('both', () => render.target === 'map+hud' && c.displayText() === 'Show map on: Cluster + HUD');
+    c.cycleDisplay();
+    await until('back to the cluster', () => render.target === 'map' && c.displayText() === 'Show map on: Cluster');
+    assert.deepStrictEqual(render.received.map((m) => m.target), ['hud', 'map+hud', 'map']);
+    await until('saved', () => patch.received.filter((m) => m.cmd === 'target').length === 3);
+    assert.deepStrictEqual(patch.received.filter((m) => m.cmd === 'target').map((m) => m.target), ['hud', 'map+hud', 'map']);
+    c.close();
+    assert(!c.canChangeDisplay(), 'no change while the render is not connected');
+});
+
 test('a page opened while the map is up reads it, again after closing', async (render, patch) => {
     patch.res = SIZE;
     patch.safe = SAFE;

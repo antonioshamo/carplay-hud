@@ -109,6 +109,12 @@ void MapFeed::make_layer()
     log_info("render: map layer on %s (%ux%u), quad %ux%u at %u,%u", cfg_.target.c_str(), tw, th, q.w, q.h, q.x, q.y);
 }
 
+bool MapFeed::knows(const std::string &name) const
+{
+    uint32_t w, h;
+    return !client_.connected() || target_size(client_.targets, name == "sail" ? "map" : name, &w, &h);
+}
+
 bool MapFeed::set_target(const std::string &name)
 {
     const std::string t = name == "sail" ? "map" : name;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.101 (eroobeeroo fork)
+
+Show map on: one button steps the map between the Cluster, the HUD and
+Cluster + HUD. The map moves at once and the choice is kept for the next
+start. Requires waze-on-cluster 0.6.101.
+
 ## 0.4.0
 
 The page says to set Instrument cluster > Central display area to Map view:

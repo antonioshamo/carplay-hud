@@ -41,6 +41,7 @@
 #include "log.h"
 #include "block_pack.h"
 #include "map_feed.h"
+#include "map_feeds.h"
 #include "map_geometry.h"
 #include "video_producer.h"
 #include "yuv_atlas.h"
@@ -80,19 +81,19 @@ std::string status_line(const FeedStatus &s)
 
 class Server : public Control::Handler {
 public:
-    explicit Server(MapFeed *feed) : feed_(feed) {}
+    explicit Server(MapFeeds *feeds) : feeds_(feeds) {}
     void set_control(Control *c) { control_ = c; }
 
-    /* start picks the target the map goes to (`run`); the map itself comes
-     * and goes with the stream. */
+    /* start picks where the map goes (`run`, or the app's display choice):
+     * "map", "hud" or "map+hud"; the map itself comes and goes with the
+     * stream. */
     void on_command(const std::map<std::string, std::string> &msg) override
     {
         const std::string &cmd = msg.at("cmd");
         auto it = msg.find("target");
         if (cmd == "start" && it != msg.end()) {
             log_info("start %s", it->second.c_str());
-            if (!feed_->set_target(it->second))
-                log_warn("start: the cluster renderer has no target %s", it->second.c_str());
+            feeds_->set_targets(it->second);
         } else {
             log_warn("control: unknown command %s", cmd.c_str());
         }
@@ -121,7 +122,7 @@ public:
     }
 
 private:
-    MapFeed *feed_;
+    MapFeeds *feeds_;
     Control *control_ = nullptr;
     uint64_t log_seq_ = 0;
     std::string last_;
@@ -212,7 +213,7 @@ int serve(const Config &cfg)
 
     std::string err;
     VideoProducer producer(vc);
-    MapFeed feed(fc);
+    MapFeeds feed(fc);
     Server server(&feed);
     Control control(&server);
     server.set_control(&control);
@@ -232,14 +233,14 @@ int serve(const Config &cfg)
     AltScreen::State alt_state = AltScreen::Unknown;
     int64_t alt_read_ms = 0;
     for (;;) {
-        struct pollfd p[5] = {{sig_fd, POLLIN, 0}, {control.listen_fd(), POLLIN, 0}, {control.owner_fd(), POLLIN, 0},
-                              {feed.fd(), (short)(POLLIN | (feed.wants_write() ? POLLOUT : 0)), 0},
-                              {producer.ready_fd(), POLLIN, 0}};
+        std::vector<pollfd> p = {{sig_fd, POLLIN, 0}, {control.listen_fd(), POLLIN, 0}, {control.owner_fd(), POLLIN, 0},
+                                 {producer.ready_fd(), POLLIN, 0}};
+        feed.poll_fds(&p);   /* one per target's renderer connection */
         /* A decoded frame wakes it (the producer's ready fd), and so does the
          * renderer's socket; four times a second otherwise, so the client
          * retries its connection, a source that is down is retried and the
          * status files stay current. */
-        int n = poll(p, 5, 250);
+        int n = poll(p.data(), p.size(), 250);
         if (n < 0 && errno != EINTR)
             break;
         if (p[0].revents & POLLIN)

@@ -109,7 +109,15 @@ reconnect the phone. If a patched CarPlay crash-loops,
 `waze-on-cluster-recovery.service` restores the original binary on disk
 (PATCH.md "Boot recovery").
 
-From a shell, `waze-on-cluster -c <conf> run map|panel|hud` (`sail` is an
+**Cluster, HUD or both.** The app's **Show map on** button steps the map
+between the cluster (`map`), the HUD (`hud`) and both at once (`map+hud`):
+the render moves it at once and `patchd` saves the choice as `target` in
+`waze-on-cluster.local.conf` for the next start. With both, each target is
+its own layer and slot on the renderer (`src/map_feeds.*`), the HUD's map
+fitted into its 800x480 scene, within the one shared upload budget. On a
+HUD dark pixels are see-through, so a night-mode map reads best.
+
+From a shell, `waze-on-cluster -c <conf> run map|panel|hud|map+hud` (`sail` is an
 alias of `map`) sets the target until the service restarts and prints the
 status.
 
@@ -178,7 +186,7 @@ street names and icons readable). The next update the budget covers, or a
 quarter second later, brings the exact picture back. `waze-on-cluster
 bench-pack <I420 file>` times the packing on the unit.
 
-**Rate.** `target_fps` (30) is a ceiling on an exact grid; only the newest
+**Rate.** `target_fps` (15) is a ceiling on an exact grid; only the newest
 frame waits, so the map skips ahead and never shows a backlog. Real Waze sent
 up to about 16 frames a second on the car.
 
