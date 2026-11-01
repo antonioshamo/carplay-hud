@@ -75,8 +75,11 @@ function ok(name, cond) {
     for (var t = 0; t < 5000 && !fs.existsSync(SOCK); t += 50) await sleep(50);
     var r = await ask({ cmd: 'target', target: 'map+hud' });
     var conf = fs.readFileSync(CONF, 'utf8');
-    ok('map+hud is saved, replacing the earlier target, the other lines kept',
-       r.ok && r.target === 'map+hud' && conf === 'upload_kb_per_s = 3000\ntarget_fps = 15\ntarget = map+hud\n');
+    ok('map+hud (both) is refused: one or the other', !r.ok && conf === 'upload_kb_per_s = 3000\ntarget = map\ntarget_fps = 15\n');
+    r = await ask({ cmd: 'target', target: 'hud' });
+    conf = fs.readFileSync(CONF, 'utf8');
+    ok('hud is saved, replacing the earlier target, the other lines kept',
+       r.ok && r.target === 'hud' && conf === 'upload_kb_per_s = 3000\ntarget_fps = 15\ntarget = hud\n');
     r = await ask({ cmd: 'target', target: 'hud' });
     conf = fs.readFileSync(CONF, 'utf8');
     ok('hud replaces it: one target line', r.ok && (conf.match(/^target =/mg) || []).length === 1 && /target = hud\n$/.test(conf));

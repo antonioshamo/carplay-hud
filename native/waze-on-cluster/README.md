@@ -113,8 +113,9 @@ reconnect the phone. If a patched CarPlay crash-loops,
 `waze-on-cluster-recovery.service` restores the original binary on disk
 (PATCH.md "Boot recovery").
 
-**Cluster, HUD or both.** The app's **Show map on** button steps the map
-between the cluster (`map`), the HUD (`hud`) and both at once (`map+hud`):
+**Cluster or HUD.** The app's **Show map on** button switches the map
+between the cluster (`map`) and the HUD (`hud`); from a shell the tool can
+still show both at once (`map+hud`):
 the render moves it at once and `patchd` saves the choice as `target` in
 `waze-on-cluster.local.conf` for the next start. With both, each target is
 its own layer and slot on the renderer (`src/map_feeds.*`), the HUD's map

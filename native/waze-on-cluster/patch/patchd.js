@@ -34,7 +34,7 @@
  *                                   carplay. reboot-reply carries ok/reason.
  *                  {"cmd":"logs"}   carplay + marker + avb log lines, dlt-receive health, patchd log
  *                                   (to the asker, read-only)
- *                  {"cmd":"target","target":"map"|"hud"|"map+hud"}
+ *                  {"cmd":"target","target":"map"|"hud"}
  *                                   where the map goes from the next start of the
  *                                   render on: written as "target = ..." into
  *                                   waze-on-cluster.local.conf (the app moves the
@@ -117,7 +117,8 @@ var REBOOT_CMD = (process.env.WOC_REBOOT_CMD || 'systemctl reboot').split(' ');
 /* The unit's own render settings, which updates keep: the display choice
  * (Cluster, HUD, both) is saved there as the render's "target". */
 var LOCAL_CONF = process.env.WOC_LOCAL_CONF || '/var/opt/waze-on-cluster/waze-on-cluster.local.conf';
-var DISPLAY_TARGETS = ['map', 'hud', 'map+hud'];
+/* one or the other: the cluster or the HUD */
+var DISPLAY_TARGETS = ['map', 'hud'];
 
 /* Writes key = value into the local conf, replacing any line of that key;
  * the other lines stay as they are. Atomic: a temporary file renamed over it. */

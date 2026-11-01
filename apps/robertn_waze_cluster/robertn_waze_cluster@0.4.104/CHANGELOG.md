@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.104 (eroobeeroo fork)
+
+Show map on switches between the Cluster and the HUD only (no longer both).
+An earlier saved choice of both shows as Cluster until the next press.
+Requires waze-on-cluster 0.7.102.
+
 ## 0.4.103 (eroobeeroo fork)
 
 Requires waze-on-cluster 0.7.101 (upstream 0.7.1: the patch works on any

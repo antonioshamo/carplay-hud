@@ -6,8 +6,8 @@
  * cluster. It drives the tool entirely from the HMI, so no shell is needed.
  *
  * One LT_State_Wide page: a status line combining the patch state and the
- * render state; the cluster setting the map needs; Show map on (Cluster, HUD,
- * Cluster + HUD; each press steps to the next, saved for the next start);
+ * render state; the cluster setting the map needs; Show map on (Cluster or
+ * HUD; each press switches, saved for the next start);
  * HUD map size (Standard, 70 %, 85 %, Full width, 40 %; enabled while the
  * map goes to the HUD); Enable map and Disable
  * map, which apply and revert the carplay patch; the diagnostic capture
