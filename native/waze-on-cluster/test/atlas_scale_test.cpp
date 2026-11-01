@@ -117,6 +117,34 @@ int main()
         ok("radius 0: square again", out[0] == 235);
     }
 
+    {
+        /* black background: a night map (navy field Y 60, a road Y 120, a
+         * label Y 220): the field goes black with neutral chroma, the road
+         * and label stay; a day map (field Y 200) is left alone */
+        std::vector<uint8_t> night(1088 * 720, 60);
+        for (size_t i = 1088 * 480; i < night.size(); i++) night[i] = (i % 2) ? 150 : 110;   /* bluish U, V */
+        for (uint32_t r = 200; r < 240; r++)
+            for (uint32_t c = 0; c < 1088; c++) night[r * 1088 + c] = 120;
+        for (uint32_t r = 300; r < 320; r++)
+            for (uint32_t c = 500; c < 600; c++) night[r * 1088 + c] = 220;
+        AtlasScaler kb;
+        kb.configure(1088, 480, 452, 200, 0);
+        kb.set_black_background(true);
+        kb.scale(night.data(), &out);
+        const uint8_t *y = out.data(), *u = y + 452 * 200;
+        ok("black background: the navy field black", y[20 * 452 + 20] == 16 && kb.background() / 16 == 60);
+        ok("black background: its chroma neutral", u[5 * 452 + 5] == 128);
+        ok("black background: the road kept", y[91 * 452 + 100] == 120);
+        ok("black background: the label kept", y[129 * 452 + 228] == 220);
+        std::vector<uint8_t> day(1088 * 720, 200);
+        for (size_t i = 1088 * 480; i < day.size(); i++) day[i] = 128;
+        AtlasScaler kd;
+        kd.configure(1088, 480, 452, 200, 0);
+        kd.set_black_background(true);
+        kd.scale(day.data(), &out);
+        ok("black background: a day map left alone", out[20 * 452 + 20] == 200);
+    }
+
     const struct { uint32_t w, h; } sizes[] = {{452, 200}, {560, 244}, {680, 300}, {800, 352}, {320, 140}};
     for (const auto &z : sizes) {
         AtlasScaler t;

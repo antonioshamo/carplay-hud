@@ -58,6 +58,8 @@ struct FeedConfig {
     unsigned scaled_level_bits = 2;
     /* the HUD map's corners rounded (a twelfth of its height, at least 6 px) */
     bool hud_round_corners = true;
+    /* the HUD map's dark background made black (see-through on a HUD) */
+    bool hud_black_background = true;
 };
 
 /* The status the Waze app shows (its render socket's "status" event), with

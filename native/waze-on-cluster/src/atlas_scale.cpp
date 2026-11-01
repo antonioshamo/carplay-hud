@@ -113,6 +113,8 @@ void AtlasScaler::scale(const uint8_t *src, std::vector<uint8_t> *dst)
     uint8_t *du = d + (size_t)dw_ * dh_, *dv = du + dw_ / 2;
     plane(su, w_, h_ / 2, du, dw_, cx_, cy_);
     plane(sv, w_, h_ / 2, dv, dw_, cx_, cy_);
+    if (black_bg_)
+        key_background(d);
     if (radius_) {
         const uint32_t cr = radius_ / 2;
         corners(d, dw_, dw_, dh_, radius_, ycov_, 16);
@@ -123,6 +125,52 @@ void AtlasScaler::scale(const uint8_t *src, std::vector<uint8_t> *dst)
     }
     if (bits_)
         crk::round_levels(d, d, dst->size(), bits_);
+}
+
+/* The background is the most common Y (a night map's field covers most of
+ * the frame), followed at a quarter of each frame's change so a frame with
+ * a big label does not flicker it. Y up to kKeyLo above it goes black, the
+ * next kKeyRamp fade in, the rest stays; U and V of each 2 x 2 block fade
+ * by the most visible of its four Y. A background lighter than kKeyMaxBg
+ * (a day map) is left alone. */
+void AtlasScaler::key_background(uint8_t *d)
+{
+    static const int kKeyLo = 8, kKeyRamp = 28, kKeyMaxBg = 150;   /* Waze's night field is grey-blue, a day map's near white */
+    const size_t n = (size_t)dw_ * dh_;
+    uint32_t hist[256] = {0};
+    for (size_t i = 0; i < n; i += 3)
+        hist[d[i]]++;
+    int mode = 0;
+    for (int v = 1; v < 256; v++)
+        if (hist[v] > hist[mode])
+            mode = v;
+    bg_ = bg_ < 0 ? mode * 16 : bg_ + (mode * 16 - bg_) / 4;
+    const int bg = bg_ / 16;
+    if (bg > kKeyMaxBg)
+        return;
+    uint16_t k[256];
+    for (int v = 0; v < 256; v++) {
+        const int over = v - bg - kKeyLo;
+        k[v] = (uint16_t)(over <= 0 ? 0 : over >= kKeyRamp ? 256 : over * 256 / kKeyRamp);
+    }
+    uint8_t *u = d + n, *v = u + dw_ / 2;
+    for (uint32_t y = 0; y < dh_; y += 2)
+        for (uint32_t x = 0; x < dw_; x += 2) {
+            uint8_t *p = d + (size_t)y * dw_ + x;
+            const uint32_t k0 = k[p[0]], k1 = k[p[1]], k2 = k[p[dw_]], k3 = k[p[dw_ + 1]];
+            p[0] = (uint8_t)(16 + ((int)p[0] - 16) * (int)k0 / 256);
+            p[1] = (uint8_t)(16 + ((int)p[1] - 16) * (int)k1 / 256);
+            p[dw_] = (uint8_t)(16 + ((int)p[dw_] - 16) * (int)k2 / 256);
+            p[dw_ + 1] = (uint8_t)(16 + ((int)p[dw_ + 1] - 16) * (int)k3 / 256);
+            uint32_t kc = k0 > k1 ? k0 : k1;
+            kc = kc > k2 ? kc : k2;
+            kc = kc > k3 ? kc : k3;
+            if (kc >= 256)
+                continue;
+            const size_t c = (size_t)(y / 2) * dw_ + x / 2;
+            u[c] = (uint8_t)(128 + ((int)u[c] - 128) * (int)kc / 256);
+            v[c] = (uint8_t)(128 + ((int)v[c] - 128) * (int)kc / 256);
+        }
 }
 
 /* Each pixel of the r x r top-left corner square: how much of it (0-256) lies

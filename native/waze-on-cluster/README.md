@@ -178,6 +178,10 @@ the HUD's media and list pop-ups show (cluster-render `hud_yield_slots`), and
 the app says so. On a HUD dark pixels are see-through, so a night-mode map reads best.
 The HUD map's corners are rounded (`hud_round_corners`, a twelfth of its
 height): they fade to black on the scaled frame, which the HUD shows as nothing.
+A night map's background is made black too (`hud_black_background`): the
+frame's most common shade, followed frame to frame, and the shades just above
+it fade to black, so the HUD shows the roads, route and labels without Waze's
+grey-blue field; a day map (light background) is left as it is.
 
 **Per driver profile.** The app reads the head unit's current user account
 every 5 s (SOME/IP `SessionManager.currentUserAccountReference`) and tells

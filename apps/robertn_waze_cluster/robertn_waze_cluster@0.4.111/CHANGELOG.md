@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.111 (eroobeeroo fork)
+
+Requires waze-on-cluster 0.7.109: on the HUD a night map's grey-blue
+background is made black, which the HUD shows as nothing.
+
 ## 0.4.110 (eroobeeroo fork)
 
 Requires waze-on-cluster 0.7.108: the HUD map's corners are rounded.

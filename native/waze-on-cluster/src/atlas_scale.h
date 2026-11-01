@@ -41,6 +41,15 @@ public:
      * the corners fade to black (Y 16, U and V 128), which a HUD shows as
      * nothing, so the picture's corners look round. Applied by scale(). */
     void set_corner_radius(uint32_t r);
+
+    /* Black background: the map's background (its most common Y, followed
+     * smoothly frame to frame) and the shades just above it fade to black,
+     * so a HUD, which shows black as nothing, shows the roads, route and
+     * labels without the map's grey-blue field (Waze's night map). Only while the background is
+     * dark (a night map): a light one is left as it is. Applied by scale(). */
+    void set_black_background(bool on) { black_bg_ = on; bg_ = -1; }
+    /* the background Y followed, -1 before the first frame */
+    int background() const { return bg_; }
     uint32_t corner_radius() const { return radius_; }
 
 private:
@@ -66,6 +75,9 @@ private:
     std::vector<uint16_t> rows_;   /* the horizontal pass, scaled 256 */
     std::vector<uint32_t> acc_;    /* one output row's vertical sums */
     uint32_t radius_ = 0;
+    bool black_bg_ = false;
+    int bg_ = -1;   /* the background's Y, x 16 (smoothed) */
+    void key_background(uint8_t *d);
     std::vector<uint16_t> ycov_, ccov_;   /* corner coverage: Y at radius_, U and V at radius_ / 2 */
 };
 
