@@ -4,7 +4,7 @@
 
 Show map on: one button steps the map between the Cluster, the HUD and
 Cluster + HUD. The map moves at once and the choice is kept for the next
-start. Requires waze-on-cluster 0.6.101.
+start. Requires waze-on-cluster 0.6.103.
 
 ## 0.4.0
 
