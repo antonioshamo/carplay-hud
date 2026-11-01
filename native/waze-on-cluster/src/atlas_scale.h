@@ -37,6 +37,12 @@ public:
     /* src: a w x atlas_height(h) atlas; *dst is resized to dst_bytes(). */
     void scale(const uint8_t *src, std::vector<uint8_t> *dst);
 
+    /* Rounded corners of radius r output pixels (0: square), anti-aliased:
+     * the corners fade to black (Y 16, U and V 128), which a HUD shows as
+     * nothing, so the picture's corners look round. Applied by scale(). */
+    void set_corner_radius(uint32_t r);
+    uint32_t corner_radius() const { return radius_; }
+
 private:
     /* One axis: for each output index, its first source index and weights
      * (sum kOne) over the source pixels its span covers. */
@@ -48,12 +54,19 @@ private:
         void build(uint32_t src, uint32_t dst);
     };
     void plane(const uint8_t *src, uint32_t sp, uint32_t sh, uint8_t *dst, uint32_t dp, const Axis &x, const Axis &y);
+    /* The corner mask on one plane (pw x ph, pitch dp) of radius r with
+     * coverage table cov (r x r, 0-256, the top-left corner). */
+    static void corners(uint8_t *p, uint32_t dp, uint32_t pw, uint32_t ph, uint32_t r, const std::vector<uint16_t> &cov,
+                        uint8_t black);
+    static void coverage(uint32_t r, std::vector<uint16_t> *cov);
 
     uint32_t w_ = 0, h_ = 0, dw_ = 0, dh_ = 0;
     unsigned bits_ = 0;
     Axis yx_, yy_, cx_, cy_;
     std::vector<uint16_t> rows_;   /* the horizontal pass, scaled 256 */
     std::vector<uint32_t> acc_;    /* one output row's vertical sums */
+    uint32_t radius_ = 0;
+    std::vector<uint16_t> ycov_, ccov_;   /* corner coverage: Y at radius_, U and V at radius_ / 2 */
 };
 
 }  // namespace woc

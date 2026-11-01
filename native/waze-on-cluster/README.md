@@ -176,6 +176,8 @@ a frame at the standard size instead of 783,360, so the frames go exact
 rather than packed within the shared budget. The HUD map steps aside while
 the HUD's media and list pop-ups show (cluster-render `hud_yield_slots`), and
 the app says so. On a HUD dark pixels are see-through, so a night-mode map reads best.
+The HUD map's corners are rounded (`hud_round_corners`, a twelfth of its
+height): they fade to black on the scaled frame, which the HUD shows as nothing.
 
 **Per driver profile.** The app reads the head unit's current user account
 every 5 s (SOME/IP `SessionManager.currentUserAccountReference`) and tells

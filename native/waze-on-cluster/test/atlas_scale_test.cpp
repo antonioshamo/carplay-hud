@@ -95,6 +95,28 @@ int main()
     h.scale(g.data(), &out);
     ok("and copies exactly", out == g);
 
+    {
+        /* rounded corners: a white frame, its corners black (Y 16, U and V
+         * 128), the edges' middles and the inside untouched */
+        AtlasScaler rc;
+        rc.configure(1088, 480, 452, 200, 0);
+        rc.set_corner_radius(16);
+        std::vector<uint8_t> white(1088 * 720, 235);
+        for (size_t i = 1088 * 480; i < white.size(); i++) white[i] = 200;
+        rc.scale(white.data(), &out);
+        const uint8_t *y = out.data(), *u = y + 452 * 200;
+        ok("corners: the four corner pixels black", y[0] == 16 && y[451] == 16 && y[199 * 452] == 16 && y[199 * 452 + 451] == 16);
+        ok("corners: the chroma corner neutral", u[0] == 128 && u[99 * 452 + 225] == 128);
+        ok("corners: the edges' middles and the inside untouched", y[226] == 235 && y[100 * 452] == 235 && y[100 * 452 + 226] == 235 &&
+                                                                       y[16 * 452 + 16] == 235);
+        bool aa = false;
+        for (uint32_t x = 0; x < 16; x++) aa = aa || (y[x] > 16 && y[x] < 235);
+        ok("corners: anti-aliased along the curve", aa);
+        rc.set_corner_radius(0);
+        rc.scale(white.data(), &out);
+        ok("radius 0: square again", out[0] == 235);
+    }
+
     const struct { uint32_t w, h; } sizes[] = {{452, 200}, {560, 244}, {680, 300}, {800, 352}, {320, 140}};
     for (const auto &z : sizes) {
         AtlasScaler t;

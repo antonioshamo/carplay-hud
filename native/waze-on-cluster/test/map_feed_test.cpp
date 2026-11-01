@@ -369,6 +369,7 @@ int main()
     AtlasScaler ref;
     std::vector<uint8_t> f1_hud;
     ref.configure(1088, 480, 452, 200, 2);   /* FeedConfig::scaled_level_bits */
+    ref.set_corner_radius(200 / 12);         /* FeedConfig::hud_round_corners */
     ref.scale(f1.data(), &f1_hud);
     if (gh)
         for (const auto &kv : gh->shown.buffers)

@@ -56,6 +56,8 @@ struct FeedConfig {
      * at most video.fps a second, rounded to these level bits. */
     bool scale_down = true;
     unsigned scaled_level_bits = 2;
+    /* the HUD map's corners rounded (a twelfth of its height, at least 6 px) */
+    bool hud_round_corners = true;
 };
 
 /* The status the Waze app shows (its render socket's "status" event), with

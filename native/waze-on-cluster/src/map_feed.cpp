@@ -101,6 +101,7 @@ void MapFeed::make_layer()
         vo.w = sw;
         vo.h = sh;
         scaling_ = true;
+        scaler_.set_corner_radius(cfg_.target == "hud" && cfg_.hud_round_corners ? (sh / 12 > 6 ? sh / 12 : 6) : 0);
     }
     lo_ = cr::LayerOptions();
     lo_.target = cfg_.target;
