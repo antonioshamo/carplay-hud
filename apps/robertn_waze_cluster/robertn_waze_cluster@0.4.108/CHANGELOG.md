@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.108 (eroobeeroo fork)
+
+HUD map size steps Standard, 70 %, 85 %, 40 %: no Full width, which the
+HUD cut off at its edges. Requires waze-on-cluster 0.7.106, which holds a
+saved larger size to 85 %.
+
 ## 0.4.107 (eroobeeroo fork)
 
 Brought up to date with upstream 0.4.1: while CarPlay's stream is live but

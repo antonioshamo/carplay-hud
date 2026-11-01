@@ -40,7 +40,7 @@
  *                                   waze-on-cluster.local.conf (the app moves the
  *                                   running render itself with its start command).
  *                                   target-reply carries ok/target/reason
- *                  {"cmd":"hud-size","hud_width_pct":0|20..100}
+ *                  {"cmd":"hud-size","hud_width_pct":0|20..85}
  *                                   the HUD map's size, saved the same way as
  *                                   "hud_width_pct = ..." (0: the default box);
  *                                   hud-size-reply carries ok/hud_width_pct/reason
@@ -99,6 +99,7 @@ var FIFO = process.env.WOC_FIFO || '/run/waze-on-cluster/alt.h264';
 /* The local UDP sink for udp mode. Must match the render's udp_port
  * (waze-on-cluster.conf); the render listens on 127.0.0.1:UDP_PORT. */
 var UDP_PORT = process.env.WOC_UDP_PORT || '20557';
+var HUD_MAX_PCT = 85;   /* the widest HUD map size: wider is cut off at the HUD's edges */
 var SOCK = process.env.WOC_PATCH_SOCK || '/dev/shm/waze-on-cluster/patch.sock';
 var SOCK_GROUP = process.env.WOC_PATCH_GROUP || 'tm_oap_app';
 var MOUNT = process.env.WOC_MOUNT || '/bin/mount';
@@ -1004,9 +1005,10 @@ function handle(line, sock) {
     if (msg.cmd === 'hud-size') {
         var pct = Number(msg.hud_width_pct);
         if (!(pct === 0 || (pct >= 20 && pct <= 100 && pct === Math.floor(pct)))) {
-            try { sock.write(JSON.stringify({ ev: 'hud-size-reply', ok: false, reason: 'HUD width must be 0 or 20-100 %' }) + '\n'); } catch (e) {}
+            try { sock.write(JSON.stringify({ ev: 'hud-size-reply', ok: false, reason: 'HUD width must be 0 or 20-85 %' }) + '\n'); } catch (e) {}
             return;
         }
+        if (pct > HUD_MAX_PCT) pct = HUD_MAX_PCT;   /* the widest the HUD shows whole (an older app asks for 100) */
         saveSetting('hud_width_pct', String(pct), function (err) {
             if (err) log('saving the HUD map size failed: ' + err.message);
             else log('HUD map size: ' + (pct ? pct + ' %' : 'default') + ' (saved for the next start)');

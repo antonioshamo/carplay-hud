@@ -166,7 +166,8 @@ the render moves it at once and `patchd` saves the choice as `target` in
 `waze-on-cluster.local.conf` for the next start. With both, each target is
 its own layer and slot on the renderer (`src/map_feeds.*`), the HUD's map
 fitted into its 800x480 scene, within the one shared upload budget. The HUD map's size (`hud_width_pct`): Standard (0, the fitted box,
-about 57 % of the HUD's width, 453x200), 70 %, 85 %, Full width (800x353)
+about 57 % of the HUD's width, 453x200), 70 %, 85 % (680x300, the widest:
+wider is cut off at the HUD's edges, and a larger saved size is held to it)
 or 40 %, the picture's shape kept and centred; the app's **HUD map size**
 button resizes it at once and `patchd` saves it. The HUD's frame is scaled
 on the head unit to the size it is shown at (`src/atlas_scale.*`, area

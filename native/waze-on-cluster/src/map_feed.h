@@ -39,6 +39,10 @@
 
 namespace woc {
 
+/* The HUD map's widest size, % of the HUD's width: wider is cut off at its
+ * edges. A larger hud_width_pct is held to it. */
+const unsigned kHudMaxPct = 85;
+
 struct FeedConfig {
     std::string socket = "/dev/shm/cluster-render/render.sock";
     std::string target = "map";

@@ -70,6 +70,8 @@ std::string join_targets(const std::vector<std::string> &targets)
 
 MapFeeds::MapFeeds(const FeedConfig &base) : base_(base)
 {
+    if (base_.hud_width_pct > kHudMaxPct)
+        base_.hud_width_pct = kHudMaxPct;
     std::string err;
     if (!parse_targets(base.target, &targets_, &err)) {
         log_error("target: %s; using map", err.c_str());
@@ -121,6 +123,8 @@ bool MapFeeds::set_targets(const std::string &spec)
 
 void MapFeeds::set_hud_width(unsigned pct)
 {
+    if (pct > kHudMaxPct)
+        pct = kHudMaxPct;
     base_.hud_width_pct = pct;
     for (auto &f : feeds_)
         f->set_hud_width(pct);

@@ -398,9 +398,9 @@ int main()
     feeds.set_hud_width(100);
     bpump(300, &f2);
     hl = layer_on(2);
-    ok("100 %: the HUD's full width, the picture's shape kept, centred",
-       hl && hl->params.rect.w == 800 && hl->params.rect.h == 352 && hl->params.rect.x == 0 && hl->params.rect.y == 63 &&
-           feeds.status("decode").hud_width_pct == 100);
+    ok("100 %: held to the widest, 85 % (680x300), the picture's shape kept, centred",
+       hl && hl->params.rect.w == 680 && hl->params.rect.h == 300 && hl->params.rect.x == 60 && hl->params.rect.y == 90 &&
+           feeds.status("decode").hud_width_pct == 85);
     feeds.set_hud_width(40);
     bpump(300, &f2);
     hl = layer_on(2);

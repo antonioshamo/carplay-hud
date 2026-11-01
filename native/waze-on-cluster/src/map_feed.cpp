@@ -130,7 +130,7 @@ crk::QuadRect MapFeed::quad(uint32_t tw, uint32_t th) const
     const unsigned pct = cfg_.hud_width_pct;
     if (cfg_.target != "hud" || !pct || !cfg_.video.w || !cfg_.video.h)
         return crk::map_quad(tw, th, cfg_.video.w, cfg_.video.h);
-    uint64_t w = (uint64_t)tw * (pct > 100 ? 100 : pct) / 100;
+    uint64_t w = (uint64_t)tw * (pct > kHudMaxPct ? kHudMaxPct : pct) / 100;
     uint64_t h = (w * cfg_.video.h + cfg_.video.w / 2) / cfg_.video.w;
     if (h > th) {
         h = th;

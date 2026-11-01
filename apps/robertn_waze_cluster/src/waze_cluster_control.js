@@ -71,7 +71,8 @@ const SAFE = '504x368+286+72';
 const DISPLAYS = [['map', 'Cluster'], ['hud', 'HUD']];
 /* The HUD map's sizes, in the order the size button steps through them: its
  * width in percent of the HUD's (0: the standard fitted box, about 57 %). */
-const HUD_SIZES = [[0, 'Standard'], [70, '70 %'], [85, '85 %'], [100, 'Full width'], [40, '40 %']];
+/* 85 % is the widest the HUD shows whole (the render holds a larger saved size to it). */
+const HUD_SIZES = [[0, 'Standard'], [70, '70 %'], [85, '85 %'], [40, '40 %']];
 
 /* One newline-delimited-JSON stream socket, reconnecting while open.
  * link: 'down' | 'up' | 'absent' (ENOENT) | 'refused' (ECONNREFUSED) | 'failed'.
