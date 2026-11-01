@@ -7,7 +7,9 @@
  *
  * One LT_State_Wide page: a status line combining the patch state and the
  * render state; the cluster setting the map needs; Show map on (Cluster, HUD,
- * Cluster + HUD; each press steps to the next, saved for the next start); Enable map and Disable
+ * Cluster + HUD; each press steps to the next, saved for the next start);
+ * HUD map size (Standard, 70 %, 85 %, Full width, 40 %; enabled while the
+ * map goes to the HUD); Enable map and Disable
  * map, which apply and revert the carplay patch; the diagnostic capture
  * button and its status; and a scrolling list of both tools' log lines,
  * newest first, one per LT_Label_1Row, redrawn at most every
@@ -36,6 +38,7 @@ const ENABLE_NAME = 'wocEnable';
 const DISABLE_NAME = 'wocDisable';
 const RESTART_NAME = 'wocRestart';
 const DISPLAY_NAME = 'wocDisplay';
+const HUD_SIZE_NAME = 'wocHudSize';
 const CAPTURE_NAME = 'wocCapture';
 const CAPTURE_STATUS = 'wocCaptureStatus';
 const ROW_NAMES = Array.from({ length: MAX_LINES }, (_, i) => `wocRow${String(i + 1).padStart(2, '0')}`);
@@ -133,7 +136,7 @@ class WazeClusterApp extends OnlineApp {
         if (!this._state) {
             return Promise.reject(new Error(`uiDescription has no ${STATE_NAME}`));
         }
-        const names = [STATUS_NAME, SETUP_NAME, DISPLAY_NAME, ENABLE_NAME, DISABLE_NAME, RESTART_NAME, CAPTURE_NAME, CAPTURE_STATUS]
+        const names = [STATUS_NAME, SETUP_NAME, DISPLAY_NAME, HUD_SIZE_NAME, ENABLE_NAME, DISABLE_NAME, RESTART_NAME, CAPTURE_NAME, CAPTURE_STATUS]
             .concat(ROW_NAMES);
         names.forEach((name) => { this._components[name] = rhmi.getByName(name); });
         const missing = names.filter((name) => !this._components[name]);
@@ -144,6 +147,7 @@ class WazeClusterApp extends OnlineApp {
         this._bind(DISABLE_NAME, () => this._control.disableMap());
         this._bind(RESTART_NAME, () => this._control.requestRestart());
         this._bind(DISPLAY_NAME, () => this._control.cycleDisplay());
+        this._bind(HUD_SIZE_NAME, () => this._control.cycleHudSize());
         this._bind(CAPTURE_NAME, () => this._control.capture());
         // Presses also arrive as the application's raw 'userEvent'; both paths
         // land in _press, which keeps a press delivered twice to one.
@@ -312,6 +316,9 @@ class WazeClusterApp extends OnlineApp {
         /* Cluster, HUD, or both: each press moves the map to the next one */
         this._write(DISPLAY_NAME, this._control.displayText());
         this._setEnabled(DISPLAY_NAME, this._control.canChangeDisplay());
+        /* the HUD map's size: enabled while the map goes to the HUD */
+        this._write(HUD_SIZE_NAME, this._control.hudSizeText());
+        this._setEnabled(HUD_SIZE_NAME, this._control.canChangeHudSize());
         this._write(CAPTURE_NAME, this._control.captureButtonText());
         this._write(CAPTURE_STATUS, this._control.captureText());
         const patch = this._control.connectedPatch();

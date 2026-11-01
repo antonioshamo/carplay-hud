@@ -40,6 +40,10 @@
  *                                   waze-on-cluster.local.conf (the app moves the
  *                                   running render itself with its start command).
  *                                   target-reply carries ok/target/reason
+ *                  {"cmd":"hud-size","hud_width_pct":0|20..100}
+ *                                   the HUD map's size, saved the same way as
+ *                                   "hud_width_pct = ..." (0: the default box);
+ *                                   hud-size-reply carries ok/hud_width_pct/reason
  *                  {"cmd":"capture-start"|"capture-stop"|"capture-status"}
  *                                   (capture-reply to the asker; every client gets
  *                                   ev capture, also once a second)
@@ -114,14 +118,15 @@ var REBOOT_CMD = (process.env.WOC_REBOOT_CMD || 'systemctl reboot').split(' ');
 var LOCAL_CONF = process.env.WOC_LOCAL_CONF || '/var/opt/waze-on-cluster/waze-on-cluster.local.conf';
 var DISPLAY_TARGETS = ['map', 'hud', 'map+hud'];
 
-/* Writes target = <t> into the local conf, replacing any target line; the
- * other lines stay as they are. Atomic: a temporary file renamed over it. */
-function saveTarget(t, done) {
+/* Writes key = value into the local conf, replacing any line of that key;
+ * the other lines stay as they are. Atomic: a temporary file renamed over it. */
+function saveSetting(key, value, done) {
     var lines = [];
     try { lines = fs.readFileSync(LOCAL_CONF, 'utf8').split('\n'); } catch (e) { if (e.code !== 'ENOENT') { done(e); return; } }
-    lines = lines.filter(function (l) { return !/^\s*target\s*=/.test(l); });
+    var re = new RegExp('^\\s*' + key + '\\s*=');
+    lines = lines.filter(function (l) { return !re.test(l); });
     while (lines.length && lines[lines.length - 1] === '') lines.pop();
-    lines.push('target = ' + t);
+    lines.push(key + ' = ' + value);
     var tmp = LOCAL_CONF + '.tmp';
     try {
         fs.writeFileSync(tmp, lines.join('\n') + '\n', { mode: 420 });
@@ -964,10 +969,23 @@ function handle(line, sock) {
             try { sock.write(JSON.stringify({ ev: 'target-reply', ok: false, reason: 'unknown target ' + t }) + '\n'); } catch (e) {}
             return;
         }
-        saveTarget(t, function (err) {
+        saveSetting('target', t, function (err) {
             if (err) log('saving the display choice failed: ' + err.message);
             else log('display: ' + t + ' (saved for the next start)');
             try { sock.write(JSON.stringify({ ev: 'target-reply', ok: !err, target: t, reason: err ? err.message : undefined }) + '\n'); } catch (e) {}
+        });
+        return;
+    }
+    if (msg.cmd === 'hud-size') {
+        var pct = Number(msg.hud_width_pct);
+        if (!(pct === 0 || (pct >= 20 && pct <= 100 && pct === Math.floor(pct)))) {
+            try { sock.write(JSON.stringify({ ev: 'hud-size-reply', ok: false, reason: 'HUD width must be 0 or 20-100 %' }) + '\n'); } catch (e) {}
+            return;
+        }
+        saveSetting('hud_width_pct', String(pct), function (err) {
+            if (err) log('saving the HUD map size failed: ' + err.message);
+            else log('HUD map size: ' + (pct ? pct + ' %' : 'default') + ' (saved for the next start)');
+            try { sock.write(JSON.stringify({ ev: 'hud-size-reply', ok: !err, hud_width_pct: pct, reason: err ? err.message : undefined }) + '\n'); } catch (e) {}
         });
         return;
     }

@@ -89,7 +89,7 @@ void MapFeed::make_layer()
     }
     /* The map area: all of the map slot's scene, the centred 1088x480 of a
      * whole-panel one, a fitted centre on the HUD. */
-    const crk::QuadRect q = crk::map_quad(tw, th, cfg_.video.w, cfg_.video.h);
+    const crk::QuadRect q = quad(tw, th);
     lo_ = cr::LayerOptions();
     lo_.target = cfg_.target;
     lo_.klass = "content";
@@ -107,6 +107,41 @@ void MapFeed::make_layer()
     layer_ = client_.video(lo_, cfg_.video);
     changed_ = true;
     log_info("render: map layer on %s (%ux%u), quad %ux%u at %u,%u", cfg_.target.c_str(), tw, th, q.w, q.h, q.x, q.y);
+}
+
+/* Where the map goes on a target of tw x th: the kit's fitted rect, or on
+ * the HUD with a size set, that width (the picture's shape kept, at most the
+ * HUD's height), centred. */
+crk::QuadRect MapFeed::quad(uint32_t tw, uint32_t th) const
+{
+    const unsigned pct = cfg_.hud_width_pct;
+    if (cfg_.target != "hud" || !pct || !cfg_.video.w || !cfg_.video.h)
+        return crk::map_quad(tw, th, cfg_.video.w, cfg_.video.h);
+    uint64_t w = (uint64_t)tw * (pct > 100 ? 100 : pct) / 100;
+    uint64_t h = (w * cfg_.video.h + cfg_.video.w / 2) / cfg_.video.w;
+    if (h > th) {
+        h = th;
+        w = (h * cfg_.video.w + cfg_.video.h / 2) / cfg_.video.h;
+    }
+    return crk::QuadRect{(uint32_t)((tw - w) / 2), (uint32_t)((th - h) / 2), (uint32_t)w, (uint32_t)h};
+}
+
+void MapFeed::set_hud_width(unsigned pct)
+{
+    if (pct == cfg_.hud_width_pct)
+        return;
+    cfg_.hud_width_pct = pct;
+    changed_ = true;
+    uint32_t tw, th;
+    if (cfg_.target != "hud" || !layer_ || !target_size(client_.targets, "hud", &tw, &th))
+        return;
+    const crk::QuadRect q = quad(tw, th);
+    lo_.x = (int)q.x;
+    lo_.y = (int)q.y;
+    lo_.w = q.w;
+    lo_.h = q.h;
+    client_.set(layer_, lo_);
+    log_info("render: HUD map %u%% wide: %ux%u at %u,%u", pct, q.w, q.h, q.x, q.y);
 }
 
 bool MapFeed::knows(const std::string &name) const
@@ -219,6 +254,7 @@ FeedStatus MapFeed::status(const std::string &decode) const
 {
     FeedStatus s;
     s.target = cfg_.target;
+    s.hud_width_pct = cfg_.hud_width_pct;
     s.upload_cap_kb = cap_kb_;
     s.upload_reason = budget_reason_;
     char cap[96] = "";

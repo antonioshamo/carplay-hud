@@ -69,6 +69,9 @@ const SAFE = '504x368+286+72';
 /* Where the map can go, in the order the Display button steps through them:
  * the render's target and the name the page shows. */
 const DISPLAYS = [['map', 'Cluster'], ['hud', 'HUD'], ['map+hud', 'Cluster + HUD']];
+/* The HUD map's sizes, in the order the size button steps through them: its
+ * width in percent of the HUD's (0: the standard fitted box, about 57 %). */
+const HUD_SIZES = [[0, 'Standard'], [70, '70 %'], [85, '85 %'], [100, 'Full width'], [40, '40 %']];
 
 /* One newline-delimited-JSON stream socket, reconnecting while open.
  * link: 'down' | 'up' | 'absent' (ENOENT) | 'refused' (ECONNREFUSED) | 'failed'.
@@ -279,6 +282,38 @@ class WazeClusterControl extends EventEmitter {
         return this.render.connected();
     }
 
+    /* ---- the HUD map's size ---- */
+    hudWidth() {
+        if (this._askedHud != null) {
+            return this._askedHud;
+        }
+        const v = this.renderStatus && this.renderStatus.hud_width_pct;
+        return typeof v === 'number' ? v : null;
+    }
+
+    hudSizeText() {
+        const d = HUD_SIZES.find(([v]) => v === this.hudWidth());
+        return `HUD map size: ${d ? d[1] : this.hudWidth() != null ? `${this.hudWidth()} %` : '…'}`;
+    }
+
+    /* Only while the map goes to the HUD. */
+    canChangeHudSize() {
+        return this.render.connected() && /hud/.test(this.displayTarget() || '');
+    }
+
+    /* The next size: the render resizes the HUD map at once, patchd saves it. */
+    cycleHudSize() {
+        if (!this.canChangeHudSize()) {
+            return;
+        }
+        const i = HUD_SIZES.findIndex(([v]) => v === this.hudWidth());
+        const next = HUD_SIZES[(i + 1) % HUD_SIZES.length][0];
+        this._askedHud = next;
+        this.render.send({ cmd: 'hud', hud_width_pct: String(next) });
+        this.patch.send({ cmd: 'hud-size', hud_width_pct: next });
+        this.emit('change');
+    }
+
     /* The next choice: the running render moves at once (its start command),
      * and patchd saves it for the render's next start. */
     cycleDisplay() {
@@ -464,6 +499,9 @@ class WazeClusterControl extends EventEmitter {
             if (this._askedDisplay && msg.target === this._askedDisplay) {
                 this._askedDisplay = null;
             }
+            if (this._askedHud != null && msg.hud_width_pct === this._askedHud) {
+                this._askedHud = null;
+            }
             this.emit('change');
         } else if (msg.ev === 'log') {
             this._addLine('map', String(msg.line));
@@ -478,6 +516,11 @@ class WazeClusterControl extends EventEmitter {
         } else if (msg.ev === 'status') {
             this.patchStatus = msg;
             this.emit('change');
+        } else if (msg.ev === 'hud-size-reply') {
+            if (!msg.ok) {
+                this._addLine('patch', `HUD size not saved: ${msg.reason || 'refused'}`);
+                this.emit('log');
+            }
         } else if (msg.ev === 'target-reply') {
             if (!msg.ok) {
                 this._addLine('patch', `display choice not saved: ${msg.reason || 'refused'}`);
@@ -508,5 +551,5 @@ class WazeClusterControl extends EventEmitter {
 module.exports = {
     WazeClusterControl, LineSocket,
     RENDER_PATH, PATCH_PATH, PENDING_PATH, MAX_LINES,
-    SIZE, SAFE, DISPLAYS
+    SIZE, SAFE, DISPLAYS, HUD_SIZES
 };

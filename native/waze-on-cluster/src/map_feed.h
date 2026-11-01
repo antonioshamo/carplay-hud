@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "cluster_render/client.h"
+#include "map_geometry.h"
 
 namespace woc {
 
@@ -38,6 +39,10 @@ struct FeedConfig {
     std::string socket = "/dev/shm/cluster-render/render.sock";
     std::string target = "map";
     cr::VideoOptions video;   /* w and h are the decoded frame's */
+    /* On the HUD: the map's width in percent of the HUD's (its height follows
+     * the picture's shape, at most the HUD's), centred. 0: the kit's fitted
+     * box (about 57 %). */
+    unsigned hud_width_pct = 0;
 };
 
 /* The status the Waze app shows (its render socket's "status" event), with
@@ -49,6 +54,7 @@ struct FeedStatus {
     std::string reason;
     unsigned upload_cap_kb = 0;   /* 0 until the renderer reports it */
     std::string upload_reason;
+    unsigned hud_width_pct = 0;   /* the HUD map's size setting (0: the default) */
 };
 
 /* Whether a status is worth a log line: its state, reason or target differs
@@ -72,6 +78,9 @@ public:
      * (known once connected). */
     bool set_target(const std::string &name);
     const std::string &target() const { return cfg_.target; }
+    /* The HUD map's size (FeedConfig::hud_width_pct), applied at once to a
+     * map on the HUD. */
+    void set_hud_width(unsigned pct);
     /* Whether the renderer has target `name` (true until connected). */
     bool knows(const std::string &name) const;
 
@@ -100,6 +109,7 @@ public:
 
 private:
     void make_layer();
+    crk::QuadRect quad(uint32_t tw, uint32_t th) const;
     void count_second(int64_t now_ms);
 
     FeedConfig cfg_;

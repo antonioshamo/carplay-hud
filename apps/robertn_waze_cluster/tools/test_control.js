@@ -160,6 +160,32 @@ test('Show map on steps Cluster, HUD, Cluster + HUD: the render moves, patchd sa
     assert(!c.canChangeDisplay(), 'no change while the render is not connected');
 });
 
+test('HUD map size steps Standard, 70, 85, Full width, 40 only while the map is on the HUD', async (render, patch) => {
+    const c = control();
+    c.open();
+    await until('connected', () => c.connectedRender() && c.connectedPatch());
+    render.stream(true);
+    await until('showing on the cluster', () => c.renderStatus && c.renderStatus.state === 'showing');
+    assert.strictEqual(c.hudSizeText(), 'HUD map size: Standard');
+    assert(!c.canChangeHudSize(), 'not while the map is only on the cluster');
+    c.cycleHudSize();
+    assert(!render.received.some((m) => m.cmd === 'hud'), 'nothing sent while not on the HUD');
+    c.cycleDisplay();
+    await until('on the HUD', () => render.target === 'hud' && c.canChangeHudSize());
+    const seen = [];
+    for (let i = 0; i < 5; i++) {
+        c.cycleHudSize();
+        seen.push(c.hudSizeText());
+        const want = [70, 85, 100, 40, 0][i];
+        await until(`render at ${want}`, () => render.hudWidth === want && c.renderStatus.hud_width_pct === want);
+    }
+    assert.deepStrictEqual(seen, ['HUD map size: 70 %', 'HUD map size: 85 %', 'HUD map size: Full width',
+        'HUD map size: 40 %', 'HUD map size: Standard']);
+    await until('saved', () => patch.received.filter((m) => m.cmd === 'hud-size').length === 5);
+    assert.deepStrictEqual(patch.received.filter((m) => m.cmd === 'hud-size').map((m) => m.hud_width_pct), [70, 85, 100, 40, 0]);
+    c.close();
+});
+
 test('a page opened while the map is up reads it, again after closing', async (render, patch) => {
     patch.res = SIZE;
     patch.safe = SAFE;

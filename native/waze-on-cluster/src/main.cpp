@@ -76,7 +76,8 @@ std::string status_line(const FeedStatus &s)
     return "{\"ev\":\"status\",\"state\":" + json_escape(s.state) + ",\"target\":" + json_escape(s.target) +
            ",\"page\":" + json_escape(s.page) + ",\"reason\":" + json_escape(s.reason) +
            ",\"upload_cap_kb_per_s\":" + std::to_string(s.upload_cap_kb) +
-           ",\"upload_reason\":" + json_escape(s.upload_reason) + "}";
+           ",\"upload_reason\":" + json_escape(s.upload_reason) +
+           ",\"hud_width_pct\":" + std::to_string(s.hud_width_pct) + "}";
 }
 
 class Server : public Control::Handler {
@@ -91,9 +92,19 @@ public:
     {
         const std::string &cmd = msg.at("cmd");
         auto it = msg.find("target");
+        auto pct = msg.find("hud_width_pct");
         if (cmd == "start" && it != msg.end()) {
             log_info("start %s", it->second.c_str());
             feeds_->set_targets(it->second);
+        } else if (cmd == "hud" && pct != msg.end()) {
+            /* the HUD map's size: 0 (the default box) or 20-100 % of its width */
+            const long v = std::strtol(pct->second.c_str(), nullptr, 10);
+            if (v == 0 || (v >= 20 && v <= 100)) {
+                log_info("hud: map %ld%% wide", v);
+                feeds_->set_hud_width((unsigned)v);
+            } else {
+                log_warn("hud: width %s out of range (0, or 20-100)", pct->second.c_str());
+            }
         } else {
             log_warn("control: unknown command %s", cmd.c_str());
         }
@@ -175,7 +186,7 @@ int serve(const Config &cfg)
                      "(upload_kb_per_s in /var/opt/cluster-render/cluster-render.local.conf)", key, cfg.str(key).c_str());
     struct Range { const char *key; long lo, hi; } ranges[] = {
         {"dirty_threshold", 0, 64}, {"dirty_settle_ms", 0, 3600000}, {"tex_level_bits", 0, 3},
-        {"target_fps", 0, 60},      {"pan_blocks", 0, 1},            {"stall_ms", 1000, 600000},
+        {"target_fps", 0, 60},      {"hud_width_pct", 0, 100},      {"pan_blocks", 0, 1},            {"stall_ms", 1000, 600000},
         {"freeze_ms", 0, 600000},   {"freeze_min_fps", 1, 60},       {"alt_screen_port", 0, 65535},
         {"idle_ms", 1000, 600000},
         {"alt_screen_uid", 0, 4294967294L}};
@@ -192,6 +203,7 @@ int serve(const Config &cfg)
     FeedConfig fc;
     fc.socket = cfg.str("render_socket");
     fc.target = cfg.str("target");
+    fc.hud_width_pct = (unsigned)cfg.num("hud_width_pct");
     fc.video.w = vc.tex_width;
     fc.video.h = vc.tex_height;
     fc.video.fps = (unsigned)cfg.num("target_fps");
@@ -418,6 +430,7 @@ void define_keys(Config *cfg)
     cfg->define("pan_blocks", "1");
     cfg->define("tex_level_bits", "2");
     cfg->define("target", "map");
+    cfg->define("hud_width_pct", "0");
     cfg->define("render_socket", "/dev/shm/cluster-render/render.sock");
     cfg->define("log_file", "/var/opt/waze-on-cluster/log/waze-on-cluster.log");
     cfg->define("log_file_kb", "512");

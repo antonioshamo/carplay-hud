@@ -48,6 +48,8 @@ public:
      * got. */
     bool set_targets(const std::string &spec);
     const std::vector<std::string> &targets() const { return targets_; }
+    /* The HUD map's size, kept for a HUD feed made later. */
+    void set_hud_width(unsigned pct);
 
     /* For poll(): one entry per feed, appended; after_poll takes the same
      * vector and where they start. */

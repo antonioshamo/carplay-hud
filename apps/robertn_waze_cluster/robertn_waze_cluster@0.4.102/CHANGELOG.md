@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.102 (eroobeeroo fork)
+
+HUD map size: a button steps the HUD map's size between Standard (the
+fitted box, about 57 % of the HUD's width), 70 %, 85 %, Full width and 40 %,
+resized at once and kept for the next start. Enabled while the map goes to
+the HUD. Requires waze-on-cluster 0.6.104.
+
 ## 0.4.101 (eroobeeroo fork)
 
 Show map on: one button steps the map between the Cluster, the HUD and

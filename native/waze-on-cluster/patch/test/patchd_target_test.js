@@ -45,7 +45,7 @@ p.stderr.on('data', function (d) { out += d; });
 
 function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-/* One request on a fresh connection; resolves to the first target-reply. */
+/* One request on a fresh connection; resolves to the first reply. */
 function ask(obj) {
     return new Promise(function (resolve, reject) {
         var s = net.connect(SOCK), buf = '';
@@ -56,7 +56,7 @@ function ask(obj) {
             buf.split('\n').forEach(function (l) {
                 var m = null;
                 try { m = JSON.parse(l); } catch (e) {}
-                if (m && m.ev === 'target-reply') { s.end(); resolve(m); }
+                if (m && (m.ev === 'target-reply' || m.ev === 'hud-size-reply')) { s.end(); resolve(m); }
             });
         });
         s.on('error', reject);
@@ -85,6 +85,12 @@ function ok(name, cond) {
     fs.unlinkSync(CONF);
     r = await ask({ cmd: 'target', target: 'map' });
     ok('no local conf yet: it is created with the target', r.ok && fs.readFileSync(CONF, 'utf8') === 'target = map\n');
+    r = await ask({ cmd: 'hud-size', hud_width_pct: 70 });
+    ok('the HUD size is saved next to the target', r.ok && fs.readFileSync(CONF, 'utf8') === 'target = map\nhud_width_pct = 70\n');
+    r = await ask({ cmd: 'hud-size', hud_width_pct: 100 });
+    ok('a new size replaces it', r.ok && fs.readFileSync(CONF, 'utf8') === 'target = map\nhud_width_pct = 100\n');
+    r = await ask({ cmd: 'hud-size', hud_width_pct: 10 });
+    ok('an out-of-range size is refused, nothing written', !r.ok && /hud_width_pct = 100\n$/.test(fs.readFileSync(CONF, 'utf8')));
 })().catch(function (e) {
     ok('no error: ' + e.message, false);
 }).then(function () {

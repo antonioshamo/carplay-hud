@@ -358,6 +358,33 @@ int main()
     bpump(2500, &f2);
     ok("map alone: the cluster showing, the HUD's layer gone", layer_on(0) && !layer_on(2) &&
                                                                feeds.status("decode").state == "showing");
+    /* ---- the HUD map's size ---- */
+    ok("set_targets: to the HUD for the size checks", feeds.set_targets("hud"));
+    bpump(2500, &f2);
+    const crs::Layer *hl = layer_on(2);
+    const unsigned default_w = hl ? hl->params.rect.w : 0;
+    ok("the default HUD map is the kit's fitted box, narrower than the HUD", hl && default_w > 0 && default_w < 800);
+    feeds.set_hud_width(100);
+    bpump(300, &f2);
+    hl = layer_on(2);
+    ok("100 %: the HUD's full width, the picture's shape kept, centred",
+       hl && hl->params.rect.w == 800 && hl->params.rect.h == 353 && hl->params.rect.x == 0 && hl->params.rect.y == 63 &&
+           feeds.status("decode").hud_width_pct == 100);
+    feeds.set_hud_width(40);
+    bpump(300, &f2);
+    hl = layer_on(2);
+    ok("40 %: resized live, centred", hl && hl->params.rect.w == 320 && hl->params.rect.h == 141 &&
+                                      hl->params.rect.x == 240 && hl->params.rect.y == 169);
+    feeds.set_targets("map");
+    bpump(2500, &f2);
+    ok("the size leaves the cluster's map alone", layer_on(0) && layer_on(0)->params.rect.w == 1088);
+    feeds.set_targets("map+hud");
+    bpump(2500, &f2);
+    ok("a HUD feed made later takes the size", layer_on(2) && layer_on(2)->params.rect.w == 320);
+    feeds.set_hud_width(0);
+    bpump(300, &f2);
+    ok("0: back to the default box", layer_on(2) && layer_on(2)->params.rect.w == default_w);
+
     feeds.set_stream(false, false);
     bpump(200, &f2);
     ok("the stream not live reaches every feed: idle", feeds.status("decode").state == "idle");

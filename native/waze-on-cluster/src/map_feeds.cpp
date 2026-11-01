@@ -120,6 +120,14 @@ bool MapFeeds::set_targets(const std::string &spec)
     return true;
 }
 
+void MapFeeds::set_hud_width(unsigned pct)
+{
+    base_.hud_width_pct = pct;
+    for (auto &f : feeds_)
+        f->set_hud_width(pct);
+    changed_ = true;
+}
+
 size_t MapFeeds::poll_fds(std::vector<pollfd> *fds) const
 {
     const size_t first = fds->size();
@@ -172,6 +180,7 @@ FeedStatus MapFeeds::status(const std::string &decode) const
             s.page += " · " + name + " " + o.state + (o.reason.empty() ? "" : ": " + o.reason);
     }
     s.target = join_targets(targets_);
+    s.hud_width_pct = base_.hud_width_pct;
     return s;
 }
 
