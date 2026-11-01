@@ -59,6 +59,7 @@ test: test-cpp
 	$(NODE) patch/test/patchd_activate_test.js
 	$(NODE) patch/test/patchd_resync_test.js
 	$(NODE) patch/test/patchd_target_test.js
+	$(NODE) patch/test/patchd_profile_test.js
 	$(NODE) patch/test/patchd_dlt_test.js
 	$(NODE) patch/test/dlt_capture_test.js
 	$(NODE) patch/test/recovery_test.js

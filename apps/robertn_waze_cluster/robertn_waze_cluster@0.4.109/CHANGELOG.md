@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.109 (eroobeeroo fork)
+
+Show map on and HUD map size per driver profile: the app reads the head
+unit's current user account (SessionManager.currentUserAccountReference)
+every 5 s, page open or not, and when it changes the map moves to that
+driver's choice. A profile seen for the first time keeps what is set.
+Requires waze-on-cluster 0.7.107 (patchd keeps the choices per profile).
+
 ## 0.4.108 (eroobeeroo fork)
 
 HUD map size steps Standard, 70 %, 85 %, 40 %: no Full width, which the

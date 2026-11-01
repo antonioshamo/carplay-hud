@@ -195,7 +195,8 @@ async function main() {
         console.log('ok   Disable map while patched, Enable map while not; presses go to the patch daemon, none to the render');
 
         byName.ST_OnlineApps_WazeCluster.emit('visible', { visible: false });
-        await until('sockets closed', () => render._clients.size === 0 && patch._clients.size === 0);
+        /* the page's own; the driver-profile link to patchd stays (profile_sync.js) */
+        await until('sockets closed', () => render._clients.size === 0 && patch._clients.size === 1);
         console.log('ok   hiding the page closes both sockets');
 
         render.stream(false);
@@ -215,7 +216,7 @@ async function main() {
 
         /* Before the head-unit start that starts the daemon: from the marker. */
         byName.ST_OnlineApps_WazeCluster.emit('visible', { visible: false });
-        await until('closed', () => patch._clients.size === 0);
+        await until('closed', () => patch._clients.size === 1);
         await patch.close();
         fs.writeFileSync(PENDING, JSON.stringify({ action: 'apply' }) + '\n');
         byName.ST_OnlineApps_WazeCluster.emit('visible', { visible: true });

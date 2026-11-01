@@ -177,6 +177,14 @@ rather than packed within the shared budget. The HUD map steps aside while
 the HUD's media and list pop-ups show (cluster-render `hud_yield_slots`), and
 the app says so. On a HUD dark pixels are see-through, so a night-mode map reads best.
 
+**Per driver profile.** The app reads the head unit's current user account
+every 5 s (SOME/IP `SessionManager.currentUserAccountReference`) and tells
+`patchd` (`{"cmd":"profile","id"}`); `patchd` keeps the display choice and
+HUD size per profile in `profiles.json` next to the local conf, records each
+change for the profile current then, and gives a profile seen again its own
+back (saved for the next start, and applied to the running render by the
+app). A profile seen for the first time keeps what is set.
+
 From a shell, `waze-on-cluster -c <conf> run map|panel|hud|map+hud` (`sail` is an
 alias of `map`) sets the target until the service restarts and prints the
 status.

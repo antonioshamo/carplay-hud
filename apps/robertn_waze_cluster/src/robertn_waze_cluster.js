@@ -28,6 +28,7 @@
 const OnlineApp = require('oap-sdk/src/core/OnlineApp.js');
 const logging = require('oap-sdk/src/logging/logging');
 const { WazeClusterControl, MAX_LINES } = require('./waze_cluster_control.js');
+const { ProfileSync } = require('./profile_sync.js');
 
 const logger = logging.getSDKLogger();
 
@@ -78,6 +79,9 @@ class WazeClusterApp extends OnlineApp {
             this._scheduleLists();
         });
         this._control.on('log', () => this._scheduleLists());
+        /* the display choice per driver profile, page shown or not */
+        this._profiles = new ProfileSync({ control: this._control, log: logger });
+        this._profiles.start();
 
         this.on('initialized', () => {
             this._appInitialized()
@@ -366,6 +370,7 @@ class WazeClusterApp extends OnlineApp {
         logger.info(`robertn_waze_cluster shutdown: ${JSON.stringify(reason)}`);
         clearTimeout(this._listTimer);
         this._control.close();
+        this._profiles.stop();
         this._shutdownPromise = Promise.resolve()
             .then(() => this.destroyBundles().catch((err) =>
                 logger.info(`destroyBundles: ${err && err.message}`)))

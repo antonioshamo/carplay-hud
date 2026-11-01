@@ -31,5 +31,6 @@ jobs:
       - run: make -C native/waze-on-cluster test-x86 target
       - run: node apps/robertn_waze_cluster/tools/test_control.js
       - run: node apps/robertn_waze_cluster/tools/test_page.js
+      - run: node apps/robertn_waze_cluster/tools/test_profiles.js
       - run: node release/test/release_test.js
       - run: node release/release.js check
