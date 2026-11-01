@@ -1187,6 +1187,49 @@ int main()
         ok("popup: asked for again once yield_ms has passed", joined().find("request hud") != std::string::npos);
         (void)r;
     }
+    for (int contending = 0; contending < 2; contending++) {
+        /* Stock content parked behind ours in the HUD slot (Google Maps' turn cards while only an overlay holds
+         * the HUD): a target that doesn't contend gives way and waits until the slot is free; one that contends
+         * (the Waze map) keeps it */
+        Rig r;
+        TargetSpec hud3;
+        FakePort port3;
+        FakeScenes scenes3;
+        SlotManager m3{&port3, &scenes3};
+        hud3.name = "hud"; hud3.slot = kHudSlot; hud3.scene_id = kPanelScene; hud3.width = 800; hud3.height = 480;
+        hud3.linger_ms = 3000;
+        hud3.yield_slots = {0x322};
+        hud3.yield_ms = 1500;
+        m3.add(hud3);
+        int64_t now = 200000;
+        const auto run = [&](int64_t ms) { for (int64_t x = 0; x < ms; x += 10) { now += 10; m3.tick(now); } };
+        const auto rows = [&](std::vector<SlotInfo> v) { m3.on_slots(v, now); };
+        const auto row = [&](uint64_t slot, uint32_t status, uint64_t content, uint32_t map) {
+            SlotInfo si; si.slot = slot; si.status = status; si.content = content; si.map_status = map; return si;
+        };
+        calls.clear();
+        m3.want(0, true, contending == 1);
+        run(1200);
+        m3.on_shown(kPanelScene, now);
+        run(20);
+        calls.clear();
+        rows({row(kHudSlot, 2, kPanelScene, 1), row(kHudSlot, 2, 0x01000361, 3)});   /* cards mapped, parked behind ours */
+        run(50);
+        if (!contending) {
+            ok("parked behind: an overlay-only HUD gives way to the stock content",
+               m3.status(0).state == TargetState::Waiting && joined().find("release hud") != std::string::npos);
+            rows({row(kHudSlot, 2, 0x01000361, 1)});                                /* the cards show */
+            run(3000);
+            ok("parked behind: not asked for while the stock content shows", joined().find("request hud") == std::string::npos);
+            rows({row(kHudSlot, 1, 0x01000361, 0)});                                /* they go */
+            run(3000);
+            ok("parked behind: asked for again once the slot is free", joined().find("request hud") != std::string::npos);
+        } else {
+            ok("parked behind: a contending target (the Waze map) keeps its slot",
+               m3.status(0).state == TargetState::Shown && joined().find("release hud") == std::string::npos);
+        }
+        (void)r;
+    }
 
     std::printf(failures ? "%d FAILED\n" : "all ok\n", failures);
     return failures ? 1 : 0;

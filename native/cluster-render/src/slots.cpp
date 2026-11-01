@@ -157,6 +157,16 @@ bool SlotManager::popup_blocks(int i, int64_t now_ms)
     Target &t = t_[i];
     const TargetSpec &spec = specs_[i];
     bool shown = false;
+    /* Stock content parked behind ours in our own slot (the HMI mapped its
+     * content after ours: Google Maps' turn cards on the HUD) - a target
+     * that doesn't contend gives way to it, or the HMI moves that content
+     * elsewhere (the cluster). A contending one (the Waze map) keeps it. */
+    if (!t.contend) {
+        auto rows = slots_.find(spec.slot);
+        if (rows != slots_.end())
+            for (const SlotInfo &r : rows->second)
+                shown = shown || (r.content != 0 && r.content != spec.scene_id && r.map_status == 3);
+    }
     for (uint64_t slot : spec.yield_slots) {
         auto rows = slots_.find(slot);
         if (rows == slots_.end())
@@ -166,7 +176,7 @@ bool SlotManager::popup_blocks(int i, int64_t now_ms)
     }
     if (shown) {
         if (t.popup_ms < 0)
-            log_info("target %s: a stock pop-up shows in a slot it gives way to", spec.name.c_str());
+            log_info("target %s: stock content shows in a slot it gives way to (a pop-up, or parked behind it)", spec.name.c_str());
         t.popup_ms = now_ms;
         return true;
     }
@@ -597,8 +607,10 @@ void SlotManager::tick(int64_t now_ms)
             continue;
         }
 
-        /* A stock pop-up in a slot the target gives way to: out of the
-         * display at once and not asked for until it has gone. */
+        /* A stock pop-up in a slot the target gives way to, or (on such a
+         * target: the HUD) stock content parked behind it while it doesn't
+         * contend: out of the display at once and not asked for until it has
+         * gone. */
         if (!spec.yield_slots.empty()) {
             if (t.wanted && popup_blocks(i, now_ms)) {
                 if (s == TargetState::Acquiring || s == TargetState::Parked || s == TargetState::Shown ||
