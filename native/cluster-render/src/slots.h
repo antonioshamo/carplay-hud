@@ -56,6 +56,14 @@
  *   kFreshSceneMs of the scene's publication (its renderer not having seen
  *   the publication yet) is asked again after kFreshRetryMs, up to
  *   kFreshRetries times; then the ladder.
+ * - A shown scene the display removes (no other content in the slot, the
+ *   slot not locked, not our release) is asked for again no sooner than
+ *   kRemovalWaitMs after the removal, or the ladder's step if longer: on the
+ *   car the KOMBI failed the fetch 2 s after such a removal and took it
+ *   7 s after. A fetch that fails within kNotReadyMs of a request made
+ *   within kNotReadyWindowMs of the removal is the display not ready yet:
+ *   asked again after kNotReadyRetryMs, up to kNotReadyRetries times; then
+ *   the ladder.
  * - Warm scenes: a target's scene is published at its first request and
  *   stays published while the target is released, lost, refused or timed
  *   out; only the display's fetch and map cycle. A released target stages
@@ -91,11 +99,14 @@
 
 namespace crs {
 
-/* Where a target's scene goes: its slot, content class and scene. */
+/* Where a target's scene goes: its slot, content class and scene. On
+ * iDrive 8 the slot is a DCSM category and the scene goes as the content
+ * offered in it (dcsm27_port.h). */
 struct TargetSpec {
     std::string name;
     uint64_t slot = 0;
     uint32_t content_class = 0;
+    uint64_t content = 0;   /* iDrive 8 */
     uint64_t scene_id = 0;
     uint32_t width = 0, height = 0;   /* scene size in pixels */
     int linger_ms = 2000;             /* kept mapped this long after the last layer stops wanting it */
@@ -134,7 +145,8 @@ enum class Refusal {
     Transient,    /* no valid reply, the fetch removed before it showed */
 };
 
-/* The display's placement service (iDrive 7: Dcsm2 fetch and map). */
+/* The display's placement service (iDrive 7: Dcsm2 fetch and map; iDrive
+ * 8: RAMSES 27's DCSM offer). */
 class Port {
 public:
     virtual ~Port() {}
@@ -212,6 +224,11 @@ public:
     static const int64_t kFreshSceneMs = 2000;
     static const int64_t kFreshRetryMs = 250;
     static const int kFreshRetries = 3;
+    static const int64_t kRemovalWaitMs = 5000;
+    static const int64_t kNotReadyMs = 300;
+    static const int64_t kNotReadyWindowMs = 10000;
+    static const int64_t kNotReadyRetryMs = 1500;
+    static const int kNotReadyRetries = 3;
 
     SlotManager(Port *port, Scenes *scenes);
     /* The scenes, when they are made after the slot manager (they read its
@@ -256,8 +273,9 @@ public:
     bool published(int target) const { return t_[target].scene; }
     /* The rendering state and its evidence; empty: none. */
     std::string rendering_text(int target, int64_t now_ms) const;
-    /* Whether subscriptions are observable, for the status text. */
-    std::string renderer_text() const;
+    /* Whether subscriptions are observable, and what the console reader
+     * has read (console_text), for the status text. */
+    std::string renderer_text(int64_t now_ms) const;
     /* Milliseconds until the next timer of any target; -1: none. */
     int64_t wake_in_ms(int64_t now_ms) const;
 
@@ -270,6 +288,8 @@ public:
      * takes, a slot the display locks (reported disabled), a refusal or no
      * answer is arbitration, not evidence. */
     std::function<void(Evidence, const std::string &detail, int64_t now_ms)> on_evidence;
+    /* The RAMSES console's line counts (RamsesConsole::counts_text). */
+    std::function<std::string(int64_t now_ms)> console_text;
 
 private:
     struct Target {
@@ -291,6 +311,11 @@ private:
         bool verdict = false, verdict_removal = false;
         uint64_t verdict_seq = 0;
         int64_t lost_ms = 0;
+        /* The display last removed the shown scene then (-1: not since it
+         * was last shown or released), and fetch failures since, asked
+         * again after kNotReadyRetryMs. */
+        int64_t removed_ms = -1;
+        int not_ready = 0;
         /* Waiting on the ladder: the table has since reported the slot
          * disabled or held by other content. */
         bool slot_away = false;
@@ -327,8 +352,10 @@ private:
     /* The target whose published scene is scene_id; -1: none. */
     int by_published(uint64_t scene_id) const;
     void release(int i, int64_t now_ms);
-    /* Waiting; on the ladder, the retry counts from from_ms (-1: now_ms). */
-    void wait(int i, Holder h, bool use_ladder, const std::string &reason, int64_t now_ms, int64_t from_ms = -1);
+    /* Waiting; on the ladder, the retry counts from from_ms (-1: now_ms),
+     * at least min_ms. */
+    void wait(int i, Holder h, bool use_ladder, const std::string &reason, int64_t now_ms, int64_t from_ms = -1,
+              int64_t min_ms = 0);
     Holder other_holder(int i) const;
     /* The slot's latest report has it disabled: the display's own lock. */
     bool locked(int i) const;

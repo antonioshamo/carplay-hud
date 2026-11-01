@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.107 (eroobeeroo fork)
+
+Brought up to date with upstream 0.4.1: while CarPlay's stream is live but
+shows no map, the status says why ("Stream lost — reconnect CarPlay", or
+"Stream lost — restarting CarPlay" where the tool restarts CarPlay itself).
+Requires waze-on-cluster 0.7.105 (upstream 0.7.2 with the fork's HUD
+changes) and cluster-render 0.3.101 (upstream 0.3.1).
+
 ## 0.4.106 (eroobeeroo fork)
 
 Requires waze-on-cluster 0.7.104: the HUD map's frames are scaled on the

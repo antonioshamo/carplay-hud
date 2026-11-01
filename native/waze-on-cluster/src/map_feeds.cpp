@@ -116,7 +116,6 @@ bool MapFeeds::set_targets(const std::string &spec)
     feeds_ = std::move(next);
     log_info("targets: %s -> %s", join_targets(targets_).c_str(), join_targets(want).c_str());
     targets_ = want;
-    changed_ = true;
     return true;
 }
 
@@ -125,7 +124,6 @@ void MapFeeds::set_hud_width(unsigned pct)
     base_.hud_width_pct = pct;
     for (auto &f : feeds_)
         f->set_hud_width(pct);
-    changed_ = true;
 }
 
 size_t MapFeeds::poll_fds(std::vector<pollfd> *fds) const
@@ -161,13 +159,13 @@ void MapFeeds::set_stream(bool live, bool frozen)
         f->set_stream(live, frozen);
 }
 
-FeedStatus MapFeeds::status(const std::string &decode) const
+FeedStatus MapFeeds::status(const std::string &decode, const std::string &stream) const
 {
     if (feeds_.empty())
         return FeedStatus();
-    FeedStatus s = feeds_[0]->status(decode);
+    FeedStatus s = feeds_[0]->status(decode, stream);
     for (size_t i = 1; i < feeds_.size(); i++) {
-        const FeedStatus o = feeds_[i]->status(decode);
+        const FeedStatus o = feeds_[i]->status(decode, stream);
         const std::string &name = targets_[i];
         if (o.state == "error" && s.state != "error") {
             s.state = "error";
@@ -176,21 +174,12 @@ FeedStatus MapFeeds::status(const std::string &decode) const
             s.state = "showing";
             s.page = o.page;
         }
-        if (o.state != feeds_[0]->status(decode).state)
+        if (o.state != feeds_[0]->status(decode, stream).state)
             s.page += " · " + name + " " + o.state + (o.reason.empty() ? "" : ": " + o.reason);
     }
     s.target = join_targets(targets_);
     s.hud_width_pct = base_.hud_width_pct;
     return s;
-}
-
-bool MapFeeds::take_changed()
-{
-    bool c = changed_;
-    changed_ = false;
-    for (auto &f : feeds_)
-        c = f->take_changed() || c;
-    return c;
 }
 
 void MapFeeds::request_report()
