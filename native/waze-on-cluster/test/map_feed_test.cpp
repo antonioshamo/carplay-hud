@@ -38,6 +38,7 @@
 #include "test/fake_port.h"
 #include "../src/map_feed.h"
 #include "../src/map_feeds.h"
+#include "../src/atlas_scale.h"
 
 using namespace woc;
 
@@ -339,10 +340,15 @@ int main()
     if (gm)
         for (const auto &kv : gm->shown.buffers)
             on_map = on_map || (kv.second.f == crs::TexFormat::R8 && kv.second.px == f1);
+    /* the HUD shows the map smaller: its frame is scaled on the head unit */
+    AtlasScaler ref;
+    std::vector<uint8_t> f1_hud;
+    ref.configure(1088, 480, 452, 200, 2);   /* FeedConfig::scaled_level_bits */
+    ref.scale(f1.data(), &f1_hud);
     if (gh)
         for (const auto &kv : gh->shown.buffers)
-            on_hud = on_hud || (kv.second.f == crs::TexFormat::R8 && kv.second.px == f1);
-    ok("map+hud: a layer on each target, the same frame drawn in both, showing",
+            on_hud = on_hud || (kv.second.f == crs::TexFormat::R8 && kv.second.px == f1_hud);
+    ok("map+hud: a layer on each target, the frame drawn in both (scaled to 452x200 for the HUD), showing",
        bm && bh && on_map && on_hud && feeds.status("decode").state == "showing" &&
            feeds.status("decode").target == "map+hud");
     ok("map+hud: the HUD's map is fitted inside its 800x480 scene",
@@ -368,13 +374,20 @@ int main()
     bpump(300, &f2);
     hl = layer_on(2);
     ok("100 %: the HUD's full width, the picture's shape kept, centred",
-       hl && hl->params.rect.w == 800 && hl->params.rect.h == 353 && hl->params.rect.x == 0 && hl->params.rect.y == 63 &&
+       hl && hl->params.rect.w == 800 && hl->params.rect.h == 352 && hl->params.rect.x == 0 && hl->params.rect.y == 63 &&
            feeds.status("decode").hud_width_pct == 100);
     feeds.set_hud_width(40);
     bpump(300, &f2);
     hl = layer_on(2);
-    ok("40 %: resized live, centred", hl && hl->params.rect.w == 320 && hl->params.rect.h == 141 &&
+    ok("40 %: resized live, centred", hl && hl->params.rect.w == 320 && hl->params.rect.h == 140 &&
                                       hl->params.rect.x == 240 && hl->params.rect.y == 169);
+    /* the frame goes at the size it is shown: 320x140, 67,200 B instead of 783,360 */
+    crs::FakeGraph *g40 = b.gpu.graph("hud");
+    bool small = false;
+    if (g40)
+        for (const auto &kv : g40->shown.buffers)
+            small = small || (kv.second.f == crs::TexFormat::R8 && kv.second.px.size() == 320u * 210);
+    ok("40 %: the HUD's texture is the scaled frame, 320x140 (67,200 B)", small);
     feeds.set_targets("map");
     bpump(2500, &f2);
     ok("the size leaves the cluster's map alone", layer_on(0) && layer_on(0)->params.rect.w == 1088);

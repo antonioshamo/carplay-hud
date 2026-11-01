@@ -52,11 +52,12 @@ MapFeed::MapFeed(const FeedConfig &cfg) : cfg_(cfg), client_("waze-on-cluster", 
         changed_ = true;
     };
     client_.on_target = [this](const std::string &t, const std::string &state, const std::string &holder,
-                               const std::string &) {
+                               const std::string &reason) {
         if (t != cfg_.target)
             return;
         target_state_ = state;
         holder_ = holder;
+        target_reason_ = reason;
         changed_ = true;
     };
     client_.on_budget = [this](unsigned cap, unsigned max, const std::string &reason) {
@@ -89,7 +90,24 @@ void MapFeed::make_layer()
     }
     /* The map area: all of the map slot's scene, the centred 1088x480 of a
      * whole-panel one, a fitted centre on the HUD. */
-    const crk::QuadRect q = quad(tw, th);
+    crk::QuadRect q = quad(tw, th);
+    /* Shown smaller than the decoded frame: the frame is scaled to the size
+     * it is shown at (a multiple of 4 wide and high, as the renderer and
+     * packed motion need), drawn 1:1 centred where the quad was. */
+    cr::VideoOptions vo = cfg_.video;
+    scaling_ = false;
+    pending_ready_ = false;
+    const uint32_t sw = q.w & ~3u, sh = q.h & ~3u;
+    if (cfg_.scale_down && (sw < cfg_.video.w || sh < cfg_.video.h) && sw >= 64 && sh >= 32 &&
+        scaler_.configure(cfg_.video.w, cfg_.video.h, sw, sh, cfg_.scaled_level_bits)) {
+        q.x += (q.w - sw) / 2;
+        q.y += (q.h - sh) / 2;
+        q.w = sw;
+        q.h = sh;
+        vo.w = sw;
+        vo.h = sh;
+        scaling_ = true;
+    }
     lo_ = cr::LayerOptions();
     lo_.target = cfg_.target;
     lo_.klass = "content";
@@ -103,10 +121,12 @@ void MapFeed::make_layer()
     layer_state_ = "stalled";
     layer_reason_.clear();
     target_state_.clear();
+    target_reason_.clear();
     holder_.clear();
-    layer_ = client_.video(lo_, cfg_.video);
+    layer_ = client_.video(lo_, vo);
     changed_ = true;
-    log_info("render: map layer on %s (%ux%u), quad %ux%u at %u,%u", cfg_.target.c_str(), tw, th, q.w, q.h, q.x, q.y);
+    log_info("render: map layer on %s (%ux%u), quad %ux%u at %u,%u%s", cfg_.target.c_str(), tw, th, q.w, q.h, q.x, q.y,
+             scaling_ ? ", the frame scaled to it on the head unit" : "");
 }
 
 /* Where the map goes on a target of tw x th: the kit's fitted rect, or on
@@ -135,13 +155,11 @@ void MapFeed::set_hud_width(unsigned pct)
     uint32_t tw, th;
     if (cfg_.target != "hud" || !layer_ || !target_size(client_.targets, "hud", &tw, &th))
         return;
-    const crk::QuadRect q = quad(tw, th);
-    lo_.x = (int)q.x;
-    lo_.y = (int)q.y;
-    lo_.w = q.w;
-    lo_.h = q.h;
-    client_.set(layer_, lo_);
-    log_info("render: HUD map %u%% wide: %ux%u at %u,%u", pct, q.w, q.h, q.x, q.y);
+    /* the texture's size changes with it: a new layer at the new size */
+    log_info("render: HUD map %u%% wide", pct);
+    client_.drop(layer_);
+    layer_ = 0;
+    make_layer();
 }
 
 bool MapFeed::knows(const std::string &name) const
@@ -171,6 +189,7 @@ bool MapFeed::set_target(const std::string &name)
 void MapFeed::poll(int64_t now_ms)
 {
     client_.poll(now_ms);
+    send_pending(now_ms);
     if (connected_ && !client_.connected()) {
         connected_ = false;
         changed_ = true;
@@ -205,9 +224,31 @@ void MapFeed::count_second(int64_t now_ms)
 
 void MapFeed::offer(std::vector<uint8_t> *atlas, uint64_t id, int64_t now_ms)
 {
-    if (layer_ && client_.frame(layer_, atlas, id))
+    if (scaling_ && layer_) {
+        /* kept without a copy: the buffer handed back is the last pending
+         * one, the same size (a copy only for the first) */
+        if (pending_.size() == atlas->size())
+            pending_.swap(*atlas);
+        else
+            pending_ = *atlas;
+        pending_ready_ = true;
+        pending_id_ = id;
+        send_pending(now_ms);
+    } else if (layer_ && client_.frame(layer_, atlas, id)) {
         frames_++;
+    }
     count_second(now_ms);
+}
+
+void MapFeed::send_pending(int64_t now_ms)
+{
+    if (!pending_ready_ || !layer_ || now_ms < next_send_ms_)
+        return;
+    scaler_.scale(pending_.data(), &scaled_);
+    pending_ready_ = false;
+    if (client_.frame(layer_, &scaled_, pending_id_))
+        frames_++;
+    next_send_ms_ = now_ms + (cfg_.video.fps ? 1000 / (int64_t)cfg_.video.fps : 0);
 }
 
 void MapFeed::set_stream(bool live, bool frozen)
@@ -285,6 +326,8 @@ FeedStatus MapFeed::status(const std::string &decode) const
         s.page = decode;
         if (layer_state_ == "suspended")
             s.reason = "under an alert on the cluster";
+        else if (target_reason_.find("pop-up") != std::string::npos)
+            s.reason = "a HUD pop-up is open; the map returns when it closes";
         else if (holder_ == "stock")
             s.reason = "the stock map holds the slot";
         else if (holder_ == "foreign")

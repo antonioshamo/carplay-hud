@@ -1,0 +1,111 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Robert Nisipeanu
+/* Host test of AtlasScaler (atlas_scale.h): sizes, flat planes stay flat and
+ * U, V and Y never mix, a 2:1 scale is the exact 2x2 average, non-integer
+ * ratios keep a gradient's mean, rounding to level bits, refusals, and the
+ * time a 1088x480 frame takes to scale to the HUD's sizes. */
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+
+#include "atlas_scale.h"
+#include "yuv_atlas.h"
+
+using namespace woc;
+
+static int failures;
+static void ok(const char *name, bool cond)
+{
+    std::printf("%-4s %s\n", cond ? "ok" : "FAIL", name);
+    if (!cond) failures++;
+}
+
+static std::vector<uint8_t> atlas(uint32_t w, uint32_t h, uint8_t y, uint8_t u, uint8_t v)
+{
+    std::vector<uint8_t> a((size_t)w * crk::atlas_height(h));
+    for (uint32_t r = 0; r < h; r++)
+        for (uint32_t c = 0; c < w; c++) a[(size_t)r * w + c] = y;
+    for (uint32_t r = 0; r < h / 2; r++)
+        for (uint32_t c = 0; c < w / 2; c++) {
+            a[(size_t)(h + r) * w + c] = u;
+            a[(size_t)(h + r) * w + w / 2 + c] = v;
+        }
+    return a;
+}
+
+int main()
+{
+    AtlasScaler s;
+    std::vector<uint8_t> out;
+
+    ok("refuses odd, upscaled or empty sizes",
+       !s.configure(1088, 480, 453, 200, 0) && !s.configure(1088, 480, 1200, 200, 0) &&
+           !s.configure(1088, 480, 452, 482, 0) && !s.configure(0, 480, 452, 200, 0));
+    ok("1088x480 -> 452x200", s.configure(1088, 480, 452, 200, 0) && s.dst_bytes() == 452u * 300);
+
+    const std::vector<uint8_t> flat = atlas(1088, 480, 200, 60, 180);
+    s.scale(flat.data(), &out);
+    bool flat_ok = out.size() == 452u * 300;
+    for (uint32_t r = 0; r < 200 && flat_ok; r++)
+        for (uint32_t c = 0; c < 452; c++) flat_ok = flat_ok && out[(size_t)r * 452 + c] == 200;
+    for (uint32_t r = 0; r < 100 && flat_ok; r++)
+        for (uint32_t c = 0; c < 226; c++)
+            flat_ok = flat_ok && out[(size_t)(200 + r) * 452 + c] == 60 && out[(size_t)(200 + r) * 452 + 226 + c] == 180;
+    ok("flat Y, U and V stay exact: the planes never mix", flat_ok);
+
+    /* 2:1 is the 2x2 average */
+    std::vector<uint8_t> g((size_t)8 * crk::atlas_height(8), 128);
+    for (uint32_t r = 0; r < 8; r++)
+        for (uint32_t c = 0; c < 8; c++) g[r * 8 + c] = (uint8_t)(r * 30 + c * 3);
+    AtlasScaler h;
+    ok("8x8 -> 4x4", h.configure(8, 8, 4, 4, 0));
+    h.scale(g.data(), &out);
+    bool avg = true;
+    for (uint32_t r = 0; r < 4; r++)
+        for (uint32_t c = 0; c < 4; c++) {
+            const int want = (int)std::lround((g[(2 * r) * 8 + 2 * c] + g[(2 * r) * 8 + 2 * c + 1] + g[(2 * r + 1) * 8 + 2 * c] +
+                                               g[(2 * r + 1) * 8 + 2 * c + 1]) / 4.0);
+            avg = avg && std::abs((int)out[r * 4 + c] - want) <= 1;
+        }
+    ok("2:1 is the 2x2 average (within rounding)", avg);
+
+    /* a horizontal ramp at 1088 -> 452 keeps its mean and stays monotonic */
+    std::vector<uint8_t> ramp = atlas(1088, 480, 0, 128, 128);
+    for (uint32_t r = 0; r < 480; r++)
+        for (uint32_t c = 0; c < 1088; c++) ramp[(size_t)r * 1088 + c] = (uint8_t)(c * 255 / 1087);
+    s.scale(ramp.data(), &out);
+    double ms = 0, md = 0;
+    bool mono = true;
+    for (uint32_t c = 0; c < 1088; c++) ms += ramp[c];
+    for (uint32_t c = 0; c < 452; c++) {
+        md += out[c];
+        if (c) mono = mono && out[c] >= out[c - 1];
+    }
+    ok("a ramp keeps its mean and order at 2.41:1", std::fabs(ms / 1088 - md / 452) < 0.6 && mono);
+
+    AtlasScaler rb;
+    rb.configure(1088, 480, 452, 200, 2);
+    rb.scale(ramp.data(), &out);
+    bool rounded = true;
+    for (uint8_t b : out) rounded = rounded && (b % 4 == 0 || b == 255);
+    ok("level bits: values rounded to multiples of 4 (255 kept)", rounded);
+
+    ok("same size is allowed (a plain copy)", h.configure(8, 8, 8, 8, 0));
+    h.scale(g.data(), &out);
+    ok("and copies exactly", out == g);
+
+    const struct { uint32_t w, h; } sizes[] = {{452, 200}, {560, 244}, {680, 300}, {800, 352}, {320, 140}};
+    for (const auto &z : sizes) {
+        AtlasScaler t;
+        t.configure(1088, 480, z.w, z.h, 2);
+        const auto t0 = std::chrono::steady_clock::now();
+        for (int i = 0; i < 20; i++) t.scale(ramp.data(), &out);
+        const double each = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() / 20;
+        std::printf("     1088x480 -> %ux%u: %.2f ms a frame on this machine, %zu B (%.1fx less than 783,360)\n", z.w, z.h,
+                    each, t.dst_bytes(), 783360.0 / t.dst_bytes());
+    }
+
+    std::printf(failures ? "%d FAILED\n" : "all ok\n", failures);
+    return failures ? 1 : 0;
+}

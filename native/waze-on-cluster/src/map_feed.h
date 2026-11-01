@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include "atlas_scale.h"
 #include "cluster_render/client.h"
 #include "map_geometry.h"
 
@@ -43,6 +44,11 @@ struct FeedConfig {
      * the picture's shape, at most the HUD's), centred. 0: the kit's fitted
      * box (about 57 %). */
     unsigned hud_width_pct = 0;
+    /* A target shown smaller than the decoded frame (the HUD) gets the frame
+     * scaled on the head unit to the size it is shown at (atlas_scale.h),
+     * at most video.fps a second, rounded to these level bits. */
+    bool scale_down = true;
+    unsigned scaled_level_bits = 2;
 };
 
 /* The status the Waze app shows (its render socket's "status" event), with
@@ -109,6 +115,9 @@ public:
 
 private:
     void make_layer();
+    /* The newest frame waiting to be scaled, scaled and handed over once
+     * the frame rate allows (offer and poll). */
+    void send_pending(int64_t now_ms);
     crk::QuadRect quad(uint32_t tw, uint32_t th) const;
     void count_second(int64_t now_ms);
 
@@ -118,7 +127,7 @@ private:
     cr::LayerOptions lo_;   /* the layer's options as last sent */
     bool live_ = false, frozen_ = false;
     std::string layer_state_ = "stalled", layer_reason_;
-    std::string target_state_, holder_;
+    std::string target_state_, holder_, target_reason_;
     unsigned cap_kb_ = 0, max_kb_ = 0;
     std::string budget_reason_, refused_, report_;
     bool connected_ = false, changed_ = true, status_asked_ = false;
@@ -128,6 +137,11 @@ private:
     bool down_long_ = false;
     int64_t second_ms_ = 0;
     int frames_ = 0, rate_ = 0;
+    AtlasScaler scaler_;
+    bool scaling_ = false, pending_ready_ = false;
+    std::vector<uint8_t> pending_, scaled_;
+    uint64_t pending_id_ = 0;
+    int64_t next_send_ms_ = 0;
 };
 
 }  // namespace woc

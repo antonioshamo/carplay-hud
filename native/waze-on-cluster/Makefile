@@ -40,7 +40,7 @@ VERSION := $(shell sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' component.json)
 
 # The capture, decode and map feed (own files), the kit's atlas, packing and
 # geometry, and the shared renderer's client.
-WOC_SRC = src/main.cpp src/video_producer.cpp src/freeze_watch.cpp src/alt_screen.cpp src/map_feed.cpp src/map_feeds.cpp src/control.cpp src/h264_source.cpp \
+WOC_SRC = src/main.cpp src/video_producer.cpp src/freeze_watch.cpp src/alt_screen.cpp src/map_feed.cpp src/map_feeds.cpp src/atlas_scale.cpp src/control.cpp src/h264_source.cpp \
           src/udp_source.cpp src/avb_source.cpp src/framing_probe.cpp src/rtp_h264.cpp \
           src/decoder_msdk.cpp src/nal_reader.cpp $(KIT)/map_geometry.cpp $(KIT)/yuv_atlas.cpp \
           $(KIT)/block_pack.cpp
@@ -65,7 +65,7 @@ test: test-cpp
 
 test-cpp: $(BUILD)/host/nal_reader_test $(BUILD)/host/rtp_h264_test $(BUILD)/host/udp_probe_test \
 		$(BUILD)/host/map_feed_test $(BUILD)/host/keyframe_wait_test $(BUILD)/host/freeze_watch_test \
-		$(BUILD)/host/alt_screen_test
+		$(BUILD)/host/alt_screen_test $(BUILD)/host/atlas_scale_test
 	$(BUILD)/host/nal_reader_test
 	$(BUILD)/host/rtp_h264_test test/data/stream15_start.rtp
 	$(BUILD)/host/udp_probe_test
@@ -73,6 +73,7 @@ test-cpp: $(BUILD)/host/nal_reader_test $(BUILD)/host/rtp_h264_test $(BUILD)/hos
 	$(BUILD)/host/keyframe_wait_test
 	$(BUILD)/host/freeze_watch_test
 	$(BUILD)/host/alt_screen_test
+	$(BUILD)/host/atlas_scale_test
 	$(MAKE) -C $(CR) test-kit BUILD=$(abspath $(BUILD))/kit
 
 test-x86:
@@ -102,11 +103,11 @@ $(BUILD)/host/udp_probe_test: test/udp_probe_test.cpp src/udp_source.cpp src/udp
 # and its main.
 CR_CORE = $(filter-out $(addprefix $(CR)/src/,main.cpp graph_ramses19.cpp dcsm2_link.cpp config.cpp log.cpp), \
           $(wildcard $(CR)/src/*.cpp)) $(wildcard $(KIT)/*.cpp)
-$(BUILD)/host/map_feed_test: test/map_feed_test.cpp src/map_feed.cpp src/map_feed.h src/map_feeds.cpp src/map_feeds.h $(CR_CORE) $(CR_SRC) \
+$(BUILD)/host/map_feed_test: test/map_feed_test.cpp src/map_feed.cpp src/map_feed.h src/map_feeds.cpp src/map_feeds.h src/atlas_scale.cpp src/atlas_scale.h $(CR_CORE) $(CR_SRC) \
 		$(CR)/src/log.cpp $(wildcard $(CR)/src/*.h $(CR)/include/cluster_render/*.h $(CR)/test/*.h)
 	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -Isrc -I$(KIT) -I$(CR)/include -I$(CR) -I$(CR)/src -isystem $(CR)/dcsm/third_party/vsomeip/interface \
-		-o $@ test/map_feed_test.cpp src/map_feed.cpp src/map_feeds.cpp $(filter-out $(CR)/client/protocol.cpp,$(CR_CORE)) $(CR_SRC) \
+		-o $@ test/map_feed_test.cpp src/map_feed.cpp src/map_feeds.cpp src/atlas_scale.cpp $(filter-out $(CR)/client/protocol.cpp,$(CR_CORE)) $(CR_SRC) \
 		$(CR)/src/log.cpp -lpthread
 
 $(BUILD)/host/keyframe_wait_test: test/keyframe_wait_test.cpp src/keyframe_wait.h
@@ -163,3 +164,7 @@ $(T)/waze-on-cluster: $(SRC) $(STUBS) component.json
 
 clean:
 	rm -rf $(BUILD)
+
+$(BUILD)/host/atlas_scale_test: test/atlas_scale_test.cpp src/atlas_scale.cpp src/atlas_scale.h $(KIT)/yuv_atlas.cpp $(KIT)/yuv_atlas.h
+	mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -Isrc -I$(KIT) -o $@ test/atlas_scale_test.cpp src/atlas_scale.cpp $(KIT)/yuv_atlas.cpp

@@ -122,7 +122,13 @@ its own layer and slot on the renderer (`src/map_feeds.*`), the HUD's map
 fitted into its 800x480 scene, within the one shared upload budget. The HUD map's size (`hud_width_pct`): Standard (0, the fitted box,
 about 57 % of the HUD's width, 453x200), 70 %, 85 %, Full width (800x353)
 or 40 %, the picture's shape kept and centred; the app's **HUD map size**
-button resizes it at once and `patchd` saves it. On a HUD dark pixels are see-through, so a night-mode map reads best.
+button resizes it at once and `patchd` saves it. The HUD's frame is scaled
+on the head unit to the size it is shown at (`src/atlas_scale.*`, area
+averaging, `hud_scale_down`), at most `target_fps` frames a second: 135,600 B
+a frame at the standard size instead of 783,360, so the frames go exact
+rather than packed within the shared budget. The HUD map steps aside while
+the HUD's media and list pop-ups show (cluster-render `hud_yield_slots`), and
+the app says so. On a HUD dark pixels are see-through, so a night-mode map reads best.
 
 From a shell, `waze-on-cluster -c <conf> run map|panel|hud|map+hud` (`sail` is an
 alias of `map`) sets the target until the service restarts and prints the

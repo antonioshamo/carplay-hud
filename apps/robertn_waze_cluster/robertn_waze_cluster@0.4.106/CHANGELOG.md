@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.106 (eroobeeroo fork)
+
+Requires waze-on-cluster 0.7.104: the HUD map's frames are scaled on the
+head unit to the size they are shown at (sharper, 2-6x less data to the
+KOMBI), and the status says when a HUD pop-up has the map stepped aside.
+
 ## 0.4.105 (eroobeeroo fork)
 
 Requires waze-on-cluster 0.7.103 with cluster-render 0.2.103: the HUD map
