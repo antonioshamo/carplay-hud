@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.105 (eroobeeroo fork)
+
+Requires waze-on-cluster 0.7.103 with cluster-render 0.2.103: the HUD map
+steps aside while the HUD's media and list pop-ups show, so they stay in
+the HUD instead of moving to the cluster, and comes back 1.5 s after they
+close.
+
 ## 0.4.104 (eroobeeroo fork)
 
 Show map on switches between the Cluster and the HUD only (no longer both).

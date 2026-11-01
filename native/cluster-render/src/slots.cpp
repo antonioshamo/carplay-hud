@@ -150,6 +150,35 @@ Holder SlotManager::other_holder(int i) const
 /* A slot the table names as someone else's is not asked for, unless a
  * contending layer takes it from the stock HMI: the target waits for it to
  * be free. */
+static const char kPopupReason[] = "a stock pop-up shows in its place";
+
+bool SlotManager::popup_blocks(int i, int64_t now_ms)
+{
+    Target &t = t_[i];
+    const TargetSpec &spec = specs_[i];
+    bool shown = false;
+    for (uint64_t slot : spec.yield_slots) {
+        auto rows = slots_.find(slot);
+        if (rows == slots_.end())
+            continue;
+        for (const SlotInfo &r : rows->second)
+            shown = shown || (r.content != 0 && (r.map_status == 1 || r.map_status == 2));
+    }
+    if (shown) {
+        if (t.popup_ms < 0)
+            log_info("target %s: a stock pop-up shows in a slot it gives way to", spec.name.c_str());
+        t.popup_ms = now_ms;
+        return true;
+    }
+    if (t.popup_ms < 0)
+        return false;
+    if (now_ms - t.popup_ms < spec.yield_ms)
+        return true;
+    log_info("target %s: the pop-up has gone; asking again", spec.name.c_str());
+    t.popup_ms = -1;
+    return false;
+}
+
 bool SlotManager::yields(int i, int64_t now_ms)
 {
     const Holder h = other_holder(i);
@@ -548,6 +577,23 @@ void SlotManager::tick(int64_t now_ms)
                 set(i, TargetState::Idle, Holder::None, "", now_ms);
             }
             continue;
+        }
+
+        /* A stock pop-up in a slot the target gives way to: out of the
+         * display at once and not asked for until it has gone. */
+        if (!spec.yield_slots.empty()) {
+            if (t.wanted && popup_blocks(i, now_ms)) {
+                if (s == TargetState::Acquiring || s == TargetState::Parked || s == TargetState::Shown ||
+                    s == TargetState::Lingering)
+                    release(i, now_ms);
+                if (t.status.state != TargetState::Waiting || t.status.reason != kPopupReason)
+                    set(i, TargetState::Waiting, Holder::Stock, kPopupReason, now_ms, -1);
+                continue;
+            }
+            if (s == TargetState::Waiting && t.status.reason == kPopupReason) {
+                set(i, TargetState::Idle, Holder::None, "", now_ms);
+                continue;
+            }
         }
 
         switch (s) {
