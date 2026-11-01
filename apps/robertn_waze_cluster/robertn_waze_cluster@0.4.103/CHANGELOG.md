@@ -1,11 +1,16 @@
 # Changelog
 
+## 0.4.103 (eroobeeroo fork)
+
+Requires waze-on-cluster 0.7.101 (upstream 0.7.1: the patch works on any
+carplay build whose edit sites are found; the recovery service stays up).
+
 ## 0.4.102 (eroobeeroo fork)
 
 HUD map size: a button steps the HUD map's size between Standard (the
 fitted box, about 57 % of the HUD's width), 70 %, 85 %, Full width and 40 %,
 resized at once and kept for the next start. Enabled while the map goes to
-the HUD. Requires waze-on-cluster 0.6.104.
+the HUD. Requires waze-on-cluster 0.7.101.
 
 ## 0.4.101 (eroobeeroo fork)
 
