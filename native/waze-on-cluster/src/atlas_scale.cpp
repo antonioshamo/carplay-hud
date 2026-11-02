@@ -132,14 +132,28 @@ void AtlasScaler::scale(const uint8_t *src, std::vector<uint8_t> *dst)
  * a big label does not flicker it. Y up to kKeyLo above it goes black, the
  * next kKeyRamp fade in, the rest stays; U and V of each 2 x 2 block fade
  * by the most visible of its four Y. A background lighter than kKeyMaxBg
- * (a day map) is left alone. */
+ * (a day map) is left alone.
+ *
+ * Green is never keyed: parks (Waze's and Google Maps' night greens are about
+ * as dark as the grey-blue field) stay, and green pixels don't count towards
+ * the background, so a park filling the frame can't become it (seen on a car:
+ * parks going black now and then). Green in YUV: V well below neutral and U
+ * not above it - the field's blue has U above. */
+static inline bool is_green(int u, int v)
+{
+    return v - 128 <= -6 && u - 128 <= 2;
+}
 void AtlasScaler::key_background(uint8_t *d)
 {
     static const int kKeyLo = 8, kKeyRamp = 28, kKeyMaxBg = 150;   /* Waze's night field is grey-blue, a day map's near white */
     const size_t n = (size_t)dw_ * dh_;
+    const uint8_t *cu = d + n;
     uint32_t hist[256] = {0};
-    for (size_t i = 0; i < n; i += 3)
-        hist[d[i]]++;
+    for (size_t i = 0; i < n; i += 3) {
+        const size_t c = (i / dw_ / 2) * dw_ + (i % dw_) / 2;
+        if (!is_green(cu[c], cu[c + dw_ / 2]))
+            hist[d[i]]++;
+    }
     int mode = 0;
     for (int v = 1; v < 256; v++)
         if (hist[v] > hist[mode])
@@ -157,6 +171,9 @@ void AtlasScaler::key_background(uint8_t *d)
     for (uint32_t y = 0; y < dh_; y += 2)
         for (uint32_t x = 0; x < dw_; x += 2) {
             uint8_t *p = d + (size_t)y * dw_ + x;
+            const size_t c = (size_t)(y / 2) * dw_ + x / 2;
+            if (is_green(u[c], v[c]))
+                continue;
             const uint32_t k0 = k[p[0]], k1 = k[p[1]], k2 = k[p[dw_]], k3 = k[p[dw_ + 1]];
             p[0] = (uint8_t)(16 + ((int)p[0] - 16) * (int)k0 / 256);
             p[1] = (uint8_t)(16 + ((int)p[1] - 16) * (int)k1 / 256);
@@ -167,7 +184,6 @@ void AtlasScaler::key_background(uint8_t *d)
             kc = kc > k3 ? kc : k3;
             if (kc >= 256)
                 continue;
-            const size_t c = (size_t)(y / 2) * dw_ + x / 2;
             u[c] = (uint8_t)(128 + ((int)u[c] - 128) * (int)kc / 256);
             v[c] = (uint8_t)(128 + ((int)v[c] - 128) * (int)kc / 256);
         }

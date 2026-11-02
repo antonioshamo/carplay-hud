@@ -182,6 +182,8 @@ A night map's background is made black too (`hud_black_background`): the
 frame's most common shade, followed frame to frame, and the shades just above
 it fade to black, so the HUD shows the roads, route and labels without Waze's
 grey-blue field; a day map (light background) is left as it is.
+Green is never made black (parks are about as dark as the night field), and green
+doesn't count towards the background, so a park filling the frame can't become it.
 
 **Per driver profile.** The app reads the head unit's current user account
 every 5 s (SOME/IP `SessionManager.currentUserAccountReference`) and tells

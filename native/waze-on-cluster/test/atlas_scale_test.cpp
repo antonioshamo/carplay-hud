@@ -136,6 +136,33 @@ int main()
         ok("black background: its chroma neutral", u[5 * 452 + 5] == 128);
         ok("black background: the road kept", y[91 * 452 + 100] == 120);
         ok("black background: the label kept", y[129 * 452 + 228] == 220);
+        /* a park: a dark green block (Y about the field's, U a little below
+         * neutral, V well below) on the night field - kept, chroma and all;
+         * and a frame mostly park doesn't make the park the background */
+        std::vector<uint8_t> park = night;
+        for (uint32_t r = 40; r < 120; r++)
+            for (uint32_t c = 100; c < 400; c++) park[r * 1088 + c] = 62;
+        for (uint32_t r = 20; r < 60; r++)
+            for (uint32_t c = 50; c < 200; c++) { park[1088 * 480 + r * 1088 + c] = 124; park[1088 * 480 + r * 1088 + 544 + c] = 116; }
+        AtlasScaler kp;
+        kp.configure(1088, 480, 452, 200, 0);
+        kp.set_black_background(true);
+        kp.scale(park.data(), &out);
+        const uint8_t *py = out.data(), *pu = py + 452 * 200, *pv = pu + 226;
+        ok("black background: a green park kept (luma and chroma)", py[33 * 452 + 100] == 62 && pu[16 * 452 + 50] < 128 && pv[16 * 452 + 50] < 122);
+        ok("black background: the navy field still black beside the park", py[150 * 452 + 300] == 16);
+        std::vector<uint8_t> parks(1088 * 720, 62);
+        for (size_t r = 0; r < 240; r++)
+            for (size_t c = 0; c < 544; c++) { parks[1088 * 480 + r * 1088 + c] = 124; parks[1088 * 480 + r * 1088 + 544 + c] = 116; }
+        for (uint32_t r = 400; r < 480; r++)
+            for (uint32_t c = 0; c < 1088; c++) parks[r * 1088 + c] = 40;
+        for (size_t r = 200; r < 240; r++)
+            for (size_t c = 0; c < 544; c++) { parks[1088 * 480 + r * 1088 + c] = 140; parks[1088 * 480 + r * 1088 + 544 + c] = 124; }
+        AtlasScaler km;
+        km.configure(1088, 480, 452, 200, 0);
+        km.set_black_background(true);
+        km.scale(parks.data(), &out);
+        ok("black background: a frame mostly park keeps the park (not taken for the field)", out[50 * 452 + 200] == 62 && km.background() / 16 == 40);
         std::vector<uint8_t> day(1088 * 720, 200);
         for (size_t i = 1088 * 480; i < day.size(); i++) day[i] = 128;
         AtlasScaler kd;

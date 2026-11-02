@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.112 (eroobeeroo fork)
+
+Requires waze-on-cluster 0.7.110: the HUD's black background leaves green
+alone, so parks no longer go black now and then.
+
 ## 0.4.111 (eroobeeroo fork)
 
 Requires waze-on-cluster 0.7.109: on the HUD a night map's grey-blue
