@@ -36,6 +36,10 @@ One `LT_State_Wide` page:
 | Enable map | applies the patch; shown while it is off, unknown or out of date and no change is pending |
 | Disable map | reverts the patch, which turns the map off; shown while patched and no change is pending |
 | Restart head unit | a normal system reboot; shown only while a written change waits for the next head-unit start |
+| Show map on: Cluster / HUD | moves the map between the instrument cluster and the head-up display, at once (this fork) |
+| HUD map larger / smaller | the HUD map's width in 5 % steps, 30-85 % of the HUD (the row shows the size now); enabled while the map is on the HUD |
+| Move HUD map left / right / up / down | moves the HUD map 10 px a press, held inside the HUD |
+| Centre HUD map | puts it back in the middle (the row shows how far it is moved) |
 | Capture logs (5 min) / Stop capture | a bounded DLT capture for diagnostics; start it, then reconnect CarPlay |
 | 30 rows | both tools' log lines, newest first, tagged `map:` / `patch:` |
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.113 (eroobeeroo fork)
+
+Requires waze-on-cluster 0.7.111: the HUD map can be sized and moved from
+the page. HUD map larger / smaller step its width by 5 % (30-85 %); Move HUD
+map left / right / up / down move it 10 px a press, and Centre HUD map puts
+it back. Size and position are kept per driver profile.
+
 ## 0.4.112 (eroobeeroo fork)
 
 Requires waze-on-cluster 0.7.110: the HUD's black background leaves green
