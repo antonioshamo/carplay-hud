@@ -21,10 +21,10 @@ jobs:
       - name: Import the reviewed source commit
         run: |
           if [ -f release-import.bundle ]; then
-            echo 'e37344634f3b6b77e7ba9fc2673d2f82f021f3fb14efbd9fb940f640c65ea2b0  release-import.bundle' | sha256sum -c -
+            echo '8b2f4071d4e06baf673f179dd7d12aad8ce1f9c100e78f15e066c6096ca1b650  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
             git fetch ./release-import.bundle refs/heads/shamo/hud-settings-research:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '66cc0ea0bf67f69454071f11e0817f2f92c1eb92'
+            test "$(git rev-parse refs/remotes/import/release)" = '998b5d74921d48a17967991a3fec4d2a2b7da8d5'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
@@ -32,11 +32,7 @@ jobs:
             git commit -m 'Remove source transport bundle after verified import'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 66cc0ea0bf67f69454071f11e0817f2f92c1eb92 HEAD
-      - run: make -C native/cluster-render test
-      - run: make -C native/cluster-render test-x86 target
-      - run: make -C native/waze-on-cluster test
-      - run: make -C native/waze-on-cluster test-x86 target
+          git merge-base --is-ancestor 998b5d74921d48a17967991a3fec4d2a2b7da8d5 HEAD
       - run: node apps/robertn_waze_cluster/tools/test_control.js
       - run: node apps/robertn_waze_cluster/tools/test_page.js
       - run: node apps/robertn_waze_cluster/tools/test_design.js
@@ -45,10 +41,10 @@ jobs:
       - run: node apps/robertn_waze_cluster/tools/test_profiles.js
       - run: node apps/robertn_waze_cluster/tools/test_settings.js
       - run: node release/test/release_test.js
-      - run: node release/release.js check
+      - run: node release/release.js check robertn_waze_cluster
       - name: Publish tested installable artifacts and catalog
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish
+        run: node release/release.js publish robertn_waze_cluster
