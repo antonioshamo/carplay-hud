@@ -1,0 +1,51 @@
+name: Import and publish HUD trial
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.12.0
+      - name: Import the reviewed source commit
+        run: |
+          if [ -f release-import.bundle ]; then
+            echo 'f9e2ba2fb5243cc8b9fd22d422d19a25fd075f6688e3a9bdaa04a6a633d18a39  release-import.bundle' | sha256sum -c -
+            git bundle verify release-import.bundle
+            git fetch ./release-import.bundle refs/heads/shamo/hud-settings-research:refs/remotes/import/release
+            test "$(git rev-parse refs/remotes/import/release)" = '3f55135e1f07fa7420cdbf1904bffcb86baae24b'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git merge --no-ff --no-edit refs/remotes/import/release
+            git rm release-import.bundle
+            git commit -m 'Remove source transport bundle after verified import'
+            git push origin HEAD:main
+          fi
+          git merge-base --is-ancestor 3f55135e1f07fa7420cdbf1904bffcb86baae24b HEAD
+      - run: make -C native/cluster-render test
+      - run: make -C native/cluster-render test-x86 target
+      - run: make -C native/waze-on-cluster test
+      - run: make -C native/waze-on-cluster test-x86 target
+      - run: node apps/robertn_waze_cluster/tools/test_control.js
+      - run: node apps/robertn_waze_cluster/tools/test_page.js
+      - run: node apps/robertn_waze_cluster/tools/test_profiles.js
+      - run: node apps/robertn_waze_cluster/tools/test_settings.js
+      - run: node release/test/release_test.js
+      - run: node release/release.js check
+      - name: Publish tested installable artifacts and catalog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MGU_PUBLISH: github:${{ github.repository }}
+          MGU_PUBLISH_VISIBILITY: any
+        run: node release/release.js publish
