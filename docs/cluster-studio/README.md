@@ -1,6 +1,8 @@
+**0.4.122 app launch recovery:** Explicit first-screen opening, deferred optional graphics/profiles and on-demand settings-page resources. Ten startup scenarios run on Node 8, including a linked package with a synthetic SDK. Car installation succeeded on 0.4.121; this launch fix still needs in-car confirmation.
+
 **0.4.121 installation recovery:** The app manifest now uses the pre-Studio (0.4.116) interface contract after a vehicle rejected 0.4.120 at `generateSomeipInterfaces`. Optional vehicle-data proxies no longer block installation. HUD controls and the editor remain; live-data-dependent Studio tests (including parked clips and feature scan) stay unavailable until compatible telemetry is verified. This is an installation hotfix, not a claim those experiments work on this car.
 
-# Cluster Studio 0.1.3 / CarPlay HUD 0.4.121
+# Cluster Studio 0.1.3 / CarPlay HUD 0.4.122
 
 A full-cluster visual designer for Antonio's X4 M Competition, integrated into
 **CarPlay HUD → Overview → Cluster Studio**. Install the Cluster Studio tool

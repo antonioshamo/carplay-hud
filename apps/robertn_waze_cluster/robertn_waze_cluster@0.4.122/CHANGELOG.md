@@ -1,3 +1,11 @@
+## 0.4.122
+
+- Startup recovery: explicitly open the native home after initialization even when the firmware does not replay the entry-point UUID. Queue early tile clicks until that mapping is ready.
+- Load only Home resources before reporting ready; load secondary/graphics screens on demand with a four-second resource timeout. Remove redundant tile icon/text RPCs from startup.
+- Start graphics and driver-profile polling after the first native screen. Optional graphics/profile failures retain native HUD controls. Catch synchronous HMI write failures as well as promise rejections.
+- Add ten startup scenarios, including an actually linked package using a synthetic SDK donor, and run them on Node 8.17.0. These are controlled SDK/HMI fixtures, not proof of the affected car's behavior.
+- Preserve the 0.4.121 installation manifest and existing helpers. No new telemetry, video, lighting or route-free startup capability.
+
 ## 0.4.121
 
 - Installation recovery: restore the 0.4.116 SOME/IP manifest. Remove the four firmware-specific Cluster Studio telemetry proxies that can cause BMW generateSomeipInterfaces to reject the entire app.
