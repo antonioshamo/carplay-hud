@@ -21,6 +21,9 @@ async function until(fn){for(let i=0;i<100;i++){if(fn())return;await wait(10);}t
   }
   assert(I.timeline(d,d.introDuration).done);
  }
+ const smooth=M.preset(0);I.prepare(smooth);const imageCount=kit.imageById.size;
+ for(let frame=0;frame<180;frame++){const rec=new kit.Recorder(480,180);D.sequence(rec,smooth,b,data,frame*1000/60);}
+ assert.equal(kit.imageById.size,imageCount,'60 fps playback reuses preloaded artwork');
  const legacy=M.preset(3);delete legacy.introDuration;delete legacy.introShine;delete legacy.introLight;assert.equal(M.validate(legacy).introDuration,3000);
  for(const [k,v] of [['introDuration',999999],['introLight','anything'],['introShine','yes']]){const bad=M.preset(0);bad[k]=v;assert.throws(()=>M.validate(bad));}
  console.log('ok every welcome on software and GPU paths, black transition, chosen-layout handoff and old saved-design migration');

@@ -55,9 +55,8 @@ function intro(r,d,b,progress){return I.intro(r,d,b,progress*I.duration(d));}
 function sequence(r,d,b,data,elapsed){
  if(r.clip)r.clip(b.x,b.y,b.w,b.h);
  const a=I.timeline(d,elapsed);
- draw(r,d,b,data);
  if(!a.done&&a.reveal===0)I.intro(r,d,b,elapsed);
- else if(!a.done)r.fillRect(b.x,b.y,b.w,b.h,[0,0,0,Math.round((1-a.reveal)*255)]);
+ else {draw(r,d,b,data);if(!a.done)r.fillRect(b.x,b.y,b.w,b.h,[0,0,0,Math.round((1-a.reveal)*255)]);}
  if(r.noclip)r.noclip();
 }
 module.exports={draw,intro,sequence};

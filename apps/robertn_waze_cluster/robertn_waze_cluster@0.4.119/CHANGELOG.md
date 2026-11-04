@@ -1,3 +1,11 @@
+## 0.4.119
+
+Smooth motion update: settings preview requests 60 fps, preloads and blends shine frames, and avoids redundant native-control updates and hidden gauge drawing. Studio 0.1.2 uses renderer-side welcome shaders with one-time artwork uploads, smooth easing and a prepared gauge handoff. Includes 60 fps HD MP4 previews. Sustained in-car frame rate is not yet measured.
+
+## 0.4.118
+
+Adds X4 M, Apple / CarPlay Ultra and Antonio welcome choices with timing, shine and color controls. Help & setup has a confirmed Restore BMW defaults action, with persistent suppression, supported patch restoration, partial-failure and restart reporting. Requires map tool 0.7.114. Software remains installed; vehicle validation is pending.
+
 ## 0.4.117
 
 Cluster Studio: 100 color/layout combinations, full-cluster design preview, drag and dial editing, 12 movable widgets, five saved designs, Ultra-inspired template, live center-area widgets and optional X4 M welcome. Full-screen output is a 10-second parked test, not a road-ready factory gauge replacement. Requires Cluster Studio tool 0.1.0.

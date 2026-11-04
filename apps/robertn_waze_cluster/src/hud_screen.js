@@ -12,7 +12,7 @@ class HudScreen extends EventEmitter {
   this.page='overview';this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
   this.active=false;this.info=null;this.scale=1;this.closed=false;this.touch=null;this.ccu=null;this.last={};this.dirty=false;this.suspended=false;
   this.studio=new StudioScreen(()=>{this.dirty=true;});
-  this.gpu.fps(20);
+  this.gpu.fps(60);
   this.gpu.on('ready',(screen,info)=>this._ready(info));
   this.gpu.on('close',()=>{this.ready=false;this.hide();this.emit('mode',false);});
   this.gpu.on('closed',()=>{this.suspended=true;this.hide();this.emit('mode',false);});
@@ -49,7 +49,8 @@ class HudScreen extends EventEmitter {
   try {
    const f=this.page==='studio'?this.studio.frame(this.focus,this.scale):view.frame(view.model(this.host.control),this.page,this.focus,this.logPage,this.scale);
    this.items=f.items;this.focus=Math.max(0,Math.min(this.focus,this.items.length-1));
-   this.host.proxies(this.items);
+   const proxyKey=JSON.stringify(this.items.map(b=>[b.id,b.label,!!b.enabled]));
+   if(proxyKey!==this.proxyKey){this.host.proxies(this.items);this.proxyKey=proxyKey;}
    // A false socket.write result means backpressure, not a lost frame.
    this.gpu.frame(f.record);
    this.dirty=false;

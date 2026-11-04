@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const M=require('./studio_model.js'),V=require('./studio_view.js'),{StudioClient}=require('./studio_client.js');
+const M=require('./studio_model.js'),V=require('./studio_view.js'),I=require('./studio_intro.js'),{StudioClient}=require('./studio_client.js');
 class StudioScreen {
  constructor(refresh,options){this.refresh=refresh;this.client=options&&options.client||new StudioClient();this.design=M.preset(0);this.page='gallery';this.selected='speed';this.dirty=false;this.history=[];this.notice='';this.drag=null;this.animationAt=0;this.loaded=false;this.client.on('change',()=>{if(!this.loaded&&this.client.status){if(!this.dirty)this.design=M.clone(this.client.status.design);this.loaded=true;}this.refresh();});}
  open(){this.client.connect();}
@@ -12,7 +12,7 @@ class StudioScreen {
   if(id==='exit')return false;
   if(id.indexOf('page:')===0){this.page=id.slice(5);this.drag=null;return true;}
   if(id==='edit'){this.page='edit';return true;}
-  if(id==='play'){this.animationAt=Date.now();return true;}
+  if(id==='play'){I.prepare(this.design);this.animationAt=Date.now();return true;}
   if(id==='select'){this.selected=M.TYPES[(M.TYPES.indexOf(this.selected)+1)%M.TYPES.length];return true;}
   if(id==='undo'){if(this.history.length){this.design=this.history.pop();this.dirty=true;}return true;}
   if(['apply','off','save','preview','stop-preview'].includes(id)||id.startsWith('save-slot:')){
@@ -33,7 +33,7 @@ class StudioScreen {
   else if(id==='units')d.units=d.units==='mph'?'km/h':'mph';
   else if(id==='title')d.title=(d.title+1)%M.TITLES.length;
   else if(id==='intro-toggle')d.introEnabled=!d.introEnabled;
-  else if(id==='animation'){const modes=['slide','reveal','apple','welcome','none'];d.intro=modes[(modes.indexOf(d.intro)+1)%modes.length];if(d.intro==='apple')d.introDuration=5500;this.animationAt=Date.now();}
+  else if(id==='animation'){const modes=['slide','reveal','apple','welcome','none'];d.intro=modes[(modes.indexOf(d.intro)+1)%modes.length];if(d.intro==='apple')d.introDuration=5500;I.prepare(d);this.animationAt=Date.now();}
   else if(id==='duration')d.introDuration=[3000,4500,5500,7000][([3000,4500,5500,7000].indexOf(d.introDuration)+1)%4];
   else if(id==='shine')d.introShine=!d.introShine;
   else if(id==='light')d.introLight=['white','blue','red','theme'][(['white','blue','red','theme'].indexOf(d.introLight)+1)%4];

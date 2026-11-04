@@ -2,7 +2,7 @@
 
 The owner asked to finish and publish the work that can be validated locally,
 then collect all vehicle-dependent work in one later session. No car access or
-physical validation was available for 0.4.118 / Studio 0.1.1 / map tool 0.7.114.
+physical validation was available for 0.4.119 / Studio 0.1.2 / map tool 0.7.114.
 
 | Requirement | Built now | Evidence needed from the car |
 |---|---|---|
