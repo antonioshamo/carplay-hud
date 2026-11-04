@@ -10,15 +10,16 @@ const s=new Supervisor({readMode:settings.readMode,now:()=>now,status:()=>{},spa
     spawned++;child=new EventEmitter();child.kills=[];child.kill=signal=>child.kills.push(signal);return child;
 }});
 try {
-    assert.equal(settings.readMode(),'off');s.tick();assert.equal(spawned,0);
+    assert.equal(settings.readMode(),'off');s.tick();assert.equal(spawned,1);
     settings.saveMode('dashboard');s.tick();s.tick();assert.equal(spawned,1);
     assert.throws(()=>settings.saveMode('shell:anything'));assert.equal(settings.readMode(),'dashboard');
-    settings.saveMode('off');s.tick();assert.deepEqual(child.kills,['SIGTERM']);child.emit('exit',0);s.tick();assert.equal(spawned,1);
+    settings.saveMode('off');s.tick();assert.deepEqual(child.kills,[]);assert.equal(spawned,1);
+    child.emit('exit',0);s.tick();assert.equal(spawned,1);
     settings.saveMode('dashboard');now+=10001;s.tick();assert.equal(spawned,2);child.emit('exit',1);s.tick();assert.equal(spawned,2);
     now+=10001;s.tick();assert.equal(spawned,3);
     child.emit('error',new Error('spawn failed'));assert.equal(s.child,null);now+=10001;s.tick();assert.equal(spawned,4);
     s.close();assert.deepEqual(child.kills,['SIGTERM']);child.emit('exit',0);now+=20000;s.tick();assert.equal(spawned,4);
-    console.log('PASS default off, explicit opt-in, one child, stop, retry backoff, shutdown');
+    console.log('PASS boot listener survives off/on, one child, retry backoff, shutdown');
     settings.writeStatus('Waiting for CarPlay');assert.equal(settings.readStatus(Date.now()),'Waiting for CarPlay');
     assert.equal(settings.readStatus(Date.now()+5000),'Waiting for startup helper');
     settings.saveMode('off');assert.equal(settings.readStatus(Date.now()),'Off');

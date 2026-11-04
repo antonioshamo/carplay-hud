@@ -1,7 +1,7 @@
-# CarPlay HUD settings 0.4.114
+# CarPlay HUD settings 0.4.115
 
 Fourteen native BMW RHMI pages: display, size/presets, position, appearance,
-startup trial, setup and diagnostics. Requires tool 0.7.112. See the root
+startup trial, setup and diagnostics. Requires tool 0.7.113. See the root
 [installation and test guide](../../README.md). The optional Dashboard startup
 experiment is off by default and has not been verified on the target car.
 

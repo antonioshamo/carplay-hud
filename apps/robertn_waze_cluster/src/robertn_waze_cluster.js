@@ -36,10 +36,10 @@ const SETUP_TEXT = 'Cluster mode: choose Map view in BMW display settings';
 const PAGES = { wocSizePage: 'ST_WOC_Size', wocPositionPage: 'ST_WOC_Position',
     wocSupportPage: 'ST_WOC_Support', wocSetupPage: 'ST_WOC_Setup',
     wocCapturePage: 'ST_WOC_Capture', wocLogPage: 'ST_WOC_Logs',
-    wocDisplay: 'ST_WOC_Display', wocPresetsPage: 'ST_WOC_Presets',
+    wocDisplayPage: 'ST_WOC_Display', wocPresetsPage: 'ST_WOC_Presets',
     wocHorizontalPage: 'ST_WOC_Horizontal', wocVerticalPage: 'ST_WOC_Vertical',
     wocStartupPage: 'ST_WOC_Startup', wocAppearancePage: 'ST_WOC_Appearance', wocTroubleshootPage: 'ST_WOC_Troubleshoot' };
-const EXTRA = ['startupStatus','startupResult','wocStartupOn','wocStartupOff','sizeStatus', 'sizeNotice', 'positionStatus', 'positionNotice',
+const EXTRA = ['wocQuickStartup','startupStatus','startupResult','wocStartupOn','wocStartupOff','sizeStatus', 'sizeNotice', 'positionStatus', 'positionNotice',
     'supportStatus', 'setupStatus', 'setupHint', 'captureHint', 'wocSizeStandard',
     'displayStatus', 'displayHint', 'wocDisplayHud', 'wocDisplayCluster',
     'presetStatus', 'presetNotice', 'wocPresetCompact', 'wocPresetBalanced', 'wocPresetLarge',
@@ -145,7 +145,10 @@ class WazeClusterApp extends OnlineApp {
             return Promise.reject(new Error(`uiDescription lacks ${missing.join(', ')}`));
         }
         Object.keys(PAGES).forEach(name => this._bind(name, () => this._openPage(PAGES[name])));
-        this._bind('wocStartupOn', () => this._control.setStartup('dashboard'));
+        this._bind(DISPLAY_NAME, () => this._control.cycleDisplay());
+        this._bind('wocQuickStartup', () => this._control.patchStatus && this._control.patchStatus.startup_mode === 'dashboard' ?
+            this._control.setStartup('off') : this._control.startHudAutomatically());
+        this._bind('wocStartupOn', () => this._control.startHudAutomatically());
         this._bind('wocStartupOff', () => this._control.setStartup('off'));
         this._bind('wocSizeStandard', () => this._control.setHudSize(0));
         this._bind(ENABLE_NAME, () => { if (this._control.canEnable()) this._control.enableMap(); });
@@ -211,8 +214,11 @@ class WazeClusterApp extends OnlineApp {
 
     _openPage(name) {
         this._render();
-        Promise.resolve(this.rhmiApplication.openState(name))
-            .catch(err => logger.warn(`open page: ${err && err.message}`));
+        return Promise.resolve().then(() => this.rhmiApplication.openState(name))
+            .catch(err => {
+                logger.warn(`open page ${name}: ${err && err.message}`);
+                this._write(STATUS_NAME, 'Page could not open; HUD and startup switches are on Home');
+            });
     }
 
     _bind(name, handler) {
@@ -335,11 +341,16 @@ class WazeClusterApp extends OnlineApp {
         if (!this._state || this._shutdownPromise) {
             return;
         }
+        Object.keys(PAGES).forEach(name => this._setEnabled(name, true));
+        this._setEnabled('wocMissingCapture', true);
         const c = this._control;
         const target = c.displayTarget();
         this._write('startupStatus', c.startupText());
         this._write('startupResult', c.startupResult());
-        this._setEnabled('wocStartupOn', target === 'hud' && c.canChangeStartup());
+        this._setEnabled('wocStartupOn', c.canChangeDisplay() && c.canChangeStartup());
+        const startupOn = c.patchStatus && c.patchStatus.startup_mode === 'dashboard';
+        this._write('wocQuickStartup', startupOn ? 'HUD auto-start trial: ON (press to turn off)' : 'Enable HUD auto-start (trial)');
+        this._setEnabled('wocQuickStartup', c.canChangeStartup() && (startupOn || c.canChangeDisplay()));
         this._setEnabled('wocStartupOff', c.canChangeStartup());
         const width = c.hudWidth();
         const size = width === null ? 'Waiting for tool' : width === 0 ? 'Standard' : `${width}%`;
@@ -351,12 +362,14 @@ class WazeClusterApp extends OnlineApp {
         const concise = c.patchStatus && c.patchStatus.state === 'patched' && !c.pending() ?
             rs && rs.state === 'showing' ? `Map active on ${target === 'hud' ? 'HUD' : 'cluster'}` :
                 rs && rs.state === 'frozen' ? 'Map paused — reconnect CarPlay' : 'Waiting for a CarPlay map' : c.statusText();
-        this._write(STATUS_NAME, c._busy() ? c.settingsNotice() : concise);
+        this._write(STATUS_NAME, c._busy() ? c.settingsNotice() : c._startupPending ? c.startupResult() :
+            startupOn && rs && rs.state === 'idle' ? c.startupResult() : concise);
         this._write('supportStatus', c.statusText());
         this._write('setupStatus', c.statusText());
         this._write(SETUP_NAME, target === 'hud' ? 'HUD selected; the tools run when this app is closed' : SETUP_TEXT);
         const display = target === 'hud' ? 'Windshield HUD' : target === 'map' ? 'Instrument cluster' : 'Waiting for tool';
-        this._write(DISPLAY_NAME, `Display: ${display}`);
+        this._write(DISPLAY_NAME, target === 'hud' ? 'HUD selected — switch to instrument cluster' : 'Use windshield HUD');
+        this._setEnabled(DISPLAY_NAME, c.canChangeDisplay());
         this._write('displayStatus', `Selected: ${display}`);
         this._write('displayHint', c.settingsNotice());
         this._setEnabled('wocDisplayHud', c.canChangeDisplay());

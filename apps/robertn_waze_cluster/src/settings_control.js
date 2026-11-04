@@ -30,6 +30,12 @@ class SettingsControl extends WazeClusterControl {
         this._startupPending=pending;
         this.patch.send({cmd:'startup-mode',mode:mode});this.emit('change');return true;
     }
+    // One press selects AND confirms the saved HUD target before enabling capture.
+    startHudAutomatically() {
+        if (!this.canChangeStartup() || !this.canChangeDisplay()) return false;
+        return this._request('target', 'hud', {cmd:'start', target:'hud'}, {cmd:'target', target:'hud'},
+            () => this.setStartup('dashboard'));
+    }
     startupText() {
         if(!this.patchStatus || !this.patchStatus.startup_trial)return 'Needs the updated map tool';
         return this.patchStatus.startup_mode==='dashboard' ? 'Dashboard experiment: enabled' : 'Dashboard experiment: off';
@@ -106,8 +112,8 @@ class SettingsControl extends WazeClusterControl {
         if (this._busy()) return 'Applying and saving...';
         return this._notice || 'Changes are saved for the next start';
     }
-    _request(key, value, live, saved) {
-        const c = {value, live: false, saved: false};
+    _request(key, value, live, saved, onSaved) {
+        const c = {value, live: false, saved: false, onSaved};
         this._changes[key] = c;
         this._notice = '';
         c.timer = setTimeout(() => {
@@ -128,6 +134,7 @@ class SettingsControl extends WazeClusterControl {
             clearTimeout(c.timer);
             delete this._changes[key];
             this._notice = 'Applied and saved';
+            if (c.onSaved) c.onSaved();
         }
     }
     _onRender(msg) {
