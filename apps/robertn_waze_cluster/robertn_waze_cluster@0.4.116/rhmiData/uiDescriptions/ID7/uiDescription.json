@@ -204,6 +204,32 @@
               }
             }
           ]
+        },
+        "2008": {
+          "type": "button",
+          "name": "wocModern",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Open modern settings",
+                "type": "Text"
+              }
+            }
+          ]
         }
       }
     },
@@ -211,7 +237,7 @@
       "type": "state",
       "name": "ST_WOC_Size",
       "components": {
-        "2021": {
+        "2022": {
           "type": "title",
           "name": "title2",
           "properties": {
@@ -229,7 +255,7 @@
             }
           ]
         },
-        "2022": {
+        "2023": {
           "type": "label",
           "name": "sizeStatus",
           "properties": {
@@ -255,7 +281,7 @@
             }
           ]
         },
-        "2023": {
+        "2024": {
           "type": "button",
           "name": "wocHudSize",
           "properties": {
@@ -281,7 +307,7 @@
             }
           ]
         },
-        "2024": {
+        "2025": {
           "type": "button",
           "name": "wocHudSmaller",
           "properties": {
@@ -307,7 +333,7 @@
             }
           ]
         },
-        "2025": {
+        "2026": {
           "type": "button",
           "name": "wocPresetsPage",
           "properties": {
@@ -333,7 +359,7 @@
             }
           ]
         },
-        "2026": {
+        "2027": {
           "type": "button",
           "name": "wocSizeStandard",
           "properties": {
@@ -359,7 +385,7 @@
             }
           ]
         },
-        "2027": {
+        "2028": {
           "type": "label",
           "name": "sizeNotice",
           "properties": {
@@ -397,7 +423,7 @@
       "type": "state",
       "name": "ST_WOC_Position",
       "components": {
-        "2034": {
+        "2035": {
           "type": "title",
           "name": "title3",
           "properties": {
@@ -415,7 +441,7 @@
             }
           ]
         },
-        "2035": {
+        "2036": {
           "type": "label",
           "name": "positionStatus",
           "properties": {
@@ -441,7 +467,7 @@
             }
           ]
         },
-        "2036": {
+        "2037": {
           "type": "button",
           "name": "wocHorizontalPage",
           "properties": {
@@ -467,7 +493,7 @@
             }
           ]
         },
-        "2037": {
+        "2038": {
           "type": "button",
           "name": "wocVerticalPage",
           "properties": {
@@ -493,7 +519,7 @@
             }
           ]
         },
-        "2038": {
+        "2039": {
           "type": "button",
           "name": "wocMoveStep",
           "properties": {
@@ -519,7 +545,7 @@
             }
           ]
         },
-        "2039": {
+        "2040": {
           "type": "button",
           "name": "wocHudCentre",
           "properties": {
@@ -545,7 +571,7 @@
             }
           ]
         },
-        "2040": {
+        "2041": {
           "type": "label",
           "name": "positionNotice",
           "properties": {
@@ -583,7 +609,7 @@
       "type": "state",
       "name": "ST_WOC_Support",
       "components": {
-        "2057": {
+        "2058": {
           "type": "title",
           "name": "title4",
           "properties": {
@@ -601,7 +627,7 @@
             }
           ]
         },
-        "2058": {
+        "2059": {
           "type": "label",
           "name": "supportStatus",
           "properties": {
@@ -627,7 +653,7 @@
             }
           ]
         },
-        "2059": {
+        "2060": {
           "type": "button",
           "name": "wocDisplayPage",
           "properties": {
@@ -653,7 +679,7 @@
             }
           ]
         },
-        "2060": {
+        "2061": {
           "type": "label",
           "name": "wocSetup",
           "properties": {
@@ -679,7 +705,7 @@
             }
           ]
         },
-        "2061": {
+        "2062": {
           "type": "button",
           "name": "wocSetupPage",
           "properties": {
@@ -705,7 +731,7 @@
             }
           ]
         },
-        "2062": {
+        "2063": {
           "type": "button",
           "name": "wocTroubleshootPage",
           "properties": {
@@ -731,7 +757,7 @@
             }
           ]
         },
-        "2063": {
+        "2064": {
           "type": "button",
           "name": "wocCapturePage",
           "properties": {
@@ -757,7 +783,7 @@
             }
           ]
         },
-        "2064": {
+        "2065": {
           "type": "button",
           "name": "wocLogPage",
           "properties": {
@@ -795,7 +821,7 @@
       "type": "state",
       "name": "ST_WOC_Setup",
       "components": {
-        "2071": {
+        "2072": {
           "type": "title",
           "name": "title5",
           "properties": {
@@ -813,7 +839,7 @@
             }
           ]
         },
-        "2072": {
+        "2073": {
           "type": "label",
           "name": "setupStatus",
           "properties": {
@@ -839,7 +865,7 @@
             }
           ]
         },
-        "2073": {
+        "2074": {
           "type": "button",
           "name": "wocEnable",
           "properties": {
@@ -865,7 +891,7 @@
             }
           ]
         },
-        "2074": {
+        "2075": {
           "type": "button",
           "name": "wocDisable",
           "properties": {
@@ -891,7 +917,7 @@
             }
           ]
         },
-        "2075": {
+        "2076": {
           "type": "button",
           "name": "wocRestart",
           "properties": {
@@ -917,7 +943,7 @@
             }
           ]
         },
-        "2076": {
+        "2077": {
           "type": "label",
           "name": "setupHint",
           "properties": {
@@ -955,7 +981,7 @@
       "type": "state",
       "name": "ST_WOC_Capture",
       "components": {
-        "2077": {
+        "2078": {
           "type": "title",
           "name": "title6",
           "properties": {
@@ -973,7 +999,7 @@
             }
           ]
         },
-        "2078": {
+        "2079": {
           "type": "label",
           "name": "wocCaptureStatus",
           "properties": {
@@ -999,7 +1025,7 @@
             }
           ]
         },
-        "2079": {
+        "2080": {
           "type": "button",
           "name": "wocCapture",
           "properties": {
@@ -1025,7 +1051,7 @@
             }
           ]
         },
-        "2080": {
+        "2081": {
           "type": "label",
           "name": "captureHint",
           "properties": {
@@ -1063,7 +1089,7 @@
       "type": "state",
       "name": "ST_WOC_Logs",
       "components": {
-        "2081": {
+        "2082": {
           "type": "title",
           "name": "title7",
           "properties": {
@@ -1081,7 +1107,7 @@
             }
           ]
         },
-        "2082": {
+        "2083": {
           "type": "label",
           "name": "wocRow01",
           "properties": {
@@ -1107,7 +1133,7 @@
             }
           ]
         },
-        "2083": {
+        "2084": {
           "type": "label",
           "name": "wocRow02",
           "properties": {
@@ -1133,7 +1159,7 @@
             }
           ]
         },
-        "2084": {
+        "2085": {
           "type": "label",
           "name": "wocRow03",
           "properties": {
@@ -1159,7 +1185,7 @@
             }
           ]
         },
-        "2085": {
+        "2086": {
           "type": "label",
           "name": "wocRow04",
           "properties": {
@@ -1185,7 +1211,7 @@
             }
           ]
         },
-        "2086": {
+        "2087": {
           "type": "label",
           "name": "wocRow05",
           "properties": {
@@ -1211,7 +1237,7 @@
             }
           ]
         },
-        "2087": {
+        "2088": {
           "type": "label",
           "name": "wocRow06",
           "properties": {
@@ -1237,7 +1263,7 @@
             }
           ]
         },
-        "2088": {
+        "2089": {
           "type": "label",
           "name": "wocRow07",
           "properties": {
@@ -1263,7 +1289,7 @@
             }
           ]
         },
-        "2089": {
+        "2090": {
           "type": "label",
           "name": "wocRow08",
           "properties": {
@@ -1289,7 +1315,7 @@
             }
           ]
         },
-        "2090": {
+        "2091": {
           "type": "label",
           "name": "wocRow09",
           "properties": {
@@ -1315,7 +1341,7 @@
             }
           ]
         },
-        "2091": {
+        "2092": {
           "type": "label",
           "name": "wocRow10",
           "properties": {
@@ -1341,7 +1367,7 @@
             }
           ]
         },
-        "2092": {
+        "2093": {
           "type": "label",
           "name": "wocRow11",
           "properties": {
@@ -1367,7 +1393,7 @@
             }
           ]
         },
-        "2093": {
+        "2094": {
           "type": "label",
           "name": "wocRow12",
           "properties": {
@@ -1393,7 +1419,7 @@
             }
           ]
         },
-        "2094": {
+        "2095": {
           "type": "label",
           "name": "wocRow13",
           "properties": {
@@ -1419,7 +1445,7 @@
             }
           ]
         },
-        "2095": {
+        "2096": {
           "type": "label",
           "name": "wocRow14",
           "properties": {
@@ -1445,7 +1471,7 @@
             }
           ]
         },
-        "2096": {
+        "2097": {
           "type": "label",
           "name": "wocRow15",
           "properties": {
@@ -1471,7 +1497,7 @@
             }
           ]
         },
-        "2097": {
+        "2098": {
           "type": "label",
           "name": "wocRow16",
           "properties": {
@@ -1497,7 +1523,7 @@
             }
           ]
         },
-        "2098": {
+        "2099": {
           "type": "label",
           "name": "wocRow17",
           "properties": {
@@ -1523,7 +1549,7 @@
             }
           ]
         },
-        "2099": {
+        "2100": {
           "type": "label",
           "name": "wocRow18",
           "properties": {
@@ -1549,7 +1575,7 @@
             }
           ]
         },
-        "2100": {
+        "2101": {
           "type": "label",
           "name": "wocRow19",
           "properties": {
@@ -1575,7 +1601,7 @@
             }
           ]
         },
-        "2101": {
+        "2102": {
           "type": "label",
           "name": "wocRow20",
           "properties": {
@@ -1601,7 +1627,7 @@
             }
           ]
         },
-        "2102": {
+        "2103": {
           "type": "label",
           "name": "wocRow21",
           "properties": {
@@ -1627,7 +1653,7 @@
             }
           ]
         },
-        "2103": {
+        "2104": {
           "type": "label",
           "name": "wocRow22",
           "properties": {
@@ -1653,7 +1679,7 @@
             }
           ]
         },
-        "2104": {
+        "2105": {
           "type": "label",
           "name": "wocRow23",
           "properties": {
@@ -1679,7 +1705,7 @@
             }
           ]
         },
-        "2105": {
+        "2106": {
           "type": "label",
           "name": "wocRow24",
           "properties": {
@@ -1705,7 +1731,7 @@
             }
           ]
         },
-        "2106": {
+        "2107": {
           "type": "label",
           "name": "wocRow25",
           "properties": {
@@ -1731,7 +1757,7 @@
             }
           ]
         },
-        "2107": {
+        "2108": {
           "type": "label",
           "name": "wocRow26",
           "properties": {
@@ -1757,7 +1783,7 @@
             }
           ]
         },
-        "2108": {
+        "2109": {
           "type": "label",
           "name": "wocRow27",
           "properties": {
@@ -1783,7 +1809,7 @@
             }
           ]
         },
-        "2109": {
+        "2110": {
           "type": "label",
           "name": "wocRow28",
           "properties": {
@@ -1809,7 +1835,7 @@
             }
           ]
         },
-        "2110": {
+        "2111": {
           "type": "label",
           "name": "wocRow29",
           "properties": {
@@ -1835,7 +1861,7 @@
             }
           ]
         },
-        "2111": {
+        "2112": {
           "type": "label",
           "name": "wocRow30",
           "properties": {
@@ -1873,7 +1899,7 @@
       "type": "state",
       "name": "ST_WOC_Display",
       "components": {
-        "2008": {
+        "2009": {
           "type": "title",
           "name": "title8",
           "properties": {
@@ -1891,7 +1917,7 @@
             }
           ]
         },
-        "2009": {
+        "2010": {
           "type": "label",
           "name": "displayStatus",
           "properties": {
@@ -1917,7 +1943,7 @@
             }
           ]
         },
-        "2010": {
+        "2011": {
           "type": "button",
           "name": "wocDisplayHud",
           "properties": {
@@ -1943,7 +1969,7 @@
             }
           ]
         },
-        "2011": {
+        "2012": {
           "type": "button",
           "name": "wocDisplayCluster",
           "properties": {
@@ -1969,7 +1995,7 @@
             }
           ]
         },
-        "2012": {
+        "2013": {
           "type": "button",
           "name": "wocStartupPage",
           "properties": {
@@ -1995,7 +2021,7 @@
             }
           ]
         },
-        "2013": {
+        "2014": {
           "type": "label",
           "name": "displayHint",
           "properties": {
@@ -2033,7 +2059,7 @@
       "type": "state",
       "name": "ST_WOC_Presets",
       "components": {
-        "2028": {
+        "2029": {
           "type": "title",
           "name": "title9",
           "properties": {
@@ -2051,7 +2077,7 @@
             }
           ]
         },
-        "2029": {
+        "2030": {
           "type": "label",
           "name": "presetStatus",
           "properties": {
@@ -2077,7 +2103,7 @@
             }
           ]
         },
-        "2030": {
+        "2031": {
           "type": "button",
           "name": "wocPresetCompact",
           "properties": {
@@ -2103,7 +2129,7 @@
             }
           ]
         },
-        "2031": {
+        "2032": {
           "type": "button",
           "name": "wocPresetBalanced",
           "properties": {
@@ -2129,7 +2155,7 @@
             }
           ]
         },
-        "2032": {
+        "2033": {
           "type": "button",
           "name": "wocPresetLarge",
           "properties": {
@@ -2155,7 +2181,7 @@
             }
           ]
         },
-        "2033": {
+        "2034": {
           "type": "label",
           "name": "presetNotice",
           "properties": {
@@ -2193,7 +2219,7 @@
       "type": "state",
       "name": "ST_WOC_Horizontal",
       "components": {
-        "2041": {
+        "2042": {
           "type": "title",
           "name": "title10",
           "properties": {
@@ -2211,7 +2237,7 @@
             }
           ]
         },
-        "2042": {
+        "2043": {
           "type": "label",
           "name": "horizontalStatus",
           "properties": {
@@ -2237,7 +2263,7 @@
             }
           ]
         },
-        "2043": {
+        "2044": {
           "type": "button",
           "name": "wocHudLeft",
           "properties": {
@@ -2263,7 +2289,7 @@
             }
           ]
         },
-        "2044": {
+        "2045": {
           "type": "button",
           "name": "wocHudRight",
           "properties": {
@@ -2289,7 +2315,7 @@
             }
           ]
         },
-        "2045": {
+        "2046": {
           "type": "label",
           "name": "horizontalHint",
           "properties": {
@@ -2327,7 +2353,7 @@
       "type": "state",
       "name": "ST_WOC_Vertical",
       "components": {
-        "2046": {
+        "2047": {
           "type": "title",
           "name": "title11",
           "properties": {
@@ -2345,7 +2371,7 @@
             }
           ]
         },
-        "2047": {
+        "2048": {
           "type": "label",
           "name": "verticalStatus",
           "properties": {
@@ -2371,7 +2397,7 @@
             }
           ]
         },
-        "2048": {
+        "2049": {
           "type": "button",
           "name": "wocHudUp",
           "properties": {
@@ -2397,7 +2423,7 @@
             }
           ]
         },
-        "2049": {
+        "2050": {
           "type": "button",
           "name": "wocHudDown",
           "properties": {
@@ -2423,7 +2449,7 @@
             }
           ]
         },
-        "2050": {
+        "2051": {
           "type": "label",
           "name": "verticalHint",
           "properties": {
@@ -2461,7 +2487,7 @@
       "type": "state",
       "name": "ST_WOC_Appearance",
       "components": {
-        "2051": {
+        "2052": {
           "type": "title",
           "name": "title12",
           "properties": {
@@ -2479,7 +2505,7 @@
             }
           ]
         },
-        "2052": {
+        "2053": {
           "type": "label",
           "name": "appearanceStatus",
           "properties": {
@@ -2505,7 +2531,7 @@
             }
           ]
         },
-        "2053": {
+        "2054": {
           "type": "button",
           "name": "wocOriginalColors",
           "properties": {
@@ -2531,7 +2557,7 @@
             }
           ]
         },
-        "2054": {
+        "2055": {
           "type": "button",
           "name": "wocClearBackground",
           "properties": {
@@ -2557,7 +2583,7 @@
             }
           ]
         },
-        "2055": {
+        "2056": {
           "type": "button",
           "name": "wocCorners",
           "properties": {
@@ -2583,7 +2609,7 @@
             }
           ]
         },
-        "2056": {
+        "2057": {
           "type": "label",
           "name": "appearanceNotice",
           "properties": {
@@ -2621,7 +2647,7 @@
       "type": "state",
       "name": "ST_WOC_Troubleshoot",
       "components": {
-        "2065": {
+        "2066": {
           "type": "title",
           "name": "title13",
           "properties": {
@@ -2639,7 +2665,7 @@
             }
           ]
         },
-        "2066": {
+        "2067": {
           "type": "label",
           "name": "missingHint1",
           "properties": {
@@ -2665,7 +2691,7 @@
             }
           ]
         },
-        "2067": {
+        "2068": {
           "type": "label",
           "name": "missingHint2",
           "properties": {
@@ -2691,7 +2717,7 @@
             }
           ]
         },
-        "2068": {
+        "2069": {
           "type": "label",
           "name": "missingHint3",
           "properties": {
@@ -2717,7 +2743,7 @@
             }
           ]
         },
-        "2069": {
+        "2070": {
           "type": "button",
           "name": "wocMissingCapture",
           "properties": {
@@ -2743,7 +2769,7 @@
             }
           ]
         },
-        "2070": {
+        "2071": {
           "type": "label",
           "name": "missingHint4",
           "properties": {
@@ -2781,7 +2807,7 @@
       "type": "state",
       "name": "ST_WOC_Startup",
       "components": {
-        "2014": {
+        "2015": {
           "type": "title",
           "name": "title14",
           "properties": {
@@ -2799,7 +2825,7 @@
             }
           ]
         },
-        "2015": {
+        "2016": {
           "type": "label",
           "name": "startupStatus",
           "properties": {
@@ -2825,7 +2851,7 @@
             }
           ]
         },
-        "2016": {
+        "2017": {
           "type": "button",
           "name": "wocStartupOn",
           "properties": {
@@ -2851,7 +2877,7 @@
             }
           ]
         },
-        "2017": {
+        "2018": {
           "type": "button",
           "name": "wocStartupOff",
           "properties": {
@@ -2877,7 +2903,7 @@
             }
           ]
         },
-        "2018": {
+        "2019": {
           "type": "label",
           "name": "startupHint",
           "properties": {
@@ -2903,7 +2929,7 @@
             }
           ]
         },
-        "2019": {
+        "2020": {
           "type": "label",
           "name": "startupLimit",
           "properties": {
@@ -2929,7 +2955,7 @@
             }
           ]
         },
-        "2020": {
+        "2021": {
           "type": "label",
           "name": "startupResult",
           "properties": {
@@ -2960,6 +2986,654 @@
         "ParentState": {
           "value": 8,
           "type": "UInt"
+        }
+      }
+    },
+    "20": {
+      "type": "state",
+      "name": "ST_WOC_Design",
+      "components": {
+        "2113": {
+          "type": "title",
+          "name": "title20",
+          "properties": {
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "CarPlay HUD",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2114": {
+          "type": "button",
+          "name": "designProxy0",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2115": {
+          "type": "button",
+          "name": "designProxy1",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2116": {
+          "type": "button",
+          "name": "designProxy2",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2117": {
+          "type": "button",
+          "name": "designProxy3",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2118": {
+          "type": "button",
+          "name": "designProxy4",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2119": {
+          "type": "button",
+          "name": "designProxy5",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2120": {
+          "type": "button",
+          "name": "designProxy6",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2121": {
+          "type": "button",
+          "name": "designProxy7",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2122": {
+          "type": "button",
+          "name": "designProxy8",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2123": {
+          "type": "button",
+          "name": "designProxy9",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2124": {
+          "type": "button",
+          "name": "designProxy10",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2125": {
+          "type": "button",
+          "name": "designProxy11",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2126": {
+          "type": "button",
+          "name": "designProxy12",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2127": {
+          "type": "button",
+          "name": "designProxy13",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2128": {
+          "type": "button",
+          "name": "designProxy14",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2129": {
+          "type": "button",
+          "name": "designProxy15",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2130": {
+          "type": "button",
+          "name": "designProxy16",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2131": {
+          "type": "button",
+          "name": "designProxy17",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2132": {
+          "type": "button",
+          "name": "designProxy18",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2133": {
+          "type": "button",
+          "name": "designProxy19",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2134": {
+          "type": "button",
+          "name": "designProxy20",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2135": {
+          "type": "button",
+          "name": "designProxy21",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2136": {
+          "type": "button",
+          "name": "designProxy22",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
+        },
+        "2137": {
+          "type": "button",
+          "name": "designProxy23",
+          "properties": {
+            "Enabled": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Visible": {
+              "value": 1,
+              "type": "UInt"
+            },
+            "Focusable": {
+              "value": 3,
+              "type": "UInt"
+            }
+          },
+          "rows": [
+            {
+              "Text": {
+                "value": "Settings",
+                "type": "Text"
+              }
+            }
+          ]
         }
       }
     }

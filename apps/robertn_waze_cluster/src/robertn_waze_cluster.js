@@ -9,6 +9,7 @@ const logging = require('oap-sdk/src/logging/logging');
 const { MAX_LINES } = require('./waze_cluster_control.js');
 const { SettingsControl } = require('./settings_control.js');
 const { ProfileSync } = require('./profile_sync.js');
+const { HudScreen, HOST, PROXIES } = require('./hud_screen.js');
 
 const logger = logging.getSDKLogger();
 
@@ -39,7 +40,7 @@ const PAGES = { wocSizePage: 'ST_WOC_Size', wocPositionPage: 'ST_WOC_Position',
     wocDisplayPage: 'ST_WOC_Display', wocPresetsPage: 'ST_WOC_Presets',
     wocHorizontalPage: 'ST_WOC_Horizontal', wocVerticalPage: 'ST_WOC_Vertical',
     wocStartupPage: 'ST_WOC_Startup', wocAppearancePage: 'ST_WOC_Appearance', wocTroubleshootPage: 'ST_WOC_Troubleshoot' };
-const EXTRA = ['wocQuickStartup','startupStatus','startupResult','wocStartupOn','wocStartupOff','sizeStatus', 'sizeNotice', 'positionStatus', 'positionNotice',
+const EXTRA = ['wocModern','wocQuickStartup','startupStatus','startupResult','wocStartupOn','wocStartupOff','sizeStatus', 'sizeNotice', 'positionStatus', 'positionNotice',
     'supportStatus', 'setupStatus', 'setupHint', 'captureHint', 'wocSizeStandard',
     'displayStatus', 'displayHint', 'wocDisplayHud', 'wocDisplayCluster',
     'presetStatus', 'presetNotice', 'wocPresetCompact', 'wocPresetBalanced', 'wocPresetLarge',
@@ -75,6 +76,20 @@ class WazeClusterApp extends OnlineApp {
             this._scheduleLists();
         });
         this._control.on('log', () => this._scheduleLists());
+        this._modern = false;
+        this._entryUuid = null;
+        this._uiChange = Promise.resolve();
+        this._design = new HudScreen({control:this._control,log:logger,
+            classic:()=>this._useModern(false),
+            proxies:items=>{
+                for(let i=0;i<PROXIES;i++){
+                    const name='designProxy'+i,item=items[i];
+                    this._write(name,item?item.label:'');
+                    this._setVisibleComp(name,!!item);
+                    this._setEnabled(name,!!(item&&item.enabled));
+                }
+            }});
+        this._design.on('mode',ready=>this._useModern(ready));
         /* the display choice per driver profile, page shown or not */
         this._profiles = new ProfileSync({ control: this._control, log: logger });
         this._profiles.start();
@@ -102,6 +117,7 @@ class WazeClusterApp extends OnlineApp {
         const foregroundStart = this._startedForeground();
         return this._setupRhmi()
             .then(() => this._registerEntryPoints())
+            .then(() => this._design.connect())
             .then(() => {
                 // A foreground start declares itself ACTIVE before initialized()
                 // reports the first app status, so the manager keeps it running.
@@ -138,13 +154,26 @@ class WazeClusterApp extends OnlineApp {
         }
         const names = [STATUS_NAME, SETUP_NAME, DISPLAY_NAME, HUD_SIZE_NAME, HUD_SMALLER_NAME]
             .concat(Object.values(HUD_MOVE_NAMES), [HUD_CENTRE_NAME, ENABLE_NAME, DISABLE_NAME, RESTART_NAME, CAPTURE_NAME, CAPTURE_STATUS])
-            .concat(ROW_NAMES, Object.keys(PAGES), EXTRA);
+            .concat(ROW_NAMES, Object.keys(PAGES), EXTRA, Array.from({length:PROXIES},(_,i)=>'designProxy'+i));
         names.forEach((name) => { this._components[name] = rhmi.getByName(name); });
         const missing = names.filter((name) => !this._components[name]);
         if (missing.length) {
             return Promise.reject(new Error(`uiDescription lacks ${missing.join(', ')}`));
         }
         Object.keys(PAGES).forEach(name => this._bind(name, () => this._openPage(PAGES[name])));
+        this._bind('wocModern', () => this._useModern(true));
+        for(let i=0;i<PROXIES;i++){
+            const name='designProxy'+i;
+            this._bind(name,()=>this._design.proxyPress(i));
+            this._components[name].on('focus',e=>this._design.proxyFocus(i,isTrue(e&&e.value)));
+        }
+        const designHost=rhmi.getByName(HOST);
+        designHost.on('visible',e=>{
+            const on=isTrue(e&&e.visible);
+            if(on){this._sawForeground=true;this._setVisible(true);}
+            this._design.hostVisible(on&&this._modern);
+        });
+        designHost.on('focus',e=>this._design.hostFocus(isTrue(e&&e.focus)));
         this._bind(DISPLAY_NAME, () => this._control.cycleDisplay());
         this._bind('wocQuickStartup', () => this._control.patchStatus && this._control.patchStatus.startup_mode === 'dashboard' ?
             this._control.setStartup('off') : this._control.startHudAutomatically());
@@ -197,7 +226,7 @@ class WazeClusterApp extends OnlineApp {
             this._render();
             this._renderLists();
         });
-        const states = [this._state].concat(Object.values(PAGES).map(name => rhmi.getByName(name)));
+        const states = [this._state,designHost].concat(Object.values(PAGES).map(name => rhmi.getByName(name)));
         if (states.some(state => !state)) return Promise.reject(new Error('missing settings page'));
         states.forEach(state => state.on('visible', event => {
             if (isTrue(event && event.visible)) {
@@ -210,6 +239,26 @@ class WazeClusterApp extends OnlineApp {
             this._render();
             this._renderLists();
         });
+    }
+
+    _useModern(wanted) {
+        const on=!!wanted&&this._design.ready;
+        if(!this._entryUuid)return Promise.resolve();
+        this._uiChange=this._uiChange.catch(()=>{}).then(()=>{
+            if(this._modern===on)return;
+            this._modern=on;
+            this._design.hostVisible(false);
+            const state=this.rhmiApplication.getByName(on?HOST:STATE_NAME);
+            return Promise.resolve(this.rhmiApplication.mapEntryState(this._entryUuid,state))
+                .then(()=>this._visible?this.rhmiApplication.openEntryState(this._entryUuid):undefined);
+        }).catch(err=>{
+            logger.warn(`modern settings: ${err&&err.message}`);
+            this._modern=false;this._design.hostVisible(false);
+            return Promise.resolve(this.rhmiApplication.mapEntryState(this._entryUuid,this._state))
+                .then(()=>this._visible?this.rhmiApplication.openEntryState(this._entryUuid):undefined)
+                .catch(e=>logger.warn('Classic settings restore: '+e.message));
+        });
+        this._render();return this._uiChange;
     }
 
     _openPage(name) {
@@ -261,6 +310,7 @@ class WazeClusterApp extends OnlineApp {
             return Promise.reject(new Error('no entry point handed over by the manager'));
         }
         const description = ours.getDescription();
+        this._entryUuid=description.uuid;
         return ours.init()
             .then(() => this.rhmiApplication.mapEntryState(description.uuid, this._state))
             .then(() => Promise.resolve()
@@ -287,6 +337,7 @@ class WazeClusterApp extends OnlineApp {
             return;
         }
         this._visible = visible;
+        if(!visible)this._design.hostVisible(false);
         logger.info(`page ${visible ? 'visible' : 'hidden'}`);
         this._reportVisibilityStatus(visible);
         if (visible) {
@@ -341,6 +392,9 @@ class WazeClusterApp extends OnlineApp {
         if (!this._state || this._shutdownPromise) {
             return;
         }
+        this._setEnabled('wocModern',this._design.ready);
+        this._write('wocModern',this._design.ready?'Open modern settings':'Modern settings: MGU Renderer unavailable');
+        if(this._design)this._design.render();
         Object.keys(PAGES).forEach(name => this._setEnabled(name, true));
         this._setEnabled('wocMissingCapture', true);
         const c = this._control;
@@ -458,6 +512,7 @@ class WazeClusterApp extends OnlineApp {
         }
         logger.info(`robertn_waze_cluster shutdown: ${JSON.stringify(reason)}`);
         clearTimeout(this._listTimer);
+        this._design.close();
         this._control.close();
         this._profiles.stop();
         this._shutdownPromise = Promise.resolve()
