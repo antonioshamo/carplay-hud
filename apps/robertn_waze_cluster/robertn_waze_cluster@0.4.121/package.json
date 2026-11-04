@@ -1,7 +1,7 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.120",
-  "description": "CarPlay HUD and Cluster Studio: visual drag editor, 100 design combinations, personal layouts, vehicle widgets and a guarded parked full-cluster test",
+  "version": "0.4.121",
+  "description": "CarPlay HUD installation recovery: BMW-style HUD settings and Cluster Studio editor; live vehicle experiments require compatible telemetry",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {

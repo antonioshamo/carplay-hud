@@ -1,3 +1,9 @@
+## 0.4.121
+
+- Installation recovery: restore the 0.4.116 SOME/IP manifest. Remove the four firmware-specific Cluster Studio telemetry proxies that can cause BMW generateSomeipInterfaces to reject the entire app.
+- Retain HUD controls, visual editor, saved layouts and all existing safety gates. Vehicle-data-dependent experiments remain unavailable without verified live telemetry; no simulated Park or speed fallback.
+- Add a release regression check for the compatible manifest contract. Physical reinstallation still needs confirmation on the affected car.
+
 ## 0.4.120
 
 Adds 10/30/60-second parked full-cluster tests with renewed renderer leases, a read-only lighting/media feature scan, and paired local-phone clip relay with center-screen movie view and cluster/HUD placement. Experimental 640x360 up to 15 fps; no native social apps, web browser, Prime Video integration, lighting setters or road-ready full-cluster replacement. Requires Cluster Studio 0.1.3.

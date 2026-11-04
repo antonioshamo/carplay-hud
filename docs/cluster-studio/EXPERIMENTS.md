@@ -1,6 +1,8 @@
+**0.4.121 installation recovery:** The app manifest now uses the pre-Studio (0.4.116) interface contract after a vehicle rejected 0.4.120 at `generateSomeipInterfaces`. Optional vehicle-data proxies no longer block installation. HUD controls and the editor remain; live-data-dependent Studio tests (including parked clips and feature scan) stay unavailable until compatible telemetry is verified. This is an installation hotfix, not a claim those experiments work on this car.
+
 # Full cluster, lighting and parked media experiments
 
-CarPlay HUD **0.4.120**, Cluster Studio **0.1.3**. No physical BMW validation was available for this build. Update both **Installed** entries in MGU Store using `antonioshamo/carplay-hud`. The map tool remains 0.7.114. This release does not change the CarPlay route-free startup trial.
+CarPlay HUD **0.4.121**, Cluster Studio **0.1.3**. No physical BMW validation was available for this build. Update both **Installed** entries in MGU Store using `antonioshamo/carplay-hud`. The map tool remains 0.7.114. This release does not change the CarPlay route-free startup trial.
 
 ## Full-cluster test
 
