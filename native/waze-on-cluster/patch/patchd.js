@@ -130,6 +130,7 @@ var REBOOT_CMD = (process.env.WOC_REBOOT_CMD || 'systemctl reboot').split(' ');
  * (Cluster, HUD, both) is saved there as the render's "target". */
 var LOCAL_CONF = process.env.WOC_LOCAL_CONF || '/var/opt/waze-on-cluster/waze-on-cluster.local.conf';
 /* one or the other: the cluster or the HUD */
+var DEFAULTS_MARKER = path.join(path.dirname(LOCAL_CONF), 'bmw-defaults');
 var DISPLAY_TARGETS = ['map', 'hud'];
 /* The display choice and HUD map size per driver profile (the app reports the
  * head unit's current user account): { "<account>": { target, hud_width_pct } }.
@@ -397,15 +398,19 @@ function readState(cb) {
         if (pending) { state = 'unknown'; mode = null; reason = pending.reason; carplay = 'deferred'; }
         cachedState = { state: state, panel: variant ? variant[1].toLowerCase() : null, mode: mode, res: res, safe: safe, reason: reason, carplay: carplay,
                         pending: pending ? pending.action || 'apply' : null, pendingBy: pending ? pending.by : null,
-                        conflict: conflict, binary: binary, known: known, backup: hasBackup };
+                        conflict: conflict, binary: binary, originalAll:/variant:\s+ORIGINAL/.test(text)&&sinkOriginal&&/selfstart:\s+ORIGINAL/.test(text)&&resOriginal, known: known, backup: hasBackup };
         cb(cachedState);
     });
 }
+
+function freshState(cb) { if(statusInFlight){setTimeout(function(){freshState(cb);},50);return;}readState(cb); }
 
 function status(extra) {
     readState(function (st) {
         var msg = { ev: 'status', state: busy ? 'busy' : st.state, panel: st.panel, mode: st.mode, res: st.res, safe: st.safe };
         msg.hud_style = true;
+        msg.restore_defaults = true;
+        msg.bmw_defaults = fs.existsSync(DEFAULTS_MARKER);
         msg.startup_trial = true;
         msg.startup_mode = startup.readMode();
         msg.startup_state = startup.readStatus(Date.now());
@@ -1101,6 +1106,9 @@ function handle(line, sock) {
         return;
     }
     if (msg.cmd === 'startup-mode') {
+        if (msg.mode !== 'off' && fs.existsSync(DEFAULTS_MARKER)) {
+            sock.write(JSON.stringify({ev:'startup-mode-reply',ok:false,reason:'Enable map first to leave BMW defaults'})+'\n');return;
+        }
         var startupError = null;
         try { startup.saveMode(msg.mode); } catch (e) { startupError = e; }
         try { sock.write(JSON.stringify({ev:'startup-mode-reply',ok:!startupError,
@@ -1179,7 +1187,43 @@ function handle(line, sock) {
         return;
     }
 
-    if (busy || resyncing || quitting || rebooting) { send({ ev: 'status', state: 'busy', reason: quitting ? 'patchd is stopping' : rebooting ? 'a restart is in progress' : 'another operation is running' }); return; }
+    if (busy || resyncing || quitting || rebooting) { if(msg.cmd==='restore-defaults') {try{sock.write(JSON.stringify({ev:'restore-defaults-reply',ok:false,reason:'Another operation is running; retry'})+'\n');}catch(e){}} send({ ev: 'status', state: 'busy', reason: quitting ? 'patchd is stopping' : rebooting ? 'a restart is in progress' : 'another operation is running' }); return; }
+
+    if (msg.cmd === 'restore-defaults') {
+        busy = true;
+        function reply(ok, reason, pending) {
+            busy = false;
+            try { sock.write(JSON.stringify({ev:'restore-defaults-reply',ok:ok,reason:reason,pending:pending||null})+'\n'); } catch(e) {}
+            status();quitWhenIdle();
+        }
+        // Persist suppression BEFORE touching firmware. The native map renderer
+        // polls this marker, including after reboot and tool updates.
+        try {
+            fs.writeFileSync(DEFAULTS_MARKER+'.tmp','off\n',{mode:420});
+            var fd=fs.openSync(DEFAULTS_MARKER+'.tmp','r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+            fs.renameSync(DEFAULTS_MARKER+'.tmp',DEFAULTS_MARKER);
+            fd=fs.openSync(path.dirname(DEFAULTS_MARKER),'r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+            startup.saveMode('off');
+        } catch(e) { reply(false,'Could not persist defaults: '+e.message);return; }
+        captureCommand('stop', function () {});
+        freshState(function(before) {
+        if(before.state==='original'&&before.originalAll&&!before.pending){reply(true,'BMW map patch already original');return;}
+        lock.acquire(5000,function(got) {
+            if(!got){reply(false,'Restore busy; retry');return;}
+            revert(false,false,function(pErr,roErr) {
+                lock.release();
+                if(pErr||roErr){reply(false,[pErr&&pErr.message,roErr&&roErr.message].filter(Boolean).join('; '));return;}
+                freshState(function(st) {
+                    const pending=st.pending==='revert'||st.carplay==='deferred';
+                    reply((st.state==='original'&&st.originalAll)||pending,
+                        pending?'BMW patch restore saved; restart head unit required':st.state==='original'?'BMW map patch restored':'Original patch state was not verified',
+                        pending?'revert':null);
+                });
+            });
+        });
+        });
+        return;
+    }
 
     if (msg.cmd === 'apply' || msg.cmd === 'revert') {
         var op = msg.cmd;
@@ -1202,6 +1246,7 @@ function handle(line, sock) {
                     log(op + ' failed: ' + reason);
                     send({ ev: 'status', state: 'error', reason: reason });
                 } else {
+                    if (op === 'apply') { try { fs.unlinkSync(DEFAULTS_MARKER); } catch(e) { if(e.code!=='ENOENT')log('Could not leave BMW defaults: '+e.message); } }
                     log(op + ' done' + (activation === 'restarted' ? '' : activation === 'deferred' ? ' (' + PENDING_REASON[op] + ')' : ' (no change)'));
                     status(activation ? { carplay: activation } : {});
                 }
@@ -1264,6 +1309,7 @@ function ensureDir(dir) {
  * patch of ours, a pending one too, and drops our backup, so a later install
  * starts from the original as a fresh one does. */
 function plan(which, st) {
+    if(which==='activate'&&fs.existsSync(DEFAULTS_MARKER))return {why:'BMW defaults active; use Enable map to resume custom maps'};
     if (st.pending && which === 'activate' && !(st.pending === 'revert' && st.pendingBy === 'removal')) {
         return { why: 'a change already waits for the next head-unit start' };
     }

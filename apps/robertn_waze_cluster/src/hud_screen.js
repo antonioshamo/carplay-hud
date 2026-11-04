@@ -18,7 +18,7 @@ class HudScreen extends EventEmitter {
   this.gpu.on('closed',()=>{this.suspended=true;this.hide();this.emit('mode',false);});
   this.gpu.on('touch',(p,x,y)=>this._touch(p,x,y));
   this.gpu.on('ccu',e=>this._ccu(e));
-  this.gpu.on('tick',()=>{if(this.dirty||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<3000))this.render();});
+  this.gpu.on('tick',()=>{if(this.dirty||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
   this.timer=setInterval(()=>{if(this.active)this.render();},1000);
   if(this.timer.unref)this.timer.unref();
  }
@@ -87,6 +87,7 @@ class HudScreen extends EventEmitter {
    case 'square':c.setHudStyle('hud_round_corners',false);break;
    case 'enable':c.enableMap();break;
    case 'disable':c.disableMap();break;
+   case 'restore-defaults':this.studio.open();c.restoreDefaults(this.studio.client);break;
    case 'capture':c.capture();break;
    case 'restart':c.requestRestart();break;
    case 'classic':this.host.classic();return true;

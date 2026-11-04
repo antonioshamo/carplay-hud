@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+'use strict';
+const M=require('./studio_model.js'),A=require('./studio_assets.js'),{Canvas}=require('./kit_canvas.js'),kit=require('./kit_record.js');
+const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>1-Math.pow(1-clamp(x),3);
+let badge=null,shine=[];
+function badgeFrame(n,color){
+ if(!badge){const source=A.badge(),cv=new Canvas(768,Math.round(768*source.h/source.w));cv.image(source,0,0,cv.w,cv.h);badge=kit.makeImage(cv.w,cv.h,cv.d);}
+ if(n<0)return badge;
+ const key=n+':'+color;if(shine[key])return shine[key];
+ const pixels=Buffer.from(badge.data),rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
+ for(let y=0;y<badge.h;y++)for(let x=0;x<badge.w;x++){const i=(y*badge.w+x)*4,k=Math.max(0,1-Math.abs(x/badge.w-y/badge.h*.12-(n/11*1.4-.2))/.11)*.85;for(let c=0;c<3;c++)pixels[i+c]+=Math.round((rgb[c]-pixels[i+c])*k);}
+ return shine[key]=kit.makeImage(badge.w,badge.h,pixels);
+}
+// Rasterize the native vector outline as one mask. Shared interior edges must
+// not be anti-aliased independently (that would leave triangulation seams).
+function appleMask(){
+ const w=256,h=292,ss=4,coverage=new Uint8Array(w*h);
+ for(let y=0;y<h*ss;y++)for(const poly of A.apple){
+  const yy=(y+.5)/(h*ss),xs=[];
+  for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];if((a[1]>yy)!==(b[1]>yy))xs.push(a[0]+(yy-a[1])*(b[0]-a[0])/(b[1]-a[1]));}
+  xs.sort((a,b)=>a-b);
+  for(let i=0;i+1<xs.length;i+=2)for(let x=Math.max(0,Math.ceil(xs[i]*w*ss-.5));x<Math.min(w*ss,xs[i+1]*w*ss-.5);x++)coverage[Math.floor(y/ss)*w+Math.floor(x/ss)]++;
+ }
+ const data=Buffer.alloc(w*h*4);for(let i=0;i<coverage.length;i++){data[i*4]=data[i*4+1]=data[i*4+2]=255;data[i*4+3]=Math.round(coverage[i]*255/(ss*ss));}
+ return kit.makeImage(w,h,data);
+}
+const apple=appleMask();
+function duration(d){return d.intro==='none'?0:d.introDuration||3000;}
+function timeline(d,ms){
+ const total=duration(d),p=total?clamp(ms/total):1,appleMode=d.intro==='apple';
+ return {total,p,done:!total||ms>=total,entrance:ease(p/(appleMode?.1:.24)),slide:ease((p-.28)/.12),shine:clamp((p-.24)/.42),fade:clamp((p-.80)/.12),reveal:clamp((p-.94)/.06)};
+}
+function intro(r,d,b,ms){
+ const a=timeline(d,ms);if(a.done)return false;
+ r.fillRect(b.x,b.y,b.w,b.h,'#000000');
+ const color=d.introLight==='blue'?'#75cfff':d.introLight==='red'?'#ff697e':d.introLight==='theme'?M.THEMES[d.theme][1]:'#ffffff';
+ if(d.intro==='apple'){
+  const h=b.h*.42,w=h*14/16,x=b.x+b.w*.5-w/2-a.slide*b.w*.22,y=b.y+b.h*.28;
+  r.image(apple,x,y,w,h);
+  if(a.slide>.01)r.text('CarPlay Ultra',b.x+b.w*.41,b.y+b.h*.57,b.h*.125,[255,255,255,Math.round(a.slide*255)],{font:'label'});
+ }else if(d.intro==='welcome'){
+  const x=b.x+(1-a.entrance)*b.w*.12;
+  r.text('Welcome',x+b.w*.35,b.y+b.h*.38,b.h*.10,color,{font:'label'});
+  r.text('Antonio Shamo',x+b.w*.215,b.y+b.h*.62,b.h*.15,'#ffffff',{font:'bold'});
+  r.fillRect(b.x+b.w*.35,b.y+b.h*.72,b.w*.30*a.entrance,b.h*.006,color);
+ }else {
+  const img=badgeFrame(d.introShine&&a.p>.24&&a.p<.72?Math.round(a.shine*11):-1,color),w=b.w*.85,h=w*img.h/img.w;
+  const x=b.x+(b.w-w)/2+(d.intro==='reveal'?0:(1-a.entrance)*b.w*.82),y=b.y+(b.h-h)/2;
+  if(d.intro==='reveal'&&a.entrance<1){const k=.65+.35*a.entrance;r.image(img,x+w*(1-k)/2,y+h*(1-k)/2,w*k,h*k);}
+  else r.image(img,x,y,w,h);
+ }
+ if(a.fade>0)r.fillRect(b.x,b.y,b.w,b.h,[0,0,0,Math.round(a.fade*255)]);
+ return true;
+}
+module.exports={intro,duration,timeline};

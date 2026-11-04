@@ -73,6 +73,12 @@ function ok(name, cond) {
 
 (async function () {
     for (var t = 0; t < 5000 && !fs.existsSync(SOCK); t += 50) await sleep(50);
+    var st=await ask({cmd:'restore-defaults'});
+    ok('restore without a readable binary reports failure, never success',!st.ok);
+    ok('restore persists suppression even when firmware restoration fails',fs.existsSync(path.join(dir,'bmw-defaults')));
+    var blocked=await ask({cmd:'startup-mode',mode:'dashboard'});
+    ok('defaults mode blocks startup reactivation',!blocked.ok);
+    fs.unlinkSync(path.join(dir,'bmw-defaults'));
     var startupFile=path.join(dir,'startup-mode');
     var r=await ask({cmd:'startup-mode',mode:'dashboard'});
     ok('startup dashboard preference saved without navigation or firmware changes',r.ok && fs.readFileSync(startupFile,'utf8')==='dashboard\n');

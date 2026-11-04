@@ -1,4 +1,4 @@
-# Cluster Studio 0.1.0 / CarPlay HUD 0.4.117
+# Cluster Studio 0.1.1 / CarPlay HUD 0.4.118
 
 A full-cluster visual designer for Antonio's X4 M Competition, integrated into
 **CarPlay HUD → Overview → Cluster Studio**. Install the Cluster Studio tool
@@ -9,24 +9,46 @@ code with sample readings; they are not photographs of a running car.
 
 ## What you can customize
 
-- 100 preset combinations: ten layouts × ten palettes. Includes **Ultra inspired**,
+- 100 preset combinations: ten layouts × ten palettes. Includes **Ultra / blue rings**,
   M Competition, Grand touring, Minimal, Panorama, Driver focus, Technical,
   Night drive, Symmetry and Track paddock. These are not 100 independent features.
 - Twelve movable elements: speed, RPM, gear, clock, date, X4 M Competition badge,
   checkered flag, coolant, oil temperature, M-color stripes, signature and data status.
 - Touch dragging; dial-accessible select/left/right/up/down controls; size, visibility,
   stacking, 1% snapping, and 30-step undo. Every widget stays within the canvas.
-- Three gauge treatments, ten palettes, three backgrounds, widget cards, mph/km/h,
+- Four gauge treatments, ten palettes, three backgrounds, widget cards, mph/km/h,
   12/24-hour time and five signature choices.
 - Five personal templates saved on the head unit. Loading a template makes a draft;
   **Apply center layout** or **Save** is explicit. Save confirmations come from the helper.
-- A three-second X4 M Competition/checkered flag welcome, with slide/reveal/static
-  choices. It requires a fresh vehicle-ready state and speed 0 / gear P, runs in the
-  center area, and works without leaving the settings app open. It is opt-in; a
-  vehicle that does not expose the required fields will not trigger it. It is not a
-  replacement for the earliest firmware boot logo.
+- Startup options: **X4 M fly-in**, **X4 M reveal**, **Apple logo → CarPlay Ultra**,
+  **Welcome Antonio Shamo**, and **None**. Choose 3 / 4.5 / 5.5 / 7 seconds,
+  badge shine on/off, white/blue/red/theme lighting, and startup on/off.
+  The Apple sequence defaults to 5.5 seconds: logo hold, slide left, title hold,
+  fade through black, then the selected gauges. The X4 M default is 3 seconds.
+  Controls that do not apply to the selected animation are disabled.
+- The app previews the entire sequence and finishes on the current gauge design.
+  Template changes preserve the welcome choice. Old saved designs migrate without
+  losing widget positions. Save the welcome choice explicitly.
+- Automatic welcome remains an opt-in **vehicle-ready/parked** trigger in the center
+  area. Actual ignition timing awaits the combined vehicle session. It is not an
+  earliest-firmware boot logo replacement. The full-panel sequence can be tried in
+  the guarded ten-second parked test; it is not a persistent driving mode.
+- **Help & setup → Restore BMW defaults** stops Studio layouts and welcomes,
+  disables Dashboard startup, suppresses custom CarPlay drawings persistently, and
+  restores the map patch's original regions. It waits for both helpers and the native
+  map shutdown acknowledgment. Partial failures and required restarts are shown.
+  Saved designs are retained. Custom software remains installed: this is not an
+  uninstall, a factory reset of unrelated settings, or a guarantee of undetectability.
+  Defaults suppression survives tool updates; **Enable map** is an explicit way to
+  resume custom maps. Studio layouts/welcomes must be explicitly enabled again.
 
-![Welcome](previews/intro.png)
+![X4 M welcome](previews/intro.png)
+
+![Apple welcome](previews/apple.png)
+
+![Personal welcome](previews/welcome.png)
+
+Animation previews generated from the actual drawing code: [X4 M](previews/welcome-slide.gif), [Apple → CarPlay Ultra](previews/welcome-apple.gif), [Welcome Antonio](previews/welcome-welcome.gif).
 
 ## Actual output modes
 
@@ -73,7 +95,7 @@ VehicleCondition.VehicleCondition, CDS.statusEngineSpeed2 and
 CDS.statusEngineTemperature. No setters or diagnostic service calls are used.
 The first physical test must confirm these definitions/instance IDs on this head unit.
 
-**Ultra inspired** is a local visual template. It does not install Apple's CarPlay
+**Ultra / blue rings** follows the blue-ring arrangement in [Apple’s Aston Martin reference](https://www.apple.com/newsroom/2025/05/carplay-ultra-the-next-generation-of-carplay-begins-rolling-out-today/). It is a local visual recreation, not a one-to-one reproduction of unavailable media, fuel, ADAS or warning data. It does not install Apple's CarPlay
 Ultra, obtain new iPhone streams, or implement Apple's automaker integration.
 Apple describes that separate integration in its
 [CarPlay architecture presentation](https://developer.apple.com/videos/play/wwdc2024/10111/).
@@ -94,3 +116,9 @@ the tool version whenever those shared sources change. Bundles include GPL, MIT,
 MPL and Inter font license texts. No proprietary SDK or vehicle data is published.
 
 Local and CI validation is distinct from physical installation and in-car validation.
+
+## One combined vehicle session
+
+See [VEHICLE-SESSION.md](VEHICLE-SESSION.md) for all deferred checks, including
+interior lighting and parked YouTube / TikTok / Instagram playback. No fake lighting
+setters or video-playback buttons are included in this release.

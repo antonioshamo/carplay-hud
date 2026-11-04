@@ -8,8 +8,24 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn){for(let i=0;i<100;i++){if(fn())return;await wait(10);}throw Error('timeout');}
 (async()=>{
  const all=[];for(let i=0;i<100;i++){const d=M.validate(M.preset(i));all.push(JSON.stringify(d));const cv=new Canvas(480,180);D.draw(cv,d,{x:0,y:0,w:480,h:180},{now:new Date(0)});assert(cv.d.some(v=>v>0));}assert.equal(new Set(all).size,100);
+ const I=require('../src/studio_intro.js'),kit=require('../src/kit_record.js');
+ const b={x:0,y:0,w:480,h:180},data={now:new Date(0),speed:0,rpm:750,gear:'P'};
+ for(const mode of ['slide','reveal','apple','welcome','none']){
+  const d=M.preset(11);d.intro=mode;d.introDuration=mode==='apple'?5500:3000;
+  for(const phase of [0,.15,.35,.60,.90,.93,.97,1]){
+   const cv=new Canvas(480,180);D.sequence(cv,d,b,data,phase*d.introDuration);
+   const rec=new kit.Recorder(480,180);D.sequence(rec,d,b,data,phase*d.introDuration);const soft=new Canvas(480,180);kit.play(rec.words(),soft);
+   assert(cv.d.some(v=>v>0));assert(soft.d.some(v=>v>0),'GPU frame can be replayed');
+   if(phase===.93&&mode!=='none')for(let i=0;i<cv.d.length;i+=4)assert.equal(cv.d[i]+cv.d[i+1]+cv.d[i+2],0,'black transition frame');
+   if(phase===1||mode==='none'){const expected=new Canvas(480,180);D.draw(expected,d,b,data);assert.deepEqual(cv.d,expected.d,'finishes on chosen gauges');}
+  }
+  assert(I.timeline(d,d.introDuration).done);
+ }
+ const legacy=M.preset(3);delete legacy.introDuration;delete legacy.introShine;delete legacy.introLight;assert.equal(M.validate(legacy).introDuration,3000);
+ for(const [k,v] of [['introDuration',999999],['introLight','anything'],['introShine','yes']]){const bad=M.preset(0);bad[k]=v;assert.throws(()=>M.validate(bad));}
+ console.log('ok every welcome on software and GPU paths, black transition, chosen-layout handoff and old saved-design migration');
  const client=new EventEmitter();client.status=null;client.connect=()=>{};client.close=()=>{};
- const s=new StudioScreen(()=>{},{client});s.page='edit';const w=s.widget(),x=V.BOX.x+(w.x+w.w/2)*V.BOX.w,y=V.BOX.y+(w.y+w.h/2)*V.BOX.h,oldx=w.x;
+ const s=new StudioScreen(()=>{},{client});s.design.intro='apple';s.design.introDuration=5500;s.press('next');assert.equal(s.design.intro,'apple');assert.equal(s.design.introDuration,5500);s.design=M.preset(0);s.history=[];s.page='edit';const w=s.widget(),x=V.BOX.x+(w.x+w.w/2)*V.BOX.w,y=V.BOX.y+(w.y+w.h/2)*V.BOX.h,oldx=w.x;
  s.touch('down',x,y);s.touch('move',x+100,y+30);s.touch('up',x+100,y+30);assert(s.widget().x>oldx);assert.equal(s.history.length,1);M.validate(s.design);s.press('undo');assert.equal(s.widget().x,oldx);
  s.touch('down',x,y);s.touch('move',-9999,9999);s.touch('up',-9999,9999);M.validate(s.design);assert.equal(s.widget().x,0);
  for(let i=0;i<100;i++)s.press('larger');M.validate(s.design);

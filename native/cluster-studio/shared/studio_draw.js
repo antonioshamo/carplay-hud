@@ -6,13 +6,22 @@ function draw(r,d,b,data,options){
  const rect=(x,y,w,h,c,rad)=>r.roundRect(b.x+x*sx,b.y+y*sy,w*sx,h*sy,(rad||0)*scale,c);
  const text=(s,x,y,size,c)=>r.text(String(s),b.x+x*sx,b.y+y*sy,size*scale,c||'#f3f5ff',{font:'bold'});
  const line=(x,y,xx,yy,n,c)=>r.line(b.x+x*sx,b.y+y*sy,b.x+xx*sx,b.y+yy*sy,n*scale,c);
- if(d.background==='gradient')r.gradientRect(b.x,b.y,b.w,b.h,[[0,t[3]],[.7,'#060a11'],[1,'#020408']]);
+ if(d.gauge==='ultra'&&d.background==='gradient')r.gradientRect(b.x,b.y,b.w,b.h,[[0,'#062c3a'],[.7,'#07151b'],[1,'#000000']]);
+ else if(d.background==='gradient')r.gradientRect(b.x,b.y,b.w,b.h,[[0,t[3]],[.7,'#060a11'],[1,'#020408']]);
  else if(d.background==='black')r.fillRect(b.x,b.y,b.w,b.h,'#030507');
  function flag(x,y,w,h){const cell=Math.min(w/8,h/4);for(let row=0;row<4;row++)for(let col=0;col<8;col++)if((row+col)%2===0)rect(x+col*cell,y+row*cell,cell*.9,cell*.9,'#f2f6ff');}
  const now=data.now||new Date(),time=d.clock24?String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'):(now.getHours()%12||12)+':'+String(now.getMinutes()).padStart(2,'0')+' '+(now.getHours()<12?'AM':'PM');
  const gauge=(w,val,max,label,unit)=>{
   const x=w.x*1920,y=w.y*720,ww=w.w*1920,hh=w.h*720,n=val==null?'—':String(Math.round(val));
-  if(d.gauge==='ring'){
+  if(d.gauge==='ultra'){
+   const rad=Math.min(ww/2-10,hh/2-10),cx=x+ww/2,cy=y+hh/2,col=d.theme===0?'#08b5db':t[1];
+   r.arc(b.x+cx*sx,b.y+cy*sy,(rad-20)*scale,rad*scale,222,498,'#103c49');
+   if(val!=null)r.arc(b.x+cx*sx,b.y+cy*sy,(rad-20)*scale,rad*scale,222,222+276*M.clamp(val/max,0,1),col);
+   const value=w.type==='rpm'?(data.gear==null?'—':data.gear):n,unitText=w.type==='rpm'?(val==null?'RPM unavailable':Math.round(val)+' RPM'):unit;
+   text(value,cx-value.length*34,cy+34,120,'#ffffff');text(unitText,cx-unitText.length*9,cy+78,29,'#d1dde1');
+   r.arc(b.x+cx*sx,b.y+cy*sy,(rad-4)*scale,rad*scale,145,215,col);
+   if(w.type==='rpm')text(data.coolant==null?'— °C':Math.round(data.coolant)+' °C',cx-44,cy+rad-34,28,'#ffffff');
+  }else if(d.gauge==='ring'){
    const rad=Math.min(ww/2-12,hh/2-8),cx=x+ww/2,cy=y+hh/2;
    r.arc(b.x+cx*sx,b.y+cy*sy,(rad-11)*scale,rad*scale,220,500,'#253247');
    if(val!=null)r.arc(b.x+cx*sx,b.y+cy*sy,(rad-11)*scale,rad*scale,220,220+280*M.clamp(val/max,0,1),t[1]);
@@ -41,13 +50,14 @@ function draw(r,d,b,data,options){
  }
  if(o.grid){for(let i=1;i<10;i++){r.line(b.x+b.w*i/10,b.y,b.x+b.w*i/10,b.y+b.h,.5,'#253347');r.line(b.x,b.y+b.h*i/10,b.x+b.w,b.y+b.h*i/10,.5,'#253347');}}
 }
-function intro(r,d,b,progress){
- const p=M.clamp(progress,0,1),t=M.THEMES[d.theme],offset=d.intro==='slide'?Math.pow(1-Math.min(1,p*4),3)*b.w*.7:0;
- const x=b.x+offset,y=b.y,w=b.w,h=b.h;
- r.roundRect(x+w*.07,y+h*.13,w*.86,h*.74,18,'#0b1421');
- r.text('X4 M',x+w*.20,y+h*.48,h*.29,t[1],{font:'bold'});
- r.text('C O M P E T I T I O N',x+w*.20,y+h*.68,h*.067,'#eef4ff',{font:'bold'});
- const cw=w*.022;for(let a=0;a<4;a++)for(let z=0;z<7;z++)if((a+z)%2===0)r.fillRect(x+w*.65+z*cw,y+h*.32+a*cw,cw*.9,cw*.9,'#f0f5ff');
- ['#53bdeb','#3457aa','#e5475b'].forEach((c,i)=>r.fillRect(x+w*(.2+i*.12),y+h*.77,w*.11*Math.min(1,p*3),h*.016,c));
+const I=require('./studio_intro.js');
+function intro(r,d,b,progress){return I.intro(r,d,b,progress*I.duration(d));}
+function sequence(r,d,b,data,elapsed){
+ if(r.clip)r.clip(b.x,b.y,b.w,b.h);
+ const a=I.timeline(d,elapsed);
+ draw(r,d,b,data);
+ if(!a.done&&a.reveal===0)I.intro(r,d,b,elapsed);
+ else if(!a.done)r.fillRect(b.x,b.y,b.w,b.h,[0,0,0,Math.round((1-a.reveal)*255)]);
+ if(r.noclip)r.noclip();
 }
-module.exports={draw,intro};
+module.exports={draw,intro,sequence};

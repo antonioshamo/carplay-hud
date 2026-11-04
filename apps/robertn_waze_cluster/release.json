@@ -1,9 +1,9 @@
 {
   "build": "node tools/build.js",
   "requires": {
-    "waze-on-cluster": "0.7.113",
+    "waze-on-cluster": "0.7.114",
     "mgu-render": "0.6.11",
-    "cluster-studio": "0.1.0"
+    "cluster-studio": "0.1.1"
   },
   "uninstallable": true,
   "mguHmi": [

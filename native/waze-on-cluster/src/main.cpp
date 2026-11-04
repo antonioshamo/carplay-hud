@@ -1,3 +1,4 @@
+#include "defaults_mode.h"
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Robert Nisipeanu
 /* waze-on-cluster: decode the captured CarPlay 2nd-screen H.264 (the Waze/Maps
@@ -71,9 +72,9 @@ const char *const kIgnoredKeys[] = {"tex_format",         "upload",          "di
 volatile sig_atomic_t g_stop;
 void on_signal(int) { g_stop = 1; }
 
-std::string status_line(const FeedStatus &s)
+std::string status_line(const FeedStatus &s, bool defaults)
 {
-    return "{\"ev\":\"status\",\"state\":" + json_escape(s.state) + ",\"target\":" + json_escape(s.target) +
+    return std::string("{\"ev\":\"status\",\"bmw_defaults\":") + (defaults ? "true" : "false") + ",\"state\":" + json_escape(s.state) + ",\"target\":" + json_escape(s.target) +
            ",\"page\":" + json_escape(s.page) + ",\"reason\":" + json_escape(s.reason) +
            ",\"upload_cap_kb_per_s\":" + std::to_string(s.upload_cap_kb) +
            ",\"upload_reason\":" + json_escape(s.upload_reason) +
@@ -339,11 +340,12 @@ int serve(const Config &cfg)
         }
         const bool live = liveness.live(alt_state, producer.last_frame_ms(), now);
         producer.set_live(live);
-        feed.set_stream(live, producer.frozen(now));
+        const bool defaults = bmw_defaults_active(cfg.str("defaults_marker").c_str());
+        feed.set_stream(live && !defaults, producer.frozen(now));
         feed.poll(now);
         producer.retry_sources(now);
         const FeedStatus fs = feed.status(producer.decode_status(), producer.stream_reason(resync));
-        const std::string status = status_line(fs);
+        const std::string status = status_line(fs, defaults);
         /* The frame rate changes the status every second; the log keeps
          * to its state, reason and target, so the app's last lines are not
          * all status. */
@@ -511,6 +513,7 @@ void define_keys(Config *cfg)
     cfg->define("hud_scale_down", "1");
     cfg->define("hud_round_corners", "1");
     cfg->define("hud_black_background", "1");
+    cfg->define("defaults_marker", "/var/opt/waze-on-cluster/bmw-defaults");
     cfg->define("render_socket", "/dev/shm/cluster-render/render.sock");
     cfg->define("log_file", "/var/opt/waze-on-cluster/log/waze-on-cluster.log");
     cfg->define("log_file_kb", "512");

@@ -53,6 +53,8 @@ all: test
 
 # ---- host tests (no unit libraries) ---------------------------------------
 test: test-cpp
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) test/defaults_mode_test.cpp -o $(BUILD)/defaults-mode-test
+	$(BUILD)/defaults-mode-test
 	$(NODE) startup/test/controller.test.js
 	$(NODE) startup/test/service.test.js
 	$(NODE) patch/test/locate_test.js
@@ -61,6 +63,7 @@ test: test-cpp
 	$(NODE) patch/test/patchd_activate_test.js
 	$(NODE) patch/test/patchd_resync_test.js
 	$(NODE) patch/test/patchd_target_test.js
+	$(NODE) patch/test/restore_defaults_test.js
 	$(NODE) patch/test/patchd_profile_test.js
 	$(NODE) patch/test/patchd_dlt_test.js
 	$(NODE) patch/test/dlt_capture_test.js
