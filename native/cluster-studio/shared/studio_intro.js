@@ -41,8 +41,8 @@ function intro(r,d,b,ms){
   if(a.slide>.01)r.text('CarPlay Ultra',b.x+b.w*.41,b.y+b.h*.57,b.h*.125,[255,255,255,Math.round(a.slide*255)],{font:'label'});
  }else if(d.intro==='welcome'){
   const x=b.x+(1-a.entrance)*b.w*.12;
-  r.text('Welcome',x+b.w*.35,b.y+b.h*.38,b.h*.10,color,{font:'label'});
-  r.text('Antonio Shamo',x+b.w*.215,b.y+b.h*.62,b.h*.15,'#ffffff',{font:'bold'});
+  r.text('Welcome',x+b.w*.5,b.y+b.h*.38,b.h*.10,color,{font:'label',align:'center'});
+  r.text('Antonio Shamo',x+b.w*.5,b.y+b.h*.62,b.h*.15,'#ffffff',{font:'bold',align:'center'});
   r.fillRect(b.x+b.w*.35,b.y+b.h*.72,b.w*.30*a.entrance,b.h*.006,color);
  }else {
   const sweep=d.introShine&&a.p>.24&&a.p<.72?a.shine*11:-1,lo=sweep<0?-1:Math.floor(sweep),img=badgeFrame(lo,color),next=sweep>=0&&lo<11?badgeFrame(lo+1,color):null,w=b.w*.85,h=w*img.h/img.w;

@@ -58,7 +58,7 @@ function create(cr,target,w,h,d,elapsed){
  const color=d.introLight==='blue'?'#75cfff':d.introLight==='red'?'#ff697e':d.introLight==='theme'?M.THEMES[d.theme][1]:'#ffffff';
  const tw=1024,th=Math.round(tw*h/w),title=new Canvas(tw,th);title.clear([0,0,0,0]);
  if(mode===2)title.text('CarPlay Ultra',tw*.41,th*.57,th*.125,'#ffffff',{font:'label'});
- if(mode===3){title.text('Welcome',tw*.35,th*.38,th*.10,color,{font:'label'});title.text('Antonio Shamo',tw*.215,th*.62,th*.15,'#ffffff',{font:'bold'});title.fillRect(tw*.35,th*.72,tw*.30,th*.006,color);}
+ if(mode===3){title.text('Welcome',tw*.5,th*.38,th*.10,color,{font:'label',align:'center'});title.text('Antonio Shamo',tw*.5,th*.62,th*.15,'#ffffff',{font:'bold',align:'center'});title.fillRect(tw*.35,th*.72,tw*.30,th*.006,color);}
  const picture=mode<2?artwork.badge:mode===2?artwork.apple:{w:tw,h:th,data:title.d};
  function upload(img){const ref=cr.asset({target,format:'rgba8',w:img.w,h:img.h,sampling:'bilinear'});assets.push(ref);cr.pixels(ref,null,Buffer.from(img.data||img.d));return ref;}
  const art=upload(picture),label=mode===2?upload({w:tw,h:th,data:title.d}):art;
