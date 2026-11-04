@@ -21,10 +21,10 @@ jobs:
       - name: Import the reviewed source commit
         run: |
           if [ -f release-import.bundle ]; then
-            echo 'e2835b29884eb4150cc3e7c5ef8382046adc7620903b37162898a254895ff106  release-import.bundle' | sha256sum -c -
+            echo 'd9a5a9dee9d3c19a8c6223aaaa1d01e5f9b2d82f5f89528df5eacd57fac88335  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
             git fetch ./release-import.bundle refs/heads/shamo/hud-settings-research:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '7f815bedbf7e95e2f57218b23484eca2ca620778'
+            test "$(git rev-parse refs/remotes/import/release)" = '8b1cdae2d612c3ac600fd86703151706c7f091a2'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
@@ -32,7 +32,7 @@ jobs:
             git commit -m 'Remove source transport bundle after verified import'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 7f815bedbf7e95e2f57218b23484eca2ca620778 HEAD
+          git merge-base --is-ancestor 8b1cdae2d612c3ac600fd86703151706c7f091a2 HEAD
       - run: make -C native/cluster-render test
       - run: make -C native/cluster-render test-x86 target
       - run: make -C native/waze-on-cluster test
