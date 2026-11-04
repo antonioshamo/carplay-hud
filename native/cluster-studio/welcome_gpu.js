@@ -70,9 +70,9 @@ function create(cr,target,w,h,d,elapsed){
  cr.uniform(ref,'u_motion',[a.entrance,a.slide,a.shine,a.fade]);cr.uniform(ref,'u_reveal',[a.reveal]);
  cr.animate(ref,{property:'uniform',name:'u_motion',keys:keys.motion,interp:'linear',loop:false});
  cr.animate(ref,{property:'uniform',name:'u_reveal',keys:keys.reveal,interp:'linear',loop:false});
- cr.animate(ref,{property:'translate',keys:'0:0,0,0 '+remaining+':0,0,0 '+(remaining+1)+':0,1200,0',interp:'step',loop:false});
+ const expiry=cr.animate(ref,{property:'translate',keys:'0:0,0,0 '+remaining+':0,0,0 '+(remaining+1)+':0,1200,0',interp:'step',loop:false});
  cr.set(ref,{visible:true});
- return {ref,assets};
+ return {ref,assets,expiry};
 }
 function drop(cr,layer){if(!layer)return;cr.drop(layer.ref);layer.assets.forEach(a=>cr.drop(a));}
 module.exports={create,drop,keyframes,FS};

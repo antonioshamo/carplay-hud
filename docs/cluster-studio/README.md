@@ -1,4 +1,4 @@
-# Cluster Studio 0.1.2 / CarPlay HUD 0.4.119
+# Cluster Studio 0.1.3 / CarPlay HUD 0.4.120
 
 A full-cluster visual designer for Antonio's X4 M Competition, integrated into
 **CarPlay HUD → Overview → Cluster Studio**. Install the Cluster Studio tool
@@ -32,7 +32,7 @@ code with sample readings; they are not photographs of a running car.
 - Automatic welcome remains an opt-in **vehicle-ready/parked** trigger in the center
   area. Actual ignition timing awaits the combined vehicle session. It is not an
   earliest-firmware boot logo replacement. The full-panel sequence can be tried in
-  the guarded ten-second parked test; it is not a persistent driving mode.
+  the guarded 10/30/60-second parked test; it is not a persistent driving mode.
 - **Help & setup → Restore BMW defaults** stops Studio layouts and welcomes,
   disables Dashboard startup, suppresses custom CarPlay drawings persistently, and
   restores the map patch's original regions. It waits for both helpers and the native
@@ -76,13 +76,13 @@ historical artifacts; they do not represent the revised motion quality.
 |---|---|
 | App design preview | Entire 1920 × 720 layout, sample readings, touch/dial editing. |
 | Use center layout | Layout scaled into the 1088 × 480 center area **under** factory gauges. Persists across service starts. Can replace/cover the center map; transparent background is available. HUD uses a different target. |
-| Full-cluster test | A manual, maximum 10-second drawing over the entire cluster. Fresh speed below 0.1 km/h and gear P are required. Unknown or active HUD blocks it. Stops when movement, non-P or stale data is observed. Not enabled at boot or saved as a driving mode. |
+| Full-cluster test | A manual, 10, 30 or 60-second drawing over the entire cluster. Fresh speed below 0.1 km/h and gear P are required. Unknown or active HUD blocks it. Stops when movement, non-P or stale data is observed. Not enabled at boot or saved as a driving mode. |
 | Restore standard map area | Removes Studio's output and disables the Studio welcome. Existing CarPlay tool settings remain independent. |
 
 The helper never sends sample readings to the car. Missing/invalid/stale vehicle
 values display a dash; no inferred gear, simulated fuel, warning icons or guessed
 speed. Freshness is two seconds. Full-screen tests additionally carry a renderer-side
-expiry animation, so a blocked helper cannot indefinitely leave that test visible.
+1.5-second expiry lease renewed every 500 ms while the test is allowed, so a blocked helper cannot indefinitely leave that test visible.
 This is not a safety-certified instrument display or a verified replacement for BMW's gauges.
 
 ## Deep-dive findings
@@ -140,5 +140,4 @@ Local and CI validation is distinct from physical installation and in-car valida
 ## One combined vehicle session
 
 See [VEHICLE-SESSION.md](VEHICLE-SESSION.md) for all deferred checks, including
-interior lighting and parked YouTube / TikTok / Instagram playback. No fake lighting
-setters or video-playback buttons are included in this release.
+interior lighting, browser compatibility and parked YouTube / TikTok / Instagram / Prime Video playback. This release adds an actual phone-decoded clip test and a lighting capability scan, not native social apps or lighting setters. See [EXPERIMENTS.md](EXPERIMENTS.md) for setup, supported video links, movie view, limits and research sources.

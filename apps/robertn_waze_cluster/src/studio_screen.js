@@ -2,7 +2,7 @@
 'use strict';
 const M=require('./studio_model.js'),V=require('./studio_view.js'),I=require('./studio_intro.js'),{StudioClient}=require('./studio_client.js');
 class StudioScreen {
- constructor(refresh,options){this.refresh=refresh;this.client=options&&options.client||new StudioClient();this.design=M.preset(0);this.page='gallery';this.selected='speed';this.dirty=false;this.history=[];this.notice='';this.drag=null;this.animationAt=0;this.loaded=false;this.client.on('change',()=>{if(!this.loaded&&this.client.status){if(!this.dirty)this.design=M.clone(this.client.status.design);this.loaded=true;}this.refresh();});}
+ constructor(refresh,options){this.refresh=refresh;this.client=options&&options.client||new StudioClient();this.design=M.preset(0);this.page='gallery';this.testSeconds=30;this.mediaTarget='center';this.videoSupported=false;this.selected='speed';this.dirty=false;this.history=[];this.notice='';this.drag=null;this.animationAt=0;this.loaded=false;this.client.on('change',()=>{if(!this.loaded&&this.client.status){if(!this.dirty)this.design=M.clone(this.client.status.design);this.loaded=true;}this.refresh();});}
  open(){this.client.connect();}
  widget(){return this.design.widgets.find(w=>w.type===this.selected);}
  checkpoint(){this.history.push(M.clone(this.design));if(this.history.length>30)this.history.shift();this.dirty=true;this.notice='Draft — use My designs to save';}
@@ -10,15 +10,19 @@ class StudioScreen {
  frame(focus,scale){return V.frame(this,focus,scale);}
  press(id){
   if(id==='exit')return false;
+  if(id==='video-full'){this.videoFull=!this.videoFull;return true;}
   if(id.indexOf('page:')===0){this.page=id.slice(5);this.drag=null;return true;}
   if(id==='edit'){this.page='edit';return true;}
   if(id==='play'){I.prepare(this.design);this.animationAt=Date.now();return true;}
   if(id==='select'){this.selected=M.TYPES[(M.TYPES.indexOf(this.selected)+1)%M.TYPES.length];return true;}
   if(id==='undo'){if(this.history.length){this.design=this.history.pop();this.dirty=true;}return true;}
-  if(['apply','off','save','preview','stop-preview'].includes(id)||id.startsWith('save-slot:')){
-   const extra={design:this.design};let cmd=id;if(id.startsWith('save-slot:')){cmd='slot';extra.slot=Number(id.split(':')[1]);}
+  if(id==='test-length'){this.testSeconds=[10,30,60][([10,30,60].indexOf(this.testSeconds)+1)%3];return true;}
+  if(id==='media-target'){this.mediaTarget=['center','map','panel','hud'][(['center','map','panel','hud'].indexOf(this.mediaTarget)+1)%4];return true;}
+  if(id.startsWith('video:')){const current=this.client.status&&this.client.status.media;if(!current)return true;const r=Object.assign({},current.rect),action=id.slice(6);if(action==='reset')Object.assign(r,{x:.15,y:.15,w:.7,h:.7});else if(action==='size'){const size=r.w>.85?.4:Math.min(1,r.w+.15);r.x=(1-size)/2;r.y=(1-size)/2;r.w=size;r.h=size;}else if(action==='left')r.x=Math.max(0,r.x-.05);else if(action==='right')r.x=Math.min(1-r.w,r.x+.05);else if(action==='up')r.y=Math.max(0,r.y-.05);else if(action==='down')r.y=Math.min(1-r.h,r.y+.05);this.client.send('media-place',{rect:r}).then(()=>this.refresh(),e=>{this.notice=e.message;this.refresh();});return true;}
+  if(['scan','media-start','media-stop','apply','off','save','preview','stop-preview'].includes(id)||id.startsWith('save-slot:')){
+   const extra={design:this.design,seconds:this.testSeconds,target:this.mediaTarget};let cmd=id;if(id.startsWith('save-slot:')){cmd='slot';extra.slot=Number(id.split(':')[1]);}
    this.notice='Waiting for confirmation';const snapshot=JSON.stringify(this.design);
-   this.client.send(cmd,extra).then(()=>{if(cmd==='off')this.design.introEnabled=false;if(['save','apply','slot'].includes(cmd)&&JSON.stringify(this.design)===snapshot)this.dirty=false;this.notice=cmd==='preview'?'Parked test requested — expires in 10 seconds':cmd==='off'?'Custom center layout disabled':cmd==='stop-preview'?'Full-cluster test ended':'Saved in the car';this.refresh();},e=>{this.notice=e.message;this.refresh();});return true;
+   this.client.send(cmd,extra).then(()=>{if(cmd==='off')this.design.introEnabled=false;if(['save','apply','slot'].includes(cmd)&&JSON.stringify(this.design)===snapshot)this.dirty=false;this.notice=cmd==='scan'?'Feature scan complete — details on the phone page':cmd==='media-start'?'Phone video session opened':cmd==='media-stop'?'Video session ended':cmd==='preview'?'Parked test requested — expires in '+this.testSeconds+' seconds':cmd==='off'?'Custom center layout disabled':cmd==='stop-preview'?'Full-cluster test ended':'Saved in the car';this.refresh();},e=>{this.notice=e.message;this.refresh();});return true;
   }
   if(id.startsWith('load:')){const a=this.client.status&&this.client.status.slots[Number(id.split(':')[1])];if(a){this.checkpoint();this.design=M.clone(a);}return true;}
   this.checkpoint();const d=this.design;

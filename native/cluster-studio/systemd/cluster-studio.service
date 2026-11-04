@@ -8,6 +8,7 @@ Group=tm_oap_app
 RuntimeDirectory=cluster-studio
 RuntimeDirectoryMode=0750
 ExecStart=/usr/bin/node /var/opt/cluster-studio/current/service.js
+ExecStopPost=/usr/bin/node /var/opt/cluster-studio/current/media_firewall.js
 Restart=on-failure
 RestartSec=10
 TimeoutStopSec=3

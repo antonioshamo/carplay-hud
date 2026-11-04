@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "robertn_waze_cluster",
-  "version": "0.4.119",
-  "tree": "robertn_waze_cluster@0.4.119",
+  "version": "0.4.120",
+  "tree": "robertn_waze_cluster@0.4.120",
   "modules": [
     "src/robertn_waze_cluster.js",
     "src/waze_cluster_control.js",
@@ -22,7 +22,8 @@
     "src/studio_client.js",
     "src/studio_screen.js",
     "src/studio_intro.js",
-    "src/studio_assets.js"
+    "src/studio_assets.js",
+    "src/qrcodegen.js"
   ],
   "sdk": [
     "oap-sdk/src/core/OnlineApp.js",

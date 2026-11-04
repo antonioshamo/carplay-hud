@@ -2,11 +2,15 @@
 'use strict';
 const kit=require('./kit_record.js'),M=require('./studio_model.js'),D=require('./studio_draw.js'),fonts=require('./kit_fonts.js');
 const BOX={x:274,y:153,w:976,h:366};
-const PAGES=[['gallery','Templates'],['edit','Arrange'],['style','Style'],['intro','Welcome'],['library','My designs'],['output','In the car']];
+const QR=require('./qrcodegen.js'),{videoOp}=require('./mgu_render_client.js');
+const PAGES=[['gallery','Templates'],['edit','Arrange'],['style','Style'],['intro','Welcome'],['library','My designs'],['output','In the car'],['features','Feature scan'],['media','Parked clips']];
+let qrText=null,qrCode=null;
 function items(s){
  const out=[],add=(id,label,x,y,w,h,enabled,selected)=>out.push({id,label,x,y,w,h,enabled:enabled!==false,selected:!!selected});
+ const live=s.client.status&&s.client.status.media;
+ if(s.page==='media'&&s.videoFull&&live&&live.playing&&live.target==='center'&&Date.now()-(s.client.statusAt||0)<2000){add('video-full','Exit full screen',18,476,260,54);add('media-stop','Stop session',1290,476,290,54,!s.client.pending);return out;}
  add('exit','CarPlay HUD',18,24,222,55);
- PAGES.forEach((p,i)=>add('page:'+p[0],p[1],18,112+i*63,222,53,true,s.page===p[0]));
+ PAGES.forEach((p,i)=>add('page:'+p[0],p[1],18,104+i*51,222,44,true,s.page===p[0]));
  const d=s.design,connected=!!s.client.status,busy=!!s.client.pending;
  if(s.page==='gallery'){
   add('previous','Previous',274,427,170,62);add('next','Next',458,427,170,62);add('shuffle','Surprise me',642,427,220,62);add('edit','Customize',876,427,374,62);
@@ -25,18 +29,31 @@ function items(s){
   add('title','Signature: '+M.TITLES[d.title],286,427,680,62);
  }else if(s.page==='output'){
   add('apply','Use center layout',1034,139,520,72,connected&&!busy);add('off','Restore standard map area',1034,227,520,72,connected&&!busy);
-  add('preview','10-second full-cluster test',1034,315,520,72,connected&&!busy&&s.client.status.canPreview===true);
-  add('stop-preview','End full-cluster test',1034,403,520,72,connected&&!busy&&s.client.status.panel===true);
+  add('test-length','Test length: '+s.testSeconds+' seconds',1034,315,520,56);
+  add('preview','Start full-cluster test',1034,384,520,56,connected&&!busy&&s.client.status.canPreview===true);
+  add('stop-preview','End full-cluster test',1034,453,520,56,connected&&!busy&&s.client.status.panel===true);
+ }else if(s.page==='features'){
+  add('scan','Scan this car',1050,146,500,65,connected&&!busy&&s.client.status.parked===true);
+  add('page:media','Get report on phone',1050,227,500,65,connected&&!busy);
+ }else if(s.page==='media'){
+  const media=connected&&s.client.status.media;
+  add('media-target','Display: '+({center:'Center screen',map:'Cluster center',panel:'Full cluster',hud:'Head-up display'})[s.mediaTarget],1040,138,524,58,!busy&&!(media&&media.active));
+  add('media-start','Start phone session',1040,209,254,58,connected&&!busy&&s.client.status.parked===true&&!(media&&media.active)&&(s.mediaTarget!=='center'||s.videoSupported));
+  add('media-stop','Stop session',1310,209,254,58,connected&&!busy&&media&&media.active);
+  ['left','up','right','down','size','reset'].forEach((a,i)=>add('video:'+a,{left:'Left',right:'Right',up:'Up',down:'Down',size:'Size',reset:'Center'}[a],1040+(i%3)*178,285+Math.floor(i/3)*65,166,54,connected&&!busy&&media&&media.active&&media.target!=='center'));
+  add('video-full','Full-screen movie view',1040,464,524,54,!!(media&&media.playing&&media.target==='center'&&s.videoSupported));
  }
  return out;
 }
 function frame(s,focus,scale){
  const r=new kit.Recorder(1600,580,{textScale:scale||1}),buttons=items(s),d=s.design,t=M.THEMES[d.theme];
  function text(str,x,y,size,col,max){str=String(str||'');const font=fonts.get('bold',size);while(max&&fonts.measure(font,str)*size/font.size>max&&str.length)str=str.slice(0,-2)+'…';r.text(str,x,y,size,col||'#f0f5ff',{font:'bold'});}
+ const live=s.client.status&&s.client.status.media;
+ if(s.page==='media'&&s.videoFull&&live&&live.playing&&live.target==='center'&&Date.now()-(s.client.statusAt||0)<2000){r.clear('#000000');const op=videoOp(9001,0,0,1600,460,0);r._grow(op.length);r.u.set(op,r.n);r.n+=op.length;buttons.forEach(b=>{r.roundRect(b.x,b.y,b.w,b.h,8,'#183858');text(b.label,b.x+15,b.y+35,23);});return {record:r,items:buttons};}
  r.clear('#060a11');r.gradientRect(252,0,1348,580,[[0,'#172438'],[.7,'#080d17'],[1,'#060a11']]);r.fillRect(0,0,252,580,'#0c131f');
  text('CLUSTER STUDIO',276,51,32,'#f0f5ff');text('X4 M COMPETITION',276,84,17,'#89a1bd');
  r.roundRect(1290,25,280,42,21,'#17283a');text(s.dirty?'Unsaved design':'Personal collection',1310,53,19,s.dirty?'#ffcc87':'#93c5e9',245);
- const subtitle={gallery:'100 curated combinations. Make any of them yours.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',output:'Choose how to use your design.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
+ const subtitle={gallery:'100 curated combinations. Make any of them yours.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',output:'Choose how to use your design.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
  const preview=['gallery','edit','style','intro'].includes(s.page);
  if(preview){
   const b=s.page==='gallery'?{x:274,y:153,w:976,h:256}:BOX;
@@ -53,10 +70,29 @@ function frame(s,focus,scale){
   for(let i=0;i<5;i++){const a=s.client.status&&s.client.status.slots[i];text(a?M.LAYOUTS[a.preset%10]+' / '+M.THEMES[a.theme][0]:'Empty design slot',1384,173+i*70,16,'#a8bbd0',185);}
  }else if(s.page==='output'){
   text('Your design. Three ways to view it.',286,170,27,t[1],710);
-  const rows=[['DESIGN PREVIEW','Edit the whole cluster here with sample values.'],['CENTER LAYOUT','Persistent widgets under the factory gauges.'],['FULL-CLUSTER TEST','Parked, fresh vehicle data, 10 seconds only.'],['HUD COMPATIBILITY','Full-cluster tests cannot run with active HUD.']];
+  const rows=[['DESIGN PREVIEW','Edit the whole cluster here with sample values.'],['CENTER LAYOUT','Persistent widgets under the factory gauges.'],['FULL-CLUSTER TEST','Parked, fresh data, '+s.testSeconds+' second test.'],['HUD COMPATIBILITY','Full-cluster tests cannot run with active HUD.']];
   rows.forEach((a,i)=>{text(a[0],286,225+i*72,17,'#7b9cbc',710);text(a[1],286,254+i*72,22,'#d6e1ef',710);});
   text(s.client.status?s.client.status.testReason:'Install Cluster Studio to check vehicle data.',286,506,19,'#a4c4e4',1250);
   text('A road-ready gauge replacement still needs in-car warning validation.',286,532,18,'#e6ba82',1250);
+ }else if(s.page==='features'){
+  const f=s.client.status&&s.client.status.features;
+  text('Interior lighting & playback',286,173,28,t[1],740);
+  text(f?'Lighting candidates: '+f.lighting+' / media candidates: '+f.media:'Run a scan while parked.',286,218,23,'#d6e1ef',740);
+  (f?f.rows:[]).slice(0,5).forEach((a,i)=>{text(a.name+(a.setter?' · setter declared':''),286,263+i*40,19,'#a4c4e4',740);});
+  text('A candidate is not a verified control. No light settings are changed.',286,491,19,'#e6ba82',1200);
+  text('The phone report includes field types for a supported lighting adapter.',286,523,19,'#a4c4e4',1200);
+ }else if(s.page==='media'){
+  const m=s.client.status&&s.client.status.media,url=m&&m.urls&&m.urls[0],fresh=Date.now()-(s.client.statusAt||0)<2000;
+  r.fillRect(286,145,720,360,'#030609');
+  if(m&&m.target==='center'&&m.playing&&fresh&&s.videoSupported){const op=videoOp(9001,286,145,720,360,0);r._grow(op.length);r.u.set(op,r.n);r.n+=op.length;}
+  else if(url){
+   if(qrText!==url){qrText=url;qrCode=QR.QrCode.encodeText(url,QR.QrCode.Ecc.MEDIUM);}
+   const step=Math.floor(310/(qrCode.size+8)),side=step*(qrCode.size+8),x=310,y=164;r.fillRect(x,y,side,side,'#ffffff');
+   for(let row=0;row<qrCode.size;row++)for(let col=0;col<qrCode.size;col++)if(qrCode.getModule(col,row))r.fillRect(x+(col+4)*step,y+(row+4)*step,step,step,'#000000');
+   text('Scan with your phone',638,222,24,'#d6e1ef',350);text('Same car Wi-Fi network',638,263,20,'#a4c4e4',350);text('Choose a saved video',638,299,20,'#a4c4e4',350);text('Session: '+m.remaining+' seconds',638,349,20,'#a4c4e4',350);
+  }else{ text('Your phone supplies the picture',310,234,25,'#d6e1ef',650);text('Select a display, then Start phone session.',310,279,20,'#a4c4e4',650);text('640 × 360 / up to 15 fps / no car-side audio',310,324,19,'#a4c4e4',650);}
+  text('Native YouTube / TikTok / Instagram apps are not enabled.',1040,440,18,'#e6ba82',530);
+  text(m?m.note:'Install Cluster Studio 0.1.3.',286,533,19,'#a4c4e4',1270);
  }
  buttons.forEach((b,i)=>{r.roundRect(b.x,b.y,b.w,b.h,9,b.selected?'#16436a':'#172335');r.strokeRoundRect(b.x,b.y,b.w,b.h,9,i===focus?3:1,i===focus?'#64c2ff':'#30435d');if(b.selected)r.fillRect(b.x,b.y+11,3,b.h-22,'#62c1ff');text(b.label,b.x+14,b.y+b.h/2+7,b.x<250?21:b.w<160?17:20,b.enabled?'#f1f6ff':'#617590',b.w-26);});
  const status=s.notice||(s.client.status?s.client.status.state:'Install Cluster Studio to save and display layouts');
