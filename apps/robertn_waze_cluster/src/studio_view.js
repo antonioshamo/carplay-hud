@@ -25,8 +25,8 @@ function items(s){
   add('title','Signature: '+M.TITLES[d.title],286,427,680,62);
  }else if(s.page==='output'){
   add('apply','Use center layout',1034,139,520,72,connected&&!busy);add('off','Restore standard map area',1034,227,520,72,connected&&!busy);
-  add('preview','10-second full-cluster test',1034,315,520,72,connected&&!busy&&s.client.status.canPreview);
-  add('stop-preview','End full-cluster test',1034,403,520,72,connected&&!busy&&s.client.status.panel);
+  add('preview','10-second full-cluster test',1034,315,520,72,connected&&!busy&&s.client.status.canPreview===true);
+  add('stop-preview','End full-cluster test',1034,403,520,72,connected&&!busy&&s.client.status.panel===true);
  }
  return out;
 }
