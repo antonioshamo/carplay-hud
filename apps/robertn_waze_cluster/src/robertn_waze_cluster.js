@@ -9,7 +9,8 @@ const logging = require('oap-sdk/src/logging/logging');
 const { MAX_LINES } = require('./waze_cluster_control.js');
 const { SettingsControl } = require('./settings_control.js');
 const { ProfileSync } = require('./profile_sync.js');
-const { HudScreen, HOST, PROXIES } = require('./hud_screen.js');
+// Keep optional graphics out of the native screen's startup path.
+const HOST = 'ST_WOC_Design', PROXIES = 24;
 
 const logger = logging.getSDKLogger();
 
@@ -79,20 +80,12 @@ class WazeClusterApp extends OnlineApp {
         this._modern = false;
         this._entryUuid = null;
         this._uiChange = Promise.resolve();
-        this._design = new HudScreen({control:this._control,log:logger,
-            classic:()=>this._useModern(false),
-            proxies:items=>{
-                for(let i=0;i<PROXIES;i++){
-                    const name='designProxy'+i,item=items[i];
-                    this._write(name,item?item.label:'');
-                    this._setVisibleComp(name,!!item);
-                    this._setEnabled(name,!!(item&&item.enabled));
-                }
-            }});
-        this._design.on('mode',ready=>this._useModern(ready));
-        /* the display choice per driver profile, page shown or not */
-        this._profiles = new ProfileSync({ control: this._control, log: logger });
-        this._profiles.start();
+        this._startupReady = false;
+        this._pendingEntryUuid = null;
+        this._resources = {};
+        this._optionalStarted = false;
+        this._design = { ready:false, render(){}, close(){}, hostVisible(){}, hostFocus(){}, proxyPress(){}, proxyFocus(){} };
+        this._profiles = null;
 
         this.on('initialized', () => {
             this._appInitialized()
@@ -117,7 +110,6 @@ class WazeClusterApp extends OnlineApp {
         const foregroundStart = this._startedForeground();
         return this._setupRhmi()
             .then(() => this._registerEntryPoints())
-            .then(() => this._design.connect())
             .then(() => {
                 // A foreground start declares itself ACTIVE before initialized()
                 // reports the first app status, so the manager keeps it running.
@@ -131,10 +123,57 @@ class WazeClusterApp extends OnlineApp {
                     this._sawForeground = true;
                     this._setVisible(true);
                 }
-                const lastUuid = this.getLastExecutedEntryPointUuid &&
-                    this.getLastExecutedEntryPointUuid();
-                return lastUuid ? this._onEntryPointExecute(lastUuid) : undefined;
+                this._startupReady = true;
+                this._render();
+                this._renderLists();
+                const lastUuid = this._pendingEntryUuid || (this.getLastExecutedEntryPointUuid &&
+                    this.getLastExecutedEntryPointUuid()) || (foregroundStart ? this._entryUuid : null);
+                this._pendingEntryUuid = null;
+                // Some firmware does not replay the launch event after initialization.
+                // Explicitly open the mapped native home before optional graphics.
+                return (lastUuid ? this._onEntryPointExecute(lastUuid) : Promise.resolve())
+                    .then(() => { this._optionalTimer = setImmediate(() => this._startOptional()); });
             });
+    }
+
+    _startOptional() {
+        if (this._shutdownPromise || this._optionalStarted) return;
+        this._optionalStarted = true;
+        try {
+            const { HudScreen } = require('./hud_screen.js');
+            this._design = new HudScreen({control:this._control,log:logger,
+                classic:()=>this._useModern(false),
+                proxies:items=>{
+                    for(let i=0;i<PROXIES;i++){
+                        const name='designProxy'+i,item=items[i];
+                        this._write(name,item?item.label:'');
+                        this._setVisibleComp(name,!!item);
+                        this._setEnabled(name,!!(item&&item.enabled));
+                    }
+                }});
+            this._design.on('mode',ready=>this._useModern(ready));
+            this._design.connect();
+        } catch (err) {
+            logger.warn('Optional graphics unavailable; native HUD controls remain: '+err.message);
+        }
+        try {
+            this._profiles = new ProfileSync({control:this._control,log:logger});
+            this._profiles.start();
+        } catch (err) { logger.warn('Driver profiles unavailable: '+err.message); }
+        this._render();
+    }
+
+    _ensureResources(name) {
+        if (this._resources[name]) return this._resources[name];
+        const state = this.rhmiApplication.getByName(name);
+        if (!state) return Promise.reject(new Error('Missing screen '+name));
+        this._resources[name] = new Promise((resolve,reject) => {
+            const timer = setTimeout(() => reject(new Error('Screen resources timed out: '+name)),4000);
+            Promise.resolve().then(()=>state.updateResources()).then(value=>{
+                clearTimeout(timer);resolve(value);
+            },err=>{clearTimeout(timer);reject(err);});
+        }).catch(err=>{delete this._resources[name];throw err;});
+        return this._resources[name];
     }
 
     _startedForeground() {
@@ -234,7 +273,7 @@ class WazeClusterApp extends OnlineApp {
                 this._setVisible(true);
             }
         }));
-        return Promise.all(states.map(state => state.updateResources())).then(() => {
+        return this._ensureResources(STATE_NAME).then(() => {
             logger.info(`page ready: ${names.length} components found`);
             this._render();
             this._renderLists();
@@ -246,10 +285,10 @@ class WazeClusterApp extends OnlineApp {
         if(!this._entryUuid)return Promise.resolve();
         this._uiChange=this._uiChange.catch(()=>{}).then(()=>{
             if(this._modern===on)return;
-            this._modern=on;
             this._design.hostVisible(false);
             const state=this.rhmiApplication.getByName(on?HOST:STATE_NAME);
-            return Promise.resolve(this.rhmiApplication.mapEntryState(this._entryUuid,state))
+            return this._ensureResources(on?HOST:STATE_NAME)
+                .then(()=>{this._modern=on;this._design.proxyKey=null;return this.rhmiApplication.mapEntryState(this._entryUuid,state);})
                 .then(()=>this._visible?this.rhmiApplication.openEntryState(this._entryUuid):undefined);
         }).catch(err=>{
             logger.warn(`modern settings: ${err&&err.message}`);
@@ -263,7 +302,10 @@ class WazeClusterApp extends OnlineApp {
 
     _openPage(name) {
         this._render();
-        return Promise.resolve().then(() => this.rhmiApplication.openState(name))
+        return this._ensureResources(name).then(() => {
+            this._written={};this._render();this._renderLists();
+            return this.rhmiApplication.openState(name);
+        })
             .catch(err => {
                 logger.warn(`open page ${name}: ${err && err.message}`);
                 this._write(STATUS_NAME, 'Page could not open; HUD and startup switches are on Home');
@@ -311,12 +353,10 @@ class WazeClusterApp extends OnlineApp {
         }
         const description = ours.getDescription();
         this._entryUuid=description.uuid;
+        // The manager already registered the tile's label/icon from application.json.
+        // Redecorating it here can wait forever on older firmware.
         return ours.init()
             .then(() => this.rhmiApplication.mapEntryState(description.uuid, this._state))
-            .then(() => Promise.resolve()
-                .then(() => ours.entryPoint.setText(description.textId))
-                .then(() => (description.icon ? ours.entryPoint.setIcon(description.icon) : undefined))
-                .catch((err) => logger.warn(`entry point text/icon: ${err && err.message}`)))
             .then(() => ours.setAvailability('ENABLED'))
             .then(() => logger.info(`entry point ${description.name} ENABLED`));
     }
@@ -325,9 +365,13 @@ class WazeClusterApp extends OnlineApp {
         if (this._shutdownPromise || !this.rhmiApplication || !uuid) {
             return Promise.resolve();
         }
+        if (!this._startupReady) {
+            this._pendingEntryUuid = uuid;
+            return Promise.resolve();
+        }
         this._sawForeground = true;
         this._setVisible(true);
-        return Promise.resolve(this.rhmiApplication.openEntryState(uuid))
+        return Promise.resolve().then(()=>this.rhmiApplication.openEntryState(uuid))
             .catch((err) => logger.warn(`openEntryState failed: ${err && err.message}`));
     }
 
@@ -363,7 +407,7 @@ class WazeClusterApp extends OnlineApp {
     _write(name, text) {
         if (this._written[name] !== text) {
             this._written[name] = text;
-            Promise.resolve(this._components[name].setValue(0, 'Text', text, 'Text'))
+            Promise.resolve().then(()=>this._components[name].setValue(0, 'Text', text, 'Text'))
                 .catch((err) => logger.warn(`${name} render failed: ${err && err.message}`));
         }
     }
@@ -373,7 +417,7 @@ class WazeClusterApp extends OnlineApp {
         const key = `enabled:${name}`;
         if (this._written[key] !== enabled) {
             this._written[key] = enabled;
-            Promise.resolve(this._components[name].setEnabled(enabled))
+            Promise.resolve().then(()=>this._components[name].setEnabled(enabled))
                 .catch((err) => logger.warn(`${name} enable failed: ${err && err.message}`));
         }
     }
@@ -383,13 +427,13 @@ class WazeClusterApp extends OnlineApp {
         const key = `visible:${name}`;
         if (this._written[key] !== visible) {
             this._written[key] = visible;
-            Promise.resolve(this._components[name].setVisible(visible))
+            Promise.resolve().then(()=>this._components[name].setVisible(visible))
                 .catch((err) => logger.warn(`${name} visibility failed: ${err && err.message}`));
         }
     }
 
     _render() {
-        if (!this._state || this._shutdownPromise) {
+        if (!this._state || !this._initialized || this._shutdownPromise) {
             return;
         }
         this._setEnabled('wocModern',this._design.ready);
@@ -496,7 +540,7 @@ class WazeClusterApp extends OnlineApp {
     }
 
     _renderLists() {
-        if (!this._state || this._shutdownPromise) {
+        if (!this._state || !this._initialized || this._shutdownPromise) {
             return;
         }
         /* Rows are only written, never hidden: on this HMI a row hidden at
@@ -514,7 +558,8 @@ class WazeClusterApp extends OnlineApp {
         clearTimeout(this._listTimer);
         this._design.close();
         this._control.close();
-        this._profiles.stop();
+        clearImmediate(this._optionalTimer);
+        if(this._profiles)this._profiles.stop();
         this._shutdownPromise = Promise.resolve()
             .then(() => this.destroyBundles().catch((err) =>
                 logger.info(`destroyBundles: ${err && err.message}`)))

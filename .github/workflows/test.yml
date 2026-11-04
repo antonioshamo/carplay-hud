@@ -34,6 +34,7 @@ jobs:
       - run: node native/cluster-studio/test/test.js
       - run: node apps/robertn_waze_cluster/tools/test_studio.js
       - run: node apps/robertn_waze_cluster/tools/test_design.js
+      - run: sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
       - run: node apps/robertn_waze_cluster/tools/test_page.js
       - run: node apps/robertn_waze_cluster/tools/test_profiles.js
       - run: node apps/robertn_waze_cluster/tools/test_settings.js
