@@ -24,7 +24,7 @@ class HudScreen extends EventEmitter {
  }
  connect(){this.gpu.connect();}
  _ready(info){
-  this.info=info;
+  this.info=info;this.studio.videoSupported=!!(info&&info.video);
   // A legacy renderer without a foreground gate must never cover BMW screens.
   const b=info&&info.appArea;
   this.ready=!!(info&&info.frontGate&&Array.isArray(info.modes)&&info.modes.indexOf('layer')>=0&&b&&b.w>=800&&b.h>=300);
@@ -48,6 +48,8 @@ class HudScreen extends EventEmitter {
   if(this.gpu.waiting){this.dirty=true;return;}
   try {
    const f=this.page==='studio'?this.studio.frame(this.focus,this.scale):view.frame(view.model(this.host.control),this.page,this.focus,this.logPage,this.scale);
+   const media=this.studio.client.status&&this.studio.client.status.media;const showVideo=this.page==='studio'&&this.studio.page==='media'&&media&&media.target==='center'&&media.playing&&Date.now()-(this.studio.client.statusAt||0)<2000&&this.studio.videoSupported;
+   if(showVideo&&(!this.videoBound||this.videoGeneration!==media.generation)){if(this.videoBound)this.gpu.video(9001,null);this.gpu.video(9001,'/dev/shm/mgu-video-shamo-clips');this.videoBound=true;this.videoGeneration=media.generation;}else if(!showVideo&&this.videoBound){this.gpu.video(9001,null);this.videoBound=false;}
    this.items=f.items;this.focus=Math.max(0,Math.min(this.focus,this.items.length-1));
    const proxyKey=JSON.stringify(this.items.map(b=>[b.id,b.label,!!b.enabled]));
    if(proxyKey!==this.proxyKey){this.host.proxies(this.items);this.proxyKey=proxyKey;}

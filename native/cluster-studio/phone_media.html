@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Parked clips · Cluster Studio</title>
+<style>body{margin:0;background:#080e18;color:#edf4ff;font:17px system-ui;padding:24px;max-width:640px}h1{font-size:29px}p{color:#b9c9df;line-height:1.5}button,label{display:block;border:1px solid #406486;border-radius:12px;padding:16px;margin:14px 0;background:#183858;color:white;font:inherit;width:100%;box-sizing:border-box}input{width:100%;margin-top:10px}video{width:100%;background:black;border-radius:12px}#status{color:#8fd2ff;min-height:3em}.small{font-size:14px}</style>
+<h1>Parked clips</h1><p>Choose a video saved on this phone. Keep this page open while it plays. The picture goes to the display selected in Cluster Studio.</p>
+<label>Choose a saved video<input id="file" type="file" accept="video/*"></label>
+<label>Or a direct HTTPS video link<input id="link" type="url" placeholder="https://example.com/movie.mp4"></label><button id="load">Load video link</button>
+<video id="video" controls playsinline></video>
+<button id="start">Send picture to the car</button><button id="stop">Pause picture and sound</button><div id="status">Pairing…</div>
+<p class="small">Experimental: 640 × 360, up to 15 fps. Sound stays with your phone's selected audio output. Links must point directly to an unprotected video with cross-origin playback allowed. Website pages and Prime Video, YouTube, TikTok or Instagram player links cannot play here. This is not a web browser. Only select videos you are allowed to play.</p>
+<button id="report">Download feature scan</button><p class="small">No videos are saved on the car. The connection is local Wi-Fi and the session ends after five minutes, when you leave Park, or if vehicle data is lost.</p>
+<canvas id="canvas" width="640" height="360" hidden></canvas>
+<script>
+'use strict';
+const token=location.hash.slice(1)||sessionStorage.getItem('clip-token')||'';if(token)sessionStorage.setItem('clip-token',token);history.replaceState(null,'',location.pathname);
+const video=document.getElementById('video'),status=document.getElementById('status'),canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+let sending=false,busy=false,seq=0,url=null;
+const say=s=>{status.textContent=s;};
+async function request(path,body){const r=await fetch(path,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':body?'application/octet-stream':'application/json','X-Sequence':String(++seq)},body:body||'{}',cache:'no-store'});const j=await r.json();if(!r.ok)throw Error(j.message||'Connection failed');return j;}
+function clamp(x){return Math.max(0,Math.min(255,Math.round(x)));}
+function encode(){
+ const w=640,h=360,ySize=w*h,out=new Uint8Array(ySize*1.5),d=ctx.getImageData(0,0,w,h).data;
+ for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2){let rr=0,gg=0,bb=0;
+  for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){const n=(y+dy)*w+x+dx,p=n*4,r=d[p],g=d[p+1],b=d[p+2];out[n]=clamp(16+.257*r+.504*g+.098*b);rr+=r;gg+=g;bb+=b;}
+  const c=(y/2)*(w/2)+x/2;out[ySize+c]=clamp(128+(-.148*rr-.291*gg+.439*bb)/4);out[ySize+ySize/4+c]=clamp(128+(.439*rr-.368*gg-.071*bb)/4);
+ }return out;
+}
+async function frame(){
+ if(!sending||busy||video.paused||video.ended||document.hidden)return;
+ busy=true;try{ctx.fillStyle='black';ctx.fillRect(0,0,640,360);const scale=Math.min(640/video.videoWidth,360/video.videoHeight),w=video.videoWidth*scale,h=video.videoHeight*scale;ctx.drawImage(video,(640-w)/2,(360-h)/2,w,h);await request('/frame',encode());say('Sending picture · use the car app to stop the session');}catch(e){sending=false;video.pause();say(e.message);}finally{busy=false;}
+}
+document.getElementById('file').onchange=e=>{sending=false;video.pause();if(url&&url.startsWith('blob:'))URL.revokeObjectURL(url);const f=e.target.files[0];if(f){video.removeAttribute('crossorigin');url=URL.createObjectURL(f);video.src=url;say('Ready. Tap Send picture to the car.');}request('/pause').catch(()=>{});};
+document.getElementById('load').onclick=()=>{try{const u=new URL(document.getElementById('link').value);if(u.protocol!=='https:'||u.username||u.password)throw Error('Use an HTTPS video link without account credentials.');if(/(^|\.)(primevideo\.com|amazon\.[a-z.]+|youtube\.com|youtu\.be|tiktok\.com|instagram\.com)$/.test(u.hostname))throw Error('This player cannot open that service. Prime Video and social sites require their supported app or browser.');sending=false;video.pause();if(url&&url.startsWith('blob:'))URL.revokeObjectURL(url);video.crossOrigin='anonymous';url=u.href;video.src=url;request('/pause').catch(()=>{});say('Loading direct video. Tap Send picture when ready.');}catch(e){say(e.message);}};
+video.onerror=()=>{sending=false;say('Video could not load. Check its format, network access and cross-origin permission; website/DRM players are unsupported.');};
+document.getElementById('start').onclick=async()=>{if(!url){say('Choose a saved video first.');return;}try{await request('/status');await video.play();sending=true;say('Starting…');}catch(e){say(e.message);}};
+async function pause(){sending=false;video.pause();try{await request('/pause');say('Paused');}catch(e){say(e.message);}}
+document.getElementById('stop').onclick=pause;video.onended=pause;
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+document.getElementById('report').onclick=async()=>{try{const data=await request('/report'),blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='cluster-studio-feature-scan.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}catch(e){say(e.message);}};
+setInterval(frame,70);request('/status').then(()=>say('Paired. Choose a saved video.')).catch(e=>say(e.message));
+</script></html>

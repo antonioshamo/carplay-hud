@@ -9,7 +9,7 @@ const {FakeGraphics}=require('./fake_graphics.js');
 const {FakeRender,FakePatch}=require('./fakes.js');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn){for(let i=0;i<250;i++){if(fn())return;await wait(10);}throw Error('condition timed out');}
-const g=new FakeGraphics(`/tmp/hud-g-${process.pid}`),r=new FakeRender(`/tmp/hud-dr-${process.pid}`),p=new FakePatch(`/tmp/hud-dp-${process.pid}`);
+const g=new FakeGraphics(`/tmp/hud-g-${process.pid}`,23),r=new FakeRender(`/tmp/hud-dr-${process.pid}`),p=new FakePatch(`/tmp/hud-dp-${process.pid}`);
 const log={warn:()=>{},info:()=>{}},c=new SettingsControl({renderPath:r.path,patchPath:p.path,pendingPath:'/nonexistent',ackMs:250,retryMs:20});
 const client=new RenderClient('robertn_waze_cluster',log,{kit,socket:g.path,mode:'layer'});
 let proxyItems=[],proxyUpdates=0,classic=0,modes=[];
@@ -50,6 +50,7 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   await tap('page:edit');assert.equal(h.studio.page,'edit');await settled();
   const sw=h.studio.widget(),sx=274+(sw.x+sw.w/2)*976,sy=153+(sw.y+sw.h/2)*366,sold=sw.x;
   g.touch(1,sx,sy);g.touch(2,sx+60,sy+10);g.touch(3,sx+60,sy+10);await wait(30);assert(h.studio.widget().x>sold,'real touch wire drags Studio widget');
+  h.studio.page='media';h.studio.client.status={media:{target:'center',playing:true,active:true,generation:1,rect:{x:0,y:0,w:1,h:1}},slots:[]};h.studio.client.statusAt=Date.now();h.render();await settled();assert(g.count(13)>0,'media binds a real VIDEO shared-file source');const videoCount=g.count(13);h.studio.client.status.media.generation=2;h.render();await settled();assert(g.count(13)>videoCount&&g.count(14)>0,'reopened shared file rebinds after pause');h.studio.videoFull=true;h.render();await settled();assert.equal(h.items.length,2,'movie view keeps exit and stop controls');h.studio.client.statusAt=Date.now()-3000;h.render();await settled();assert(!h.videoBound,'stale helper status removes center video');h.studio.page='edit';h.studio.client.status=null;h.render();await settled();
   h.hostFocus(false);const hiddenX=h.studio.widget().x;g.touch(1,sx,sy);g.touch(2,sx+120,sy);g.touch(3,sx+120,sy);await wait(20);assert.equal(h.studio.widget().x,hiddenX);
   h.hostVisible(true);await settled();await tap('exit');assert.equal(h.page,'overview');await wait(310);await tap('nav:support');
   await tap('classic');assert.equal(classic,1);

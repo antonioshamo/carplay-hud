@@ -13,14 +13,15 @@ class Render extends EventEmitter{
  drop(r){this.layers.delete(r);}
  pixels(r,_,data){assert.equal(data.length,this.layers.get(r).iw*this.layers.get(r).ih*4);this.uploads++;}
  set(r,o){Object.assign(this.layers.get(r),o);}
- animate(r,o){this.animations.push({r,o});}
+ animate(r,o){this.animations.push({r,o});return this.animations.length;}
+ stop(r,a){this.animations[a-1].stopped=true;}
  close(){}
 }
 let now=10000;const t=new Telemetry({now:()=>now}),r=new Render(),e=new Engine(r,t,{now:()=>now});
 const parked=()=>{t.receive('speed',{speedVehicleCentreOfGravity:0});t.receive('gear',{statusActualStageDrive:1});};
 assert(!t.parked());assert.throws(()=>e.preview(M.preset(0)),/fresh/);parked();assert(t.parked());assert.throws(()=>e.preview(M.preset(0)),/HUD/);
 r.emit('target','hud','shown');assert.throws(()=>e.preview(M.preset(0)),/HUD/);r.emit('target','hud','idle');
-e.preview(M.preset(11));e.tick();assert.equal(e.target,'panel');assert.equal(r.layers.size,1);assert(r.animations.some(a=>a.o.keys.endsWith('10001:0,1200,0')),'renderer-side expiry');
+e.preview(M.preset(11));e.tick();assert.equal(e.target,'panel');assert.equal(r.layers.size,1);assert(r.animations.some(a=>a.o.keys.endsWith('1501:0,1200,0')),'renderer-side expiry');
 t.receive('gear',{statusActualStageDrive:4});e.tick();assert.equal(r.layers.size,0,'gear change drops full-screen output');
 parked();e.preview(M.preset(0));e.tick();now+=2001;e.tick();assert.equal(r.layers.size,0,'stale data drops full-screen output');
 parked();e.preview(M.preset(0));e.tick();r.emit('target','hud','acquiring');assert.equal(r.layers.size,0,'HUD acquisition cancels test');
@@ -36,6 +37,7 @@ now+=3001;parked();t.receive('condition',{statusConditionVehicle:10});e.tick();a
 const prior=M.clone(e.design);e.preview(design);e.tick();assert(e.introUntil);e.stopPreview();assert.equal(e.introUntil,0,'ending test also ends its animation');assert.deepEqual(e.design,prior);
 assert.deepEqual(e.design,design);r.emit('disconnected');assert.equal(r.layers.size,0,'no stale image replay after disconnect');
 assert.equal(decode('speed',{speedVehicleCentreOfGravity:65535}).speed,null);assert.equal(decode('rpm',{actualValueRPMEngineCrankshaft:65535}).rpm,null);assert.equal(decode('temps',{temperatureEngineOilDrive:255}).oil,null);assert.equal(decode('gear',{statusActualStageDrive:0}).gear,null);assert.equal(decode('speed',{speedVehicleCentreOfGravity:6400}).speed,100);assert.equal(decode('rpm',{actualValueRPMEngineCrankshaft:12800}).rpm,3200);
+parked();r.emit('target','hud','idle');e.preview(M.preset(0),60);e.tick();const leaseCount=r.animations.length;now+=500;parked();e.tick();assert(r.animations.length>leaseCount,'long test renews short renderer lease');assert.equal(e.panelUntil-now,59500);for(let n=0;n<45;n++){now+=500;parked();e.tick();}assert.equal(r.animations.filter(a=>a.r===e.ref&&!a.stopped).length,1,'renewals replace the lease without exhausting the 16-animation limit');assert.throws(()=>e.preview(M.preset(0),999),/Choose/);e.stopPreview();
 console.log('ok renderer geometry, parked gates, stale signals, movement, HUD conflict, native expiry, startup and no stale replay');
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cluster-studio-test-')),file=path.join(dir,'studio.json');
 const s=new StudioService({engine:e,telemetry:t,file});
@@ -46,3 +48,5 @@ const broken=new StudioService({engine:e,telemetry:t,file:path.join(dir,'missing
 fs.writeFileSync(file,'broken');const recovered=new StudioService({engine:e,telemetry:t,file});assert(!recovered.store.enabled,'corrupt configuration fails off');
 console.log('ok atomic persistence, five slots, restart restore, input bounds and failed-save/corrupt-store behavior');
 e.close();t.close();fs.rmSync(dir,{recursive:true,force:true});
+
+require('./test_features.js');
