@@ -22,7 +22,7 @@ class StudioScreen {
   }
   if(id.startsWith('load:')){const a=this.client.status&&this.client.status.slots[Number(id.split(':')[1])];if(a){this.checkpoint();this.design=M.clone(a);}return true;}
   this.checkpoint();const d=this.design;
-  if(['previous','next','shuffle','layout'].includes(id)){const n=id==='shuffle'?Math.floor(Math.random()*100):id==='layout'?d.theme*10+(d.preset%10+1)%10:(d.preset+(id==='next'?1:99))%100;this.design=M.preset(n);}
+  if(['previous','next','shuffle','layout'].includes(id)){const n=id==='shuffle'?Math.floor(Math.random()*100):id==='layout'?d.theme*10+(d.preset%10+1)%10:(d.preset+(id==='next'?1:99))%100;const intro={};['intro','introEnabled','introDuration','introShine','introLight'].forEach(k=>intro[k]=d[k]);this.design=Object.assign(M.preset(n),intro);}
   else if(id==='theme'){d.theme=(d.theme+1)%10;d.preset=d.theme*10+d.preset%10;}
   else if(id==='toggle')this.widget().on=!this.widget().on;
   else if(id==='front'){const w=this.widget();d.widgets.splice(d.widgets.indexOf(w),1);d.widgets.push(w);}
@@ -33,8 +33,11 @@ class StudioScreen {
   else if(id==='units')d.units=d.units==='mph'?'km/h':'mph';
   else if(id==='title')d.title=(d.title+1)%M.TITLES.length;
   else if(id==='intro-toggle')d.introEnabled=!d.introEnabled;
-  else if(id==='animation')d.intro=['slide','reveal','none'][(['slide','reveal','none'].indexOf(d.intro)+1)%3];
-  else if(id==='gauge')d.gauge=['ring','digital','bar'][(['ring','digital','bar'].indexOf(d.gauge)+1)%3];
+  else if(id==='animation'){const modes=['slide','reveal','apple','welcome','none'];d.intro=modes[(modes.indexOf(d.intro)+1)%modes.length];if(d.intro==='apple')d.introDuration=5500;this.animationAt=Date.now();}
+  else if(id==='duration')d.introDuration=[3000,4500,5500,7000][([3000,4500,5500,7000].indexOf(d.introDuration)+1)%4];
+  else if(id==='shine')d.introShine=!d.introShine;
+  else if(id==='light')d.introLight=['white','blue','red','theme'][(['white','blue','red','theme'].indexOf(d.introLight)+1)%4];
+  else if(id==='gauge')d.gauge=['ring','digital','bar','ultra'][(['ring','digital','bar','ultra'].indexOf(d.gauge)+1)%4];
   else if(id==='background')d.background=['gradient','black','transparent'][(['gradient','black','transparent'].indexOf(d.background)+1)%3];
   else {this.history.pop();return false;}
   return true;

@@ -6,6 +6,7 @@ const FILE = process.env.WOC_STARTUP_MODE || path.join(path.dirname(process.env.
     '/var/opt/waze-on-cluster/waze-on-cluster.local.conf'), 'startup-mode');
 const STATUS = process.env.WOC_STARTUP_STATUS || '/run/waze-on-cluster/startup.json';
 function readMode() {
+    try { fs.lstatSync(path.join(path.dirname(FILE),'bmw-defaults'));return 'off'; } catch(e) { if(e.code!=='ENOENT')return 'off'; }
     try { return fs.readFileSync(FILE, 'utf8').trim() === 'dashboard' ? 'dashboard' : 'off'; }
     catch (e) { return 'off'; }
 }

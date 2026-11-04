@@ -1,7 +1,7 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
   "description": "Custom cluster layouts, 100 theme/layout presets, saved designs and read-only vehicle widgets. Full-screen output is a guarded 10-second parked test.",
@@ -72,6 +72,25 @@
     },
     {
       "path": "shared/cluster_render_client.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/studio_intro.js",
+      "from": "shared/studio_intro.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/studio_assets.js",
+      "from": "shared/studio_assets.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/kit_record.js",
+      "from": "shared/kit_record.js",
+      "mode": "0644"
+    },
+    {
+      "path": "ASSET-NOTICE.md",
       "mode": "0644"
     }
   ],

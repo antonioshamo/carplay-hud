@@ -133,6 +133,17 @@ patch.on('command', m => {
         c._onPatch({ev:'startup-mode-reply',ok:true,mode:'dashboard'});
         assert(!c._startupPending);
         console.log('ok one-press HUD startup waits for saved/live target; failed saves cannot enable it');
+        patch._status=()=>Object.assign(oldStatus(),{restore_defaults:true,startup_trial:true});
+        c._onPatch(patch._status());
+        let restoreResult={ok:true},studioCalls=0;
+        patch.on('command',m=>{if(m.cmd==='restore-defaults'){c._onRender(Object.assign({},render._status(),{bmw_defaults:true}));patch._broadcast(Object.assign({ev:'restore-defaults-reply'},restoreResult));}});
+        const studio={ready:()=>Promise.resolve(),send:async cmd=>{assert.equal(cmd,'off');studioCalls++;}};
+        assert(await c.restoreDefaults(studio));assert.equal(studioCalls,1);assert.match(c.settingsNotice(),/software remains installed/);
+        restoreResult={ok:true,pending:'revert'};assert(await c.restoreDefaults(studio));assert.match(c.settingsNotice(),/Restart head unit/);
+        restoreResult={ok:false,reason:'Patch backup mismatch'};assert(!await c.restoreDefaults(studio));assert.match(c.settingsNotice(),/incomplete.*backup mismatch/);assert.equal(studioCalls,3,'cluster off attempted even when map restore fails');
+        restoreResult={ok:true};assert(!await c.restoreDefaults({ready:()=>Promise.reject(Error('Cluster offline'))}));assert.match(c.settingsNotice(),/incomplete.*Cluster offline/);
+        c._onPatch(Object.assign(patch._status(),{restore_defaults:false}));assert(!c.canRestoreDefaults());
+        console.log('ok global restore awaits both helpers, handles deferred restart and partial failure, and gates old tools');
         c.close(); assert.equal(c._busy(), false);
         console.log('all settings checks passed');
     } finally { c.close(); await render.close(); await patch.close(); }

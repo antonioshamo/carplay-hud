@@ -1,6 +1,6 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.117",
+  "version": "0.4.118",
   "description": "CarPlay HUD and Cluster Studio: visual drag editor, 100 design combinations, personal layouts, vehicle widgets and a guarded parked full-cluster test",
   "private": false,
   "main": "javascript/runner.js",

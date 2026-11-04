@@ -15,6 +15,7 @@ parked();e.preview(M.preset(0));e.tick();r.emit('target','hud','acquiring');asse
 r.emit('target','hud','idle');e.preview(M.preset(0));e.tick();now+=10001;parked();e.tick();assert.equal(r.layers.size,0,'wall-clock expiry');
 const design=M.preset(11);design.introEnabled=true;e.configure(design,true);t.receive('condition',{statusConditionVehicle:10});e.tick();assert.equal(e.target,'map');assert(e.introUntil>now);assert(r.animations.some(a=>a.o.keys.includes('3001:0,1200,0')));
 now+=3001;parked();t.receive('condition',{statusConditionVehicle:10});e.tick();assert.equal(e.introUntil,0);assert.equal(e.target,'map');
+const prior=M.clone(e.design);e.preview(design);e.tick();assert(e.introUntil);e.stopPreview();assert.equal(e.introUntil,0,'ending test also ends its animation');assert.deepEqual(e.design,prior);
 assert.deepEqual(e.design,design);r.emit('disconnected');assert.equal(r.layers.size,0,'no stale image replay after disconnect');
 assert.equal(decode('speed',{speedVehicleCentreOfGravity:65535}).speed,null);assert.equal(decode('rpm',{actualValueRPMEngineCrankshaft:65535}).rpm,null);assert.equal(decode('temps',{temperatureEngineOilDrive:255}).oil,null);assert.equal(decode('gear',{statusActualStageDrive:0}).gear,null);assert.equal(decode('speed',{speedVehicleCentreOfGravity:6400}).speed,100);assert.equal(decode('rpm',{actualValueRPMEngineCrankshaft:12800}).rpm,3200);
 console.log('ok renderer geometry, parked gates, stale signals, movement, HUD conflict, native expiry, startup and no stale replay');

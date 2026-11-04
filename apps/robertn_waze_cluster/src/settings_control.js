@@ -15,9 +15,37 @@ class SettingsControl extends WazeClusterControl {
         this._startupPending = null;
         this._startupNote = '';
     }
+    canRestoreDefaults() { return this.connectedPatch() && this.patchStatus && this.patchStatus.restore_defaults === true && !this._restoring && !this._busy() && !this._startupPending && !this.pending() && this.patchStatus.state !== 'busy'; }
+    async restoreDefaults(studio) {
+        if(!this.canRestoreDefaults())return false;
+        this._restoring=true;this._notice='Restoring HUD, cluster and startup effects...';this.emit('change');
+        const map=new Promise((resolve,reject)=>{
+            const timer=setTimeout(()=>{this._restoreReply=null;reject(Error('Map restore timed out; result unknown'));},60000);
+            this._restoreReply=m=>{clearTimeout(timer);this._restoreReply=null;m.ok?resolve(m):reject(Error(m.reason||'Map restore failed'));};
+            this.patch.send({cmd:'restore-defaults'});
+        });
+        const tasks=[map.then(async result=>{await this._waitForDefaults();return result;}),studio.ready().then(()=>studio.send('off',{}))];
+        const results=await Promise.all(tasks.map(p=>p.then(value=>({ok:true,value}),error=>({ok:false,error}))));
+        this._restoring=false;
+        const errors=results.filter(r=>!r.ok).map(r=>r.error.message);
+        this._notice=errors.length?'Restore incomplete: '+errors.join(' / '):results[0].value.pending?
+            'Custom displays off. Restart head unit to finish BMW defaults.':'BMW displays restored. Custom software remains installed.';
+        this.emit('change');return errors.length===0;
+    }
+    _waitForDefaults() {
+        const confirmed=()=>this.connectedRender()&&this.renderStatus&&this.renderStatus.bmw_defaults===true;
+        if(confirmed())return Promise.resolve();
+        return new Promise((resolve,reject)=>{
+            const done=()=>{if(confirmed()){clearTimeout(timer);this.removeListener('change',done);resolve();}};
+            const timer=setTimeout(()=>{this.removeListener('change',done);reject(Error('Restore saved; live map shutdown not confirmed'));},5000);
+            this.on('change',done);done();
+        });
+    }
+    canEnable() { return !this._restoring && super.canEnable(); }
+    canDisable() { return !this._restoring && super.canDisable(); }
     canChangeStartup() {
         return this.connectedPatch() && this.patchStatus && this.patchStatus.startup_trial === true &&
-            !this._startupPending && !this.restartRequested();
+            !this._restoring && !this._startupPending && !this.restartRequested();
     }
     setStartup(mode) {
         if(!this.canChangeStartup() || !['off','dashboard'].includes(mode))return false;
@@ -56,8 +84,8 @@ class SettingsControl extends WazeClusterControl {
         return s && Number.isFinite(s.hud_x) && Number.isFinite(s.hud_y) ? [s.hud_x, s.hud_y] : null;
     }
     canChangeDisplay() {
-        return this.connectedRender() && this.connectedPatch() && !!this.renderStatus &&
-            !this.restartRequested() && !this.pending() &&
+        return this.connectedRender() && this.connectedPatch() && !!this.renderStatus && !(this.patchStatus&&this.patchStatus.bmw_defaults) &&
+            !this._restoring && !this.restartRequested() && !this.pending() &&
             !(this.patchStatus && this.patchStatus.state === 'busy') && !this._busy();
     }
     _busy() { return !!(this._changes && Object.keys(this._changes).length); }
@@ -109,6 +137,7 @@ class SettingsControl extends WazeClusterControl {
         return this._request('position', [x,y], {cmd: 'hud', hud_x: String(x), hud_y: String(y)}, {cmd: 'hud-pos', hud_x: x, hud_y: y});
     }
     settingsNotice() {
+        if (this._restoring) return 'Restoring HUD, cluster and startup effects...';
         if (this._busy()) return 'Applying and saving...';
         return this._notice || 'Changes are saved for the next start';
     }
@@ -151,6 +180,7 @@ class SettingsControl extends WazeClusterControl {
     }
     _onPatch(msg) {
         super._onPatch(msg);
+        if(msg.ev==='restore-defaults-reply' && this._restoreReply)this._restoreReply(msg);
         if(msg.ev==='status' && !this._startupPending)this._startupNote='';
         if(msg.ev==='startup-mode-reply' && this._startupPending) {
             const p=this._startupPending;
@@ -177,6 +207,7 @@ class SettingsControl extends WazeClusterControl {
         this.emit('change');
     }
     close() {
+        if(this._restoreReply)this._restoreReply({ok:false,reason:'Settings closed before restore confirmation'});
         if(this._startupPending)clearTimeout(this._startupPending.timer);
         this._startupPending=null;this._startupNote='';
         Object.keys(this._changes).forEach(key => clearTimeout(this._changes[key].timer));

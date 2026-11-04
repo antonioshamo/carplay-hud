@@ -19,7 +19,7 @@ function items(s){
  }else if(s.page==='style'){
   [['theme','Color: '+M.THEMES[d.theme][0]],['gauge','Gauges: '+d.gauge],['background','Backdrop: '+d.background],['units','Speed: '+d.units],['borders',d.borders?'Widget cards: On':'Widget cards: Off'],['clock',d.clock24?'Clock: 24 hour':'Clock: 12 hour']].forEach((a,i)=>add(a[0],a[1],1282,128+i*66,296,55));
  }else if(s.page==='intro'){
-  add('play','Play welcome',1282,153,290,72);add('animation','Animation: '+d.intro,1282,241,290,72);add('intro-toggle',d.introEnabled?'On ready: Enabled':'On ready: Disabled',1282,329,290,72);add('save','Save welcome choice',1282,427,290,62,connected&&!busy);
+  [['animation',({slide:'X4 M / fly-in',reveal:'X4 M / reveal',apple:'Apple / CarPlay Ultra',welcome:'Welcome Antonio',none:'No animation'})[d.intro]],['duration','Length: '+(d.introDuration/1000)+' seconds'],['shine','Badge shine: '+(d.introShine?'On':'Off')],['light','Light: '+d.introLight],['intro-toggle',d.introEnabled?'At startup: On':'At startup: Off'],['play','Preview sequence'],['save','Save startup choice']].forEach((a,i)=>add(a[0],a[1],1282,128+i*56,296,47,a[0]==='save'?connected&&!busy:a[0]==='shine'?['slide','reveal'].includes(d.intro):a[0]==='light'?['slide','reveal','welcome'].includes(d.intro):a[0]==='duration'||a[0]==='intro-toggle'?d.intro!=='none':true));
  }else if(s.page==='library'){
   for(let i=0;i<5;i++){const full=s.client.status&&s.client.status.slots[i];add('load:'+i,'Load '+(i+1),1034,139+i*70,160,54,!!full);add('save-slot:'+i,'Save '+(i+1),1208,139+i*70,160,54,connected&&!busy);}
   add('title','Signature: '+M.TITLES[d.title],286,427,680,62);
@@ -36,17 +36,17 @@ function frame(s,focus,scale){
  r.clear('#060a11');r.gradientRect(252,0,1348,580,[[0,'#172438'],[.7,'#080d17'],[1,'#060a11']]);r.fillRect(0,0,252,580,'#0c131f');
  text('CLUSTER STUDIO',276,51,32,'#f0f5ff');text('X4 M COMPETITION',276,84,17,'#89a1bd');
  r.roundRect(1290,25,280,42,21,'#17283a');text(s.dirty?'Unsaved design':'Personal collection',1310,53,19,s.dirty?'#ffcc87':'#93c5e9',245);
- const subtitle={gallery:'100 curated combinations. Make any of them yours.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'A motorsport welcome when the vehicle reports ready and parked.',library:'Five personal designs, stored in your car.',output:'Choose how to use your design.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
+ const subtitle={gallery:'100 curated combinations. Make any of them yours.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',output:'Choose how to use your design.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
  const preview=['gallery','edit','style','intro'].includes(s.page);
  if(preview){
   const b=s.page==='gallery'?{x:274,y:153,w:976,h:256}:BOX;
   r.roundRect(b.x-2,b.y-2,b.w+4,b.h+4,12,'#2a3d55');r.fillRect(b.x,b.y,b.w,b.h,'#050910');
   const inner=s.page==='gallery'?{x:b.x+147,y:b.y,w:682,h:256}:b;
-  if(s.page==='intro')D.intro(r,d,inner,s.animationAt?Math.min(1,(Date.now()-s.animationAt)/3000):1);
+  if(s.page==='intro')D.sequence(r,d,inner,s.previewData(),s.animationAt?Date.now()-s.animationAt:d.introDuration*.55);
   else D.draw(r,d,inner,s.previewData(),{selected:s.page==='edit'?s.selected:null,grid:s.page==='edit'&&s.design.snap});
   if(s.page==='gallery'){text(M.LAYOUTS[d.preset%10],b.x+18,b.y+30,20,'#d2e1f5',240);text(String(d.preset+1).padStart(3,'0')+' / 100',b.x+18,b.y+59,16,'#8199b5',160);}
   if(s.page==='edit')text(M.LABELS[s.selected]+' / '+Math.round(s.widget().w*100)+'% wide / SAMPLE READINGS',284,548,18,'#a4c4e4',850);
-  else if(s.page==='intro')text('Center-area welcome only. Requires live vehicle data; never covers factory gauges.',284,544,18,'#a4c4e4',1230);
+  else if(s.page==='intro')text('Startup uses the center area. Full-screen sequence: parked test. Ignition timing awaits vehicle testing.',284,544,18,'#a4c4e4',1230);
   else text('FULL-CLUSTER DESIGN PREVIEW / sample readings / not CarPlay Ultra software',284,548,17,'#8299b4',1220);
  }else if(s.page==='library'){
   D.draw(r,d,{x:286,y:176,w:680,h:255},s.previewData());text('DESIGN PREVIEW / SAMPLE READINGS',286,515,17,'#8299b4',690);

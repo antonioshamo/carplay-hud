@@ -7,17 +7,18 @@ const C={bg:'#080c13',nav:'#101620',panel:'#151e2b',edge:'#2a3a4f',text:'#f4f7fc
 const tabs=[['overview','Overview','hud'],['layout','Map layout','layout'],['appearance','Appearance','sun'],['startup','Startup','power'],['support','Help & setup','help']];
 function model(c) {
  const r=c.renderStatus||{},p=c.patchStatus||{},target=c.displayTarget();
- return {target,state:r.state||'offline',width:c.hudWidth(),offset:c.hudOffset(),step:c.moveStep,
+ return {target,bmwDefaults:p.bmw_defaults===true,state:r.state||'offline',width:c.hudWidth(),offset:c.hudOffset(),step:c.moveStep,
   background:c.hudStyle('hud_black_background'),corners:c.hudStyle('hud_round_corners'),startup:p.startup_mode==='dashboard',
   startupSupported:p.startup_trial===true,startupText:c.startupText(),startupResult:c.startupResult(),
   notice:c.settingsNotice(),busy:c._busy()||!!c._startupPending,canDisplay:c.canChangeDisplay(),canSize:c.canChangeHudSize(),
   canLarger:c.canHudLarger(),canSmaller:c.canHudSmaller(),canMove:c.canMoveHud(),canStyle:c.canChangeStyle('hud_black_background'),
   canCorners:c.canChangeStyle('hud_round_corners'),canStartup:c.canChangeStartup(),canEnable:c.canEnable(),canDisable:c.canDisable(),
-  canRestart:c.restartNeeded()&&c.connectedPatch()&&!c.restartRequested(),captureText:c.captureText(),captureButton:c.captureButtonText(),
+  canRestore:typeof c.canRestoreDefaults==='function'&&c.canRestoreDefaults(),canRestart:c.restartNeeded()&&c.connectedPatch()&&!c.restartRequested(),captureText:c.captureText(),captureButton:c.captureButtonText(),
   canCapture:c.connectedPatch()&&!c.restartRequested()&&c.captureState.state!=='closing',logs:c.rows()};
 }
 function status(m) {
  if(m.busy)return 'Saving changes';
+ if(m.bmwDefaults&&!m.canRestart)return 'BMW defaults active';
  if(m.canRestart)return 'Restart needed';
  if(m.state==='showing')return m.target==='hud'?'Map active on HUD':'Map active on cluster';
  if(m.startup&&m.state==='idle')return 'Auto-start enabled';
@@ -59,6 +60,7 @@ function layout(m,page,logPage) {
   add(m.canEnable?'enable':'disable',m.canEnable?'Enable map':'Disable map',310,144,390,98,m.canEnable||m.canDisable,false,m.canEnable?'Activate the map tool':'Restore normal map behavior','map');
   add('capture',m.captureButton,718,144,418,98,m.canCapture,false,'Record the map connection','record');
   add('nav:details','Connection details',1154,144,406,98,true,false,'Read the latest tool messages','info');
+  add('restore-defaults','Restore BMW defaults',1154,362,406,86,m.canRestore,false,'HUD, cluster and startup effects','power');
   add('classic','Classic settings',310,362,390,86,true,false,'Use the standard BMW list controls','layout');
   if(m.canRestart)add('restart','Restart head unit',718,362,418,86,true,false,'Required to apply pending setup','power');
  } else if(page==='details') {
@@ -85,7 +87,7 @@ function frame(m,page,focus,logPage,textScale) {
  const title={overview:'Your map. Your view.',layout:'Map layout',appearance:'Map appearance',startup:'Start with CarPlay',support:'Help & setup',details:'Connection details'}[page]||'CarPlay HUD';
  text(title,304,56,38,C.text,850,'bold');
  const st=status(m);r.roundRect(1180,22,378,46,23,'#132a3c');r.circle(1202,45,5,m.state==='showing'?C.green:m.state==='frozen'?C.amber:C.blue);text(st,1218,53,21,C.text,320);
- text({overview:'Everything you need, one touch away.',layout:'Set the map size and position on your windshield.',appearance:'Choose the look that is easiest to read.',startup:'A saved preference for your next connection.',support:'Simple controls when you need a hand.',details:'Live messages from the installed map tool.'}[page],304,91,21,C.dim,1180);
+ text({overview:'Everything you need, one touch away.',layout:'Set the map size and position on your windshield.',appearance:'Choose the look that is easiest to read.',startup:'A saved preference for your next connection.',support:'One action restores BMW displays; your saved designs are kept.',details:'Live messages from the installed map tool.'}[page],304,91,21,C.dim,1180);
  function panel(x,y,w,h){r.card(x,y,w,h,12,[[0,'#1a2738'],[1,'#101924']]);r.strokeRoundRect(x,y,w,h,12,1,C.edge);}
  function preview(x,y,w,h){
   panel(x,y,w,h);text('LAYOUT PREVIEW',x+24,y+32,16,C.dim,w-40,'bold');
