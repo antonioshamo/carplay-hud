@@ -1,8 +1,10 @@
 # Optional Dashboard startup experiment
 
-Packaged with tool 0.7.112 and controlled by app 0.4.114. Default OFF. The boot
-service polls a separate saved `startup-mode` preference and starts the child
-only for `dashboard`. Changing it to `off` hides output and stops capture.
+Packaged with tool 0.7.113 and controlled by app 0.4.115. Default OFF. The boot
+service keeps the CarPlay listener running even while capture is off, retaining
+foreground events received before opt-in. The runner polls the separate saved
+`startup-mode` preference. `dashboard` enables capture; `off` immediately hides
+output and stops capture while leaving the listener ready for the next event.
 
 The runner subscribes to CarPlayManager.onScreenChange. A positive PROJECTED
 notification, fresh normal-tool status with target HUD and state idle, a recognized
@@ -26,7 +28,9 @@ solve the independent secondary stream starting without a route.
 
 App status separates a saved preference from helper readiness. Sending frames
 means the renderer accepted data, not proof that pixels are visible on the car.
-Reconnecting CarPlay after enabling the option supplies a new ownership event.
+If no ownership event has arrived since the helper started, reopening or
+reconnecting CarPlay supplies one. Startup status now identifies the blocking
+condition (ownership, center screen, target, renderer, or stale source status).
 Retries after a helper failure are spaced by at least 10 seconds. Off remains
 available without a live map stream. The preference is global, not per driver.
 

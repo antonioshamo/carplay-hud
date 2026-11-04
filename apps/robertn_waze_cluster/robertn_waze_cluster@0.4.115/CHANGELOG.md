@@ -1,3 +1,13 @@
+# 0.4.115 - Accessible controls and startup connection timing
+
+- Explicitly enable navigation buttons and declare ID7 parent-state links in XML and JSON.
+- Direct HUD and startup switches on Home avoid relying on a subpage transition.
+- A single startup press selects HUD, waits for live and saved confirmation, then enables the Dashboard trial.
+- Report page-open failures and precise startup blockers instead of silently doing nothing.
+- Requires Tool 0.7.113, which listens for CarPlay from boot and retains pre-opt-in foreground events. Capture remains off until enabled.
+- Tests cover declared parent links, direct actions with the page API removed, failed saves, and pre-opt-in events. They are not a BMW SDK or physical-car test.
+- Route-free output still requires CarPlay Dashboard visible on the center screen and the capture/classifier working on the car. An independent Apple secondary stream is not solved.
+
 # 0.4.114 - HUD settings and optional startup trial
 
 - Fourteen focused native pages; the home screen contains six rows.

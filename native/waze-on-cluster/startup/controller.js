@@ -29,7 +29,7 @@ class MirrorController {
         const before = this.allowed();
         this.source = status;
         this.sourceAt = at;
-        if (!this.allowed()) this.invalidate('Independent map active or source state unavailable');
+        if (!this.allowed()) this.invalidate(this.blockReason());
         else if (!before) this.epoch++;
     }
     rendererChanged(ready) {
@@ -41,23 +41,31 @@ class MirrorController {
         this.enabled = enabled === true;
         this.invalidate(enabled ? 'Waiting for a fresh map frame' : 'Mirror off');
     }
-    allowed() {
+    blockReason() {
         const now = this.o.now();
-        return !this.closed && this.enabled && this.rendererReady && this.owner === 'PROJECTED' &&
-            this.source && this.source.target === 'hud' && this.source.state === 'idle' &&
-            Number.isFinite(this.sourceAt) && now >= this.sourceAt && now - this.sourceAt <= 2500;
+        if (this.closed) return 'Mirror stopped';
+        if (!this.enabled) return 'Mirror off';
+        if (this.owner === null) return 'Waiting for CarPlay event; reopen CarPlay';
+        if (this.owner !== 'PROJECTED') return 'Open CarPlay Dashboard on the center screen';
+        if (!this.rendererReady) return 'Waiting for HUD renderer';
+        if (!this.source || !Number.isFinite(this.sourceAt) || now < this.sourceAt || now - this.sourceAt > 2500)
+            return 'Waiting for fresh map-tool status';
+        if (this.source.target !== 'hud') return 'Select windshield HUD in CarPlay HUD';
+        if (this.source.state !== 'idle') return 'Normal map stream: ' + this.source.state;
+        return '';
     }
+    allowed() { return !this.blockReason(); }
     hide(reason) {
         this.reason = reason;
-        this.o.hide();
+        if (this.visible) this.o.hide();
         this.visible = false;
         this.lastFrame = 0;
     }
     invalidate(reason) { this.epoch++; this.hide(reason); }
     watchdog() {
-        if (!this.allowed() || (this.visible && this.o.now() - this.lastFrame > 750)) {
-            this.invalidate('Waiting for a fresh map frame');
-        }
+        const blocked = this.blockReason();
+        if (blocked) this.invalidate(blocked);
+        else if (this.visible && this.o.now() - this.lastFrame > 750) this.invalidate('Waiting for a fresh map frame');
     }
     async tick() {
         if (this.inFlight || !this.allowed()) return false;

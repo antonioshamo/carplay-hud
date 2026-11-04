@@ -3,7 +3,7 @@
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps),
 with clearer native settings and an **optional experimental Dashboard startup mode**.
 
-Release candidate: app **0.4.114**, tool **0.7.112**. A source commit alone is not
+Update versions: app **0.4.115**, tool **0.7.113**. A source commit alone is not
 an installable release. Use the [Releases](https://github.com/antonioshamo/carplay-hud/releases)
 page to confirm that the `catalog` release and both versioned artifacts exist.
 
@@ -20,20 +20,23 @@ this fork from replacing it. For a source migration, note your settings, remove
 **Waze on cluster (App)** and then **Waze on cluster (Tool)** from Installed.
 Leave the working **cluster-render** installed: it satisfies this fork's renderer
 dependency. Install Waze on cluster from **antonioshamo/carplay-hud**, then verify
-Installed shows App 0.4.114 and Tool 0.7.112. Follow any restart notice from Store.
+Installed shows App 0.4.115 and Tool 0.7.113. Follow any restart notice from Store.
 Removing a source alone does not transfer ownership of its installed packages.
 
-Open the app and choose **Display → Windshield HUD**. This saves the target for
+Already using this repository? Refresh Store and update the App and Tool in place; no removal is needed.
+
+Open the app and choose **Use windshield HUD** on Home. This saves the target for
 the next head-unit start. For the route-free trial, while parked:
 
-1. Open **Display → Startup experiment → Try Dashboard auto-start**.
+1. Press **Enable HUD auto-start (trial)** on Home. It confirms the live and saved HUD target before enabling the trial.
 2. Reconnect CarPlay, leaving its **Dashboard map visible on the center screen**.
 3. Do not start a navigation route. Check whether a fresh map appears on the HUD.
-4. To return to normal behavior, choose **Off: use normal map stream**.
+4. To stop the trial, press **HUD auto-start trial: ON (press to turn off)** on Home.
 
-The helper starts at boot after you opt in. The app can be closed. It requires a
-new foreground-CarPlay event; enabling it while CarPlay is already connected can
-require reconnecting. It yields to the normal secondary map feed and hides when
+The helper now listens for CarPlay from boot, even before you opt in. Capture stays
+off until enabled. A foreground event received before opt-in is retained, so opening
+the app to enable the trial no longer discards it. A connection that predates the
+helper still requires reopening or reconnecting CarPlay. The app can be closed. It yields to the normal secondary map feed and hides when
 CarPlay is covered by BMW menus or frames stop. Size and position follow the app's
 settings. Dashboard trial frames use original colors and square corners.
 
@@ -45,6 +48,8 @@ stays hidden. No new firmware patch or automatic navigation route is used.
 
 ## Settings and missing streets
 
+The update explicitly enables menu buttons and declares ID7 parent-page links.
+HUD and startup switches also work directly on Home without a page transition.
 Fourteen native pages provide short menus, size presets, fine/coarse movement,
 background/corner controls and diagnostics. Choose **Map appearance → Original
 colors** to preserve faint pixels removed by the existing HUD dark-background

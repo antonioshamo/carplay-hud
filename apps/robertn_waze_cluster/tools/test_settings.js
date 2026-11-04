@@ -113,6 +113,26 @@ patch.on('command', m => {
         assert.match(c.startupText(),/enabled/);assert.match(c.startupResult(),/Waiting for CarPlay/);
         assert(!c.setStartup('anything'));
         console.log('ok startup capability, timeout, failed save, mismatched reply and waiting status');
+        // A real socket exercise: shortcut starts from cluster and only enables
+        // startup after both live HUD and persistence have acknowledged.
+        const oldStatus=patch._status.bind(patch);
+        patch._status=()=>Object.assign(oldStatus(),{startup_trial:true,startup_mode:'off',startup_state:'Off'});
+        await wait(30); // Drain earlier intentionally unmatched command/reply cases.
+        c._onPatch(patch._status());
+        c._onRender(Object.assign({},render._status(),{target:'map'}));
+        const starts=()=>patch.received.filter(m=>m.cmd==='startup-mode').length;
+        let before=starts();reply=false;
+        assert(c.startHudAutomatically());
+        await until(()=>!c._busy());assert.equal(starts(),before,'unconfirmed target must not enable startup');
+        reply=true;reject=true;
+        assert(c.startHudAutomatically());await until(()=>!c._busy());assert.equal(starts(),before);
+        reject=false;
+        assert(c.startHudAutomatically());assert.equal(starts(),before);
+        await until(()=>starts()===before+1);
+        assert.equal(c.displayTarget(),'hud');assert(c._startupPending);
+        c._onPatch({ev:'startup-mode-reply',ok:true,mode:'dashboard'});
+        assert(!c._startupPending);
+        console.log('ok one-press HUD startup waits for saved/live target; failed saves cannot enable it');
         c.close(); assert.equal(c._busy(), false);
         console.log('all settings checks passed');
     } finally { c.close(); await render.close(); await patch.close(); }

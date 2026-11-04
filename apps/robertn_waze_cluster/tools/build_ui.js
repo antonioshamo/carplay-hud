@@ -6,7 +6,7 @@ const L=(name,text)=>({name,text,type:'label'});
 const B=(name,text)=>({name,text,type:'button'});
 const pages=[
  [1,'ST_OnlineApps_WazeCluster','CarPlay HUD',[
-  L('wocStatus','Connecting...'),B('wocDisplay','Display'),B('wocSizePage','Map size'),
+  L('wocStatus','Connecting...'),B('wocDisplay','Use windshield HUD'),B('wocQuickStartup','Enable HUD auto-start (trial)'),B('wocSizePage','Map size'),
   B('wocPositionPage','Map position'),B('wocAppearancePage','Map appearance'),B('wocSupportPage','Help & setup')]],
  [8,'ST_WOC_Display','Choose a display',[
   L('displayStatus','Reading display...'),B('wocDisplayHud','Windshield HUD'),B('wocDisplayCluster','Instrument cluster'),
@@ -34,7 +34,7 @@ const pages=[
   L('appearanceStatus','Reading map appearance...'),B('wocOriginalColors','Original colors: keep dim map detail'),
   B('wocClearBackground','Clear dark background'),B('wocCorners','Corners'),L('appearanceNotice','Clear background can hide faint roads')]],
  [4,'ST_WOC_Support','Help & setup',[
-  L('supportStatus','Connecting...'),L('wocSetup',''),B('wocSetupPage','Map setup'),B('wocTroubleshootPage','Streets disappear / map zooms out'),
+  L('supportStatus','Connecting...'),B('wocDisplayPage','Display & startup'),L('wocSetup',''),B('wocSetupPage','Map setup'),B('wocTroubleshootPage','Streets disappear / map zooms out'),
   B('wocCapturePage','Record diagnostics'),B('wocLogPage','Technical details')]],
  [13,'ST_WOC_Troubleshoot','Missing streets',[
   L('missingHint1','Apple Maps controls the street detail and zoom'),
@@ -49,6 +49,8 @@ const pages=[
   L('captureHint','Start recording before reconnecting CarPlay')]],
  [7,'ST_WOC_Logs','Technical details',Array.from({length:30},(_,i)=>Object.assign(L('wocRow'+String(i+1).padStart(2,'0'),''),{focus:3}))]
 ];
+// ID7 child states need their parent in both descriptions, as in Store's ID7 layout.
+const parents={2:1,3:1,4:1,5:4,6:4,7:4,8:4,9:2,10:3,11:3,12:1,13:4,14:8};
 function build(){
  const spec=JSON.parse(fs.readFileSync(path.join(__dirname,'../mgu-app.json'),'utf8'));
  const dest=path.join(__dirname,'..',spec.tree,'rhmiData/uiDescriptions/ID7');
@@ -58,15 +60,18 @@ function build(){
   const components={};const titleId=id++;
   const prop=(value)=>({value,type:'UInt'});
   components[titleId]={type:'title',name:'title'+sid,properties:{Visible:prop(1)},rows:[{Text:{value:title,type:'Text'}}]};
-  xml.push(`  <container id="${sid}" type="state" widget="LT_State_Wide">`,
+  xml.push(`  <container id="${sid}" type="state" widget="LT_State_Wide">`);
+  if(parents[sid])xml.push(`    <property id="9" value="${parents[sid]}"/>`);
+  xml.push(
    `    <layoutGroup id="${1000+sid*2}" name="Titlebar"><component id="${titleId}" type="title"><property id="2" value="1"/></component></layoutGroup>`,
    `    <layoutGroup id="${1001+sid*2}" name="List"><property id="3" value="1"/>`);
   for(const row of rows){
    const cid=id++,visible=row.visible===0?0:1,focus=row.focus===3||row.type==='button'?3:0;
-   components[cid]={type:row.type,name:row.name,properties:{Visible:prop(visible),Focusable:prop(focus)},rows:[{Text:{value:row.text,type:'Text'}}]};
-   xml.push(`      <component id="${cid}" type="${row.type}" widget="LT_${row.type==='button'?'Button':'Label'}_1Row"><property id="2" value="${visible}"/><property id="3" value="${focus}"/></component>`);
+   components[cid]={type:row.type,name:row.name,properties:{Enabled:prop(1),Visible:prop(visible),Focusable:prop(focus)},rows:[{Text:{value:row.text,type:'Text'}}]};
+   xml.push(`      <component id="${cid}" type="${row.type}" widget="LT_${row.type==='button'?'Button':'Label'}_1Row"><property id="1" value="1"/><property id="2" value="${visible}"/><property id="3" value="${focus}"/></component>`);
   }
   ui.containers[sid]={type:'state',name,components};
+  if(parents[sid])ui.containers[sid].properties={ParentState:prop(parents[sid])};
   xml.push('    </layoutGroup>','  </container>');
  }
  xml.push('</application>');fs.writeFileSync(path.join(dest,'application.xml'),xml.join('\n')+'\n');

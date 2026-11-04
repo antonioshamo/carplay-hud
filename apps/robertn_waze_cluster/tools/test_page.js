@@ -89,7 +89,13 @@ rhmi.getByName = (name) => byName[name] || null;
 rhmi.mapEntryState = () => Promise.resolve();
 rhmi.openEntryState = () => Promise.resolve();
 const openedPages = [];
-rhmi.openState = name => { openedPages.push(name); return Promise.resolve(); };
+// This fixture checks our declared hierarchy, not BMW's native implementation.
+rhmi.openState = name => {
+    const state = byName[name];
+    assert(state && state.desc.properties && state.desc.properties.ParentState, 'ID7 child state declares ParentState');
+    assert(UI.containers[state.desc.properties.ParentState.value], 'parent exists');
+    openedPages.push(name); return Promise.resolve();
+};
 let instance;
 
 /* ---- fake SDK ----------------------------------------------------------------- */
@@ -154,10 +160,19 @@ async function main() {
     const xmlButtons = [...XML.matchAll(/<component id="(\d+)" type="button"/g)].map(m => m[1]).sort();
     assert.deepStrictEqual(buttons.map(([id]) => id).sort(), xmlButtons);
     assert.equal(Object.keys(UI.containers).length, 14);
-    assert.equal(Object.keys(UI.containers['1'].components).length, 7, 'home is six rows plus title');
+    assert.equal(Object.keys(UI.containers['1'].components).length, 8, 'home is seven rows plus title');
     assert(!Object.values(UI.containers['1'].components).some(c => /wocRow|wocEnable|wocDisable/.test(c.name)), 'technical rows stay off home');
     assert.equal(APP_JSON.application.version, MANIFEST.version);
-    console.log('ok   fourteen native pages; home has six rows; XML and JSON agree');
+    for (const [id, state] of Object.entries(UI.containers)) {
+        if (id === '1') continue;
+        const parent = state.properties.ParentState.value;
+        assert(UI.containers[parent]);
+        const xmlState = XML.split('<container id="' + id + '"')[1].split('</container>')[0];
+        assert(xmlState.includes('<property id="9" value="' + parent + '"/>'));
+        const seen = new Set([id]);let at = String(parent);
+        while(at !== '1') {assert(!seen.has(at));seen.add(at);at=String(UI.containers[at].properties.ParentState.value);}
+    }
+    console.log('ok   fourteen native pages; home has seven rows; XML and JSON agree');
 
     const render = new FakeRender(RSOCK);
     let patch = new FakePatch(PSOCK);
@@ -186,15 +201,41 @@ async function main() {
         assert.equal(render._clients.size, 1, 'moving to a settings page keeps the socket open');
         assert.equal(byName.wocHudSize.enabled, false, 'HUD adjustments disabled in cluster mode');
         console.log('ok   native page navigation retains controls; cluster mode disables HUD adjustments');
-        for (const [button, state] of [['wocStartupPage','ST_WOC_Startup'], ['wocDisplay','ST_WOC_Display'], ['wocPresetsPage','ST_WOC_Presets'],
+        for (const [button, state] of [['wocStartupPage','ST_WOC_Startup'], ['wocDisplayPage','ST_WOC_Display'], ['wocPresetsPage','ST_WOC_Presets'],
             ['wocAppearancePage','ST_WOC_Appearance'], ['wocHorizontalPage','ST_WOC_Horizontal'],
             ['wocVerticalPage','ST_WOC_Vertical'], ['wocTroubleshootPage','ST_WOC_Troubleshoot']]) {
+            assert.equal(byName[button].enabled,true,'navigation explicitly enabled');
             byName[button].emit('action');
             await until(state, () => openedPages.includes(state));
         }
         assert.equal(byName.wocOriginalColors.enabled, false);
         assert.equal(byName.wocCorners.enabled, false);
         console.log('ok   customization pages open; unsupported appearance controls are disabled');
+
+        // Primary recovery controls MUST work even if openState is absent.
+        const openState = rhmi.openState;
+        delete rhmi.openState;
+        const acknowledgeTarget = m => {
+            if (m.cmd === 'target') patch._broadcast({ev:'target-reply',ok:true,target:m.target});
+        };
+        patch.on('command', acknowledgeTarget);
+        byName.wocDisplay.emit('action');
+        await until('direct HUD applied and saved', () => instance._control.displayTarget() === 'hud' && !instance._control._busy());
+        assert.match(byName.wocDisplay.text,/HUD selected/);
+        assert(render.received.some(m => m.cmd === 'start' && m.target === 'hud'));
+        rhmi.emit('userEvent',{eventType:'ACTION',sourceId:byName.wocDisplay.getId()});
+        await sleep(20);
+        assert.equal(render.received.filter(m=>m.cmd==='start').length,1,'duplicate component/raw press applies once');
+        await sleep(410);
+        rhmi.emit('userEvent',{eventType:'ACTION',sourceId:byName.wocDisplay.getId()});
+        await until('direct cluster applied and saved', () => instance._control.displayTarget() === 'map' && !instance._control._busy());
+        // A failed page change is reported, rather than silently doing nothing.
+        await instance._openPage('ST_WOC_Size');
+        assert.match(status.text,/Page could not open/);
+        rhmi.openState = openState;
+        patch.removeListener('command',acknowledgeTarget);
+        render.received.length=0;
+        console.log('ok   direct HUD works without page API; raw/normal press dedupes; navigation errors visible');
 
         await until('patched: Disable map only', () => byName.wocDisable.visible === true && byName.wocDisable.enabled === true &&
             byName.wocEnable.visible === false && byName.wocEnable.enabled === false);
