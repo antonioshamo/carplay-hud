@@ -1,3 +1,7 @@
+## 0.4.117
+
+Cluster Studio: 100 color/layout combinations, full-cluster design preview, drag and dial editing, 12 movable widgets, five saved designs, Ultra-inspired template, live center-area widgets and optional X4 M welcome. Full-screen output is a 10-second parked test, not a road-ready factory gauge replacement. Requires Cluster Studio tool 0.1.0.
+
 # 0.4.116 - BMW-inspired graphical settings
 
 - New dark navy panels, blue highlights, fixed left navigation and large touch targets; the iDrive dial also selects and presses controls.

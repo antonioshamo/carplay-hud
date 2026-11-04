@@ -1,15 +1,17 @@
-# CarPlay HUD for BMW iDrive 7
+# CarPlay HUD and Cluster Studio for BMW iDrive 7
+
+**New: CarPlay HUD 0.4.117 + Cluster Studio 0.1.0.** Open Overview → Cluster Studio for a full-cluster designer, 100 preset combinations, Ultra-inspired styling, movable widgets, saved designs and an X4 M welcome. Full-screen output is a guarded 10-second parked test, not a road-ready factory-gauge replacement. [Guide and previews](docs/cluster-studio/README.md).
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps),
 with BMW-inspired graphical settings and an **optional experimental Dashboard startup mode**.
 
-Update versions: app **0.4.116**, map tool **0.7.113**, and **MGU Renderer 0.6.11**.
+Update versions: app **0.4.117**, map tool **0.7.113**, and **MGU Renderer 0.6.11**.
 MGU Renderer comes from the official MGU Store source; it draws the settings app
 and is separate from the existing cluster-render tool.
 
 [See the new settings screens](docs/hud-research/DESIGN.md). A source commit alone is not
 an installable release. Use the [Releases](https://github.com/antonioshamo/carplay-hud/releases)
-page to confirm that the `catalog` release and both versioned artifacts exist.
+page to confirm that the `catalog` release and the versioned artifacts exist.
 
 ## Install and test
 
@@ -24,7 +26,7 @@ this fork from replacing it. For a source migration, note your settings, remove
 **Waze on cluster (App)** and then **Waze on cluster (Tool)** from Installed.
 Leave the working **cluster-render** installed: it satisfies this fork's renderer
 dependency. Install Waze on cluster from **antonioshamo/carplay-hud**, then verify
-Installed shows App 0.4.116 and Tool 0.7.113. Follow any restart notice from Store.
+Installed shows App 0.4.117 and Tool 0.7.113. Follow any restart notice from Store.
 Removing a source alone does not transfer ownership of its installed packages.
 
 Already using this repository? Refresh Store and update the App and Tool in place; no removal is needed.

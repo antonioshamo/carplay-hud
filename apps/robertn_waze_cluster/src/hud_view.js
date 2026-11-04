@@ -32,7 +32,8 @@ function layout(m,page,logPage) {
   add('hud','Windshield HUD',998,178,270,80,m.canDisplay,m.target==='hud','','hud');
   add('cluster','Cluster',1280,178,278,80,m.canDisplay,m.target==='map','','cluster');
   add(m.startup?'startup-off':'startup-on',m.startup?'Auto-start with CarPlay: ON':'Enable CarPlay auto-start',998,336,560,86,m.canStartup&&(m.startup||m.canDisplay),m.startup,'Dashboard trial', 'power');
-  add('nav:layout','Adjust map layout',330,422,614,66,true,false,'','arrow');
+  add('nav:layout','Map layout',330,422,292,66,true,false,'','arrow');
+  add('open-studio','Cluster Studio',634,422,310,66,true,false,'','cluster');
  } else if(page==='layout') {
   add('size:40','Small',800,180,115,64,m.canSize,m.width===40);
   add('size:60','Medium',923,180,115,64,m.canSize,m.width===60);

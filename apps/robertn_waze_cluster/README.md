@@ -1,4 +1,6 @@
-# CarPlay HUD settings 0.4.116
+# CarPlay HUD settings 0.4.117
+
+Includes [Cluster Studio](../../docs/cluster-studio/README.md): visual customization, saved templates and a guarded parked full-screen test.
 
 A BMW-inspired graphical interface for iDrive 7: fixed section menu, dark panels,
 blue focus accents, large touch controls and iDrive dial support. See the
