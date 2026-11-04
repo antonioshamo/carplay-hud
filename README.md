@@ -11,7 +11,7 @@ and is separate from the existing cluster-render tool.
 
 [See the new settings screens](docs/hud-research/DESIGN.md). A source commit alone is not
 an installable release. Use the [Releases](https://github.com/antonioshamo/carplay-hud/releases)
-page to confirm that the `catalog` release and both versioned artifacts exist.
+page to confirm that the `catalog` release and the versioned artifacts exist.
 
 ## Install and test
 
@@ -26,7 +26,7 @@ this fork from replacing it. For a source migration, note your settings, remove
 **Waze on cluster (App)** and then **Waze on cluster (Tool)** from Installed.
 Leave the working **cluster-render** installed: it satisfies this fork's renderer
 dependency. Install Waze on cluster from **antonioshamo/carplay-hud**, then verify
-Installed shows App 0.4.116 and Tool 0.7.113. Follow any restart notice from Store.
+Installed shows App 0.4.117 and Tool 0.7.113. Follow any restart notice from Store.
 Removing a source alone does not transfer ownership of its installed packages.
 
 Already using this repository? Refresh Store and update the App and Tool in place; no removal is needed.
