@@ -3,7 +3,19 @@
 const assert=require('assert'),fs=require('fs'),os=require('os'),path=require('path'),EventEmitter=require('events');
 require('../build.js');
 const M=require('../shared/studio_model.js'),{Engine}=require('../engine.js'),{Telemetry,decode}=require('../telemetry.js'),{StudioService}=require('../service.js');
-class Render extends EventEmitter{constructor(){super();this.ready=true;this.targets='map:1088x480,panel:1920x720,hud:800x480';this.layers=new Map();this.seq=0;this.animations=[];}image(o){this.layers.set(++this.seq,o);return this.seq;}drop(r){this.layers.delete(r);}pixels(r,_,data){assert.equal(data.length,this.layers.get(r).iw*this.layers.get(r).ih*4);}set(r,o){Object.assign(this.layers.get(r),o);}animate(r,o){this.animations.push({r,o});}close(){}}
+class Render extends EventEmitter{
+ constructor(){super();this.ready=true;this.targets='map:1088x480,panel:1920x720,hud:800x480';this.layers=new Map();this.seq=0;this.animations=[];this.uploads=0;}
+ image(o){this.layers.set(++this.seq,Object.assign({kind:'image'},o));return this.seq;}
+ asset(o){return this.image(Object.assign({},o,{kind:'asset',iw:o.w,ih:o.h}));}
+ effect(o){return this.image(Object.assign({},o,{kind:'effect'}));}
+ bind(r,name,a){assert(this.layers.has(a));}
+ uniform(r,name,v){assert(this.layers.has(r));assert(v.every(Number.isFinite));}
+ drop(r){this.layers.delete(r);}
+ pixels(r,_,data){assert.equal(data.length,this.layers.get(r).iw*this.layers.get(r).ih*4);this.uploads++;}
+ set(r,o){Object.assign(this.layers.get(r),o);}
+ animate(r,o){this.animations.push({r,o});}
+ close(){}
+}
 let now=10000;const t=new Telemetry({now:()=>now}),r=new Render(),e=new Engine(r,t,{now:()=>now});
 const parked=()=>{t.receive('speed',{speedVehicleCentreOfGravity:0});t.receive('gear',{statusActualStageDrive:1});};
 assert(!t.parked());assert.throws(()=>e.preview(M.preset(0)),/fresh/);parked();assert(t.parked());assert.throws(()=>e.preview(M.preset(0)),/HUD/);
@@ -14,7 +26,13 @@ parked();e.preview(M.preset(0));e.tick();now+=2001;e.tick();assert.equal(r.layer
 parked();e.preview(M.preset(0));e.tick();r.emit('target','hud','acquiring');assert.equal(r.layers.size,0,'HUD acquisition cancels test');
 r.emit('target','hud','idle');e.preview(M.preset(0));e.tick();now+=10001;parked();e.tick();assert.equal(r.layers.size,0,'wall-clock expiry');
 const design=M.preset(11);design.introEnabled=true;e.configure(design,true);t.receive('condition',{statusConditionVehicle:10});e.tick();assert.equal(e.target,'map');assert(e.introUntil>now);assert(r.animations.some(a=>a.o.keys.includes('3001:0,1200,0')));
-now+=3001;parked();t.receive('condition',{statusConditionVehicle:10});e.tick();assert.equal(e.introUntil,0);assert.equal(e.target,'map');
+const baseRef=e.ref,uploads=r.uploads;
+for(let n=1;n<30;n++){now+=16;parked();e.tick();}
+assert.equal(r.uploads,uploads,'native animation sends no per-frame bitmaps');
+assert.equal(e.ref,baseRef,'gauges remain prepared beneath the animation');
+const G=require('../welcome_gpu.js');
+for(const duration of [3000,4500,5500,7000]){const d=M.preset(0);d.introDuration=duration;const keys=G.keyframes(d,123,duration);for(const key of Object.values(keys)){const rows=key.split(' ');assert(rows.length<=256);let previous=-1;for(const row of rows){const parts=row.split(':');assert(+parts[0]>previous);previous=+parts[0];assert(parts[1].split(',').every(v=>Number.isFinite(+v)));}assert.equal(previous,duration-123);}}
+now+=3001;parked();t.receive('condition',{statusConditionVehicle:10});e.tick();assert.equal(e.introUntil,0);assert.equal(e.target,'map');assert.equal(e.ref,baseRef,'no black layer rebuild at gauge handoff');assert.equal(r.layers.size,1,'all intro assets released');
 const prior=M.clone(e.design);e.preview(design);e.tick();assert(e.introUntil);e.stopPreview();assert.equal(e.introUntil,0,'ending test also ends its animation');assert.deepEqual(e.design,prior);
 assert.deepEqual(e.design,design);r.emit('disconnected');assert.equal(r.layers.size,0,'no stale image replay after disconnect');
 assert.equal(decode('speed',{speedVehicleCentreOfGravity:65535}).speed,null);assert.equal(decode('rpm',{actualValueRPMEngineCrankshaft:65535}).rpm,null);assert.equal(decode('temps',{temperatureEngineOilDrive:255}).oil,null);assert.equal(decode('gear',{statusActualStageDrive:0}).gear,null);assert.equal(decode('speed',{speedVehicleCentreOfGravity:6400}).speed,100);assert.equal(decode('rpm',{actualValueRPMEngineCrankshaft:12800}).rpm,3200);

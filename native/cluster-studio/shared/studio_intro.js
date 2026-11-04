@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
 const M=require('./studio_model.js'),A=require('./studio_assets.js'),{Canvas}=require('./kit_canvas.js'),kit=require('./kit_record.js');
-const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>1-Math.pow(1-clamp(x),3);
-let badge=null,shine=[];
+const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>{x=clamp(x);return x*x*x*(x*(x*6-15)+10);};
+let badge=null,shine=[],shineColor=null;
 function badgeFrame(n,color){
- if(!badge){const source=A.badge(),cv=new Canvas(768,Math.round(768*source.h/source.w));cv.image(source,0,0,cv.w,cv.h);badge=kit.makeImage(cv.w,cv.h,cv.d);}
+ if(!badge){const source=A.badge(),cv=new Canvas(1024,Math.round(1024*source.h/source.w));cv.image(source,0,0,cv.w,cv.h);badge=kit.makeImage(cv.w,cv.h,cv.d);}
  if(n<0)return badge;
- const key=n+':'+color;if(shine[key])return shine[key];
+ if(color!==shineColor){shine.forEach(img=>kit.dropImage(img));shine=[];shineColor=color;}
+ const key=n;if(shine[key])return shine[key];
  const pixels=Buffer.from(badge.data),rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
  for(let y=0;y<badge.h;y++)for(let x=0;x<badge.w;x++){const i=(y*badge.w+x)*4,k=Math.max(0,1-Math.abs(x/badge.w-y/badge.h*.12-(n/11*1.4-.2))/.11)*.85;for(let c=0;c<3;c++)pixels[i+c]+=Math.round((rgb[c]-pixels[i+c])*k);}
  return shine[key]=kit.makeImage(badge.w,badge.h,pixels);
@@ -44,12 +45,14 @@ function intro(r,d,b,ms){
   r.text('Antonio Shamo',x+b.w*.215,b.y+b.h*.62,b.h*.15,'#ffffff',{font:'bold'});
   r.fillRect(b.x+b.w*.35,b.y+b.h*.72,b.w*.30*a.entrance,b.h*.006,color);
  }else {
-  const img=badgeFrame(d.introShine&&a.p>.24&&a.p<.72?Math.round(a.shine*11):-1,color),w=b.w*.85,h=w*img.h/img.w;
+  const sweep=d.introShine&&a.p>.24&&a.p<.72?a.shine*11:-1,lo=sweep<0?-1:Math.floor(sweep),img=badgeFrame(lo,color),next=sweep>=0&&lo<11?badgeFrame(lo+1,color):null,w=b.w*.85,h=w*img.h/img.w;
   const x=b.x+(b.w-w)/2+(d.intro==='reveal'?0:(1-a.entrance)*b.w*.82),y=b.y+(b.h-h)/2;
-  if(d.intro==='reveal'&&a.entrance<1){const k=.65+.35*a.entrance;r.image(img,x+w*(1-k)/2,y+h*(1-k)/2,w*k,h*k);}
-  else r.image(img,x,y,w,h);
+  const k=d.intro==='reveal'?.65+.35*a.entrance:1,xx=x+w*(1-k)/2,yy=y+h*(1-k)/2;
+  r.image(img,xx,yy,w*k,h*k);
+  if(next){const opacity=sweep-lo;if(r.alpha){r.alpha(opacity);r.image(next,xx,yy,w*k,h*k);r.alpha(1);}else r.image(next,xx,yy,w*k,h*k,0,opacity);}
  }
  if(a.fade>0)r.fillRect(b.x,b.y,b.w,b.h,[0,0,0,Math.round(a.fade*255)]);
  return true;
 }
-module.exports={intro,duration,timeline};
+function prepare(d){if(d.intro==='slide'||d.intro==='reveal'){badgeFrame(-1);if(d.introShine){const color=d.introLight==='blue'?'#75cfff':d.introLight==='red'?'#ff697e':d.introLight==='theme'?M.THEMES[d.theme][1]:'#ffffff';for(let n=0;n<12;n++)badgeFrame(n,color);}}}
+module.exports={intro,duration,timeline,prepare,artwork:()=>({badge:badgeFrame(-1),apple})};

@@ -1,4 +1,4 @@
-# Cluster Studio 0.1.1 / CarPlay HUD 0.4.118
+# Cluster Studio 0.1.2 / CarPlay HUD 0.4.119
 
 A full-cluster visual designer for Antonio's X4 M Competition, integrated into
 **CarPlay HUD → Overview → Cluster Studio**. Install the Cluster Studio tool
@@ -48,7 +48,27 @@ code with sample readings; they are not photographs of a running car.
 
 ![Personal welcome](previews/welcome.png)
 
-Animation previews generated from the actual drawing code: [X4 M](previews/welcome-slide.gif), [Apple → CarPlay Ultra](previews/welcome-apple.gif), [Welcome Antonio](previews/welcome-welcome.gif).
+60 fps HD video previews generated from the actual drawing code: [X4 M](previews/welcome-slide-60fps.mp4), [Apple → CarPlay Ultra](previews/welcome-apple-60fps.mp4), [Welcome Antonio](previews/welcome-welcome-60fps.mp4).
+
+## Motion update in 0.4.119 / Studio 0.1.2
+
+The settings app requests 60 fps, preloads shine artwork before playback, blends
+shine positions continuously, and avoids drawing gauges hidden behind the welcome.
+Unchanged native control labels are not rewritten on each animation frame.
+The badge texture is sharper (1024 pixels wide), and movement uses smooth
+acceleration and deceleration. The native cluster welcome uploads its artwork once
+and runs motion, lighting and fades through renderer-side shader animation. It no
+longer streams 8 fps low-resolution bitmaps, and the chosen gauge layer remains
+prepared underneath for the reveal. Animation timing and the parked/expiry gates
+are retained. This change concerns welcome animation; ordinary vehicle gauge data
+refresh is not claimed to run at 60 fps.
+
+Validation includes GLSL ES shader compilation, WebGL compile/link and pixel
+checks for visible artwork, black transition and transparent expiry, plus native
+mock checks for no per-frame bitmap traffic and cleanup. Desktop rendering exceeded
+60 fps in the visual test. Sustained frame rate on the BMW is **not yet measured**.
+The three new MP4 previews are 1280 × 512 at 60 fps. Older GIFs are retained only as
+historical artifacts; they do not represent the revised motion quality.
 
 ## Actual output modes
 

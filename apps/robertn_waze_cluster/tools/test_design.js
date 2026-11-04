@@ -12,8 +12,8 @@ async function until(fn){for(let i=0;i<250;i++){if(fn())return;await wait(10);}t
 const g=new FakeGraphics(`/tmp/hud-g-${process.pid}`),r=new FakeRender(`/tmp/hud-dr-${process.pid}`),p=new FakePatch(`/tmp/hud-dp-${process.pid}`);
 const log={warn:()=>{},info:()=>{}},c=new SettingsControl({renderPath:r.path,patchPath:p.path,pendingPath:'/nonexistent',ackMs:250,retryMs:20});
 const client=new RenderClient('robertn_waze_cluster',log,{kit,socket:g.path,mode:'layer'});
-let proxyItems=[],classic=0,modes=[];
-const h=new HudScreen({control:c,log,proxies:items=>proxyItems=items,classic:()=>classic++},{client});
+let proxyItems=[],proxyUpdates=0,classic=0,modes=[];
+const h=new HudScreen({control:c,log,proxies:items=>{proxyItems=items;proxyUpdates++;},classic:()=>classic++},{client});
 h.on('mode',on=>modes.push(on));c.on('change',()=>h.render());
 const press=id=>{const i=h.items.findIndex(b=>b.id===id);assert(i>=0,id);assert(h.press(i),id);};
 async function settled(){await until(()=>!client.waiting);}
@@ -25,9 +25,10 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   await until(()=>c.canChangeDisplay());h.connect();await until(()=>h.ready);assert(!h.active);assert.equal(g.count(7),0,'no drawing in the background');
   assert(g.last(1).payload.toString().startsWith('robertn_waze_cluster\0proto=mgu-render/1'));
   h.hostVisible(true);await until(()=>g.count(7)>0);await settled();
-  assert(h.active);assert.equal(g.last(3).payload.readUInt32LE(),1);assert.equal(g.last(0x4d520002).payload.readUInt32LE(),1);
+  assert.equal(client.maxFps,60,'preview requests 60 fps');assert(h.active);assert.equal(g.last(3).payload.readUInt32LE(),1);assert.equal(g.last(0x4d520002).payload.readUInt32LE(),1);
   const pl=g.last(2).payload;assert.deepEqual([0,4,8,12].map(i=>pl.readInt32LE(i)),[160,100,1600,580]);
   assert(g.count(4)>0,'actual font atlases uploaded');assert(proxyItems.some(x=>x.id==='hud'));
+  const proxyBefore=proxyUpdates;h.render();await settled();h.render();await settled();assert.equal(proxyUpdates,proxyBefore,'animation frames do not rewrite unchanged BMW proxies');
   console.log('ok real renderer handshake, placement, atlas upload, frame and foreground input claims');
   await tap('hud');await until(()=>c.displayTarget()==='hud'&&!c._busy());assert.equal(c.settingsNotice(),'Applied and saved');
   assert(p.received.some(m=>m.cmd==='target'&&m.target==='hud'));
