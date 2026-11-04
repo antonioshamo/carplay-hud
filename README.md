@@ -1,9 +1,13 @@
 # CarPlay HUD for BMW iDrive 7
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps),
-with clearer native settings and an **optional experimental Dashboard startup mode**.
+with BMW-inspired graphical settings and an **optional experimental Dashboard startup mode**.
 
-Update versions: app **0.4.115**, tool **0.7.113**. A source commit alone is not
+Update versions: app **0.4.116**, map tool **0.7.113**, and **MGU Renderer 0.6.11**.
+MGU Renderer comes from the official MGU Store source; it draws the settings app
+and is separate from the existing cluster-render tool.
+
+[See the new settings screens](docs/hud-research/DESIGN.md). A source commit alone is not
 an installable release. Use the [Releases](https://github.com/antonioshamo/carplay-hud/releases)
 page to confirm that the `catalog` release and both versioned artifacts exist.
 
@@ -20,18 +24,18 @@ this fork from replacing it. For a source migration, note your settings, remove
 **Waze on cluster (App)** and then **Waze on cluster (Tool)** from Installed.
 Leave the working **cluster-render** installed: it satisfies this fork's renderer
 dependency. Install Waze on cluster from **antonioshamo/carplay-hud**, then verify
-Installed shows App 0.4.115 and Tool 0.7.113. Follow any restart notice from Store.
+Installed shows App 0.4.116 and Tool 0.7.113. Follow any restart notice from Store.
 Removing a source alone does not transfer ownership of its installed packages.
 
 Already using this repository? Refresh Store and update the App and Tool in place; no removal is needed.
 
-Open the app and choose **Use windshield HUD** on Home. This saves the target for
+Open the app and choose **Overview → Windshield HUD**. This saves the target for
 the next head-unit start. For the route-free trial, while parked:
 
-1. Press **Enable HUD auto-start (trial)** on Home. It confirms the live and saved HUD target before enabling the trial.
+1. Press **Overview → Enable CarPlay auto-start**. It confirms the live and saved HUD target before enabling the trial.
 2. Reconnect CarPlay, leaving its **Dashboard map visible on the center screen**.
 3. Do not start a navigation route. Check whether a fresh map appears on the HUD.
-4. To stop the trial, press **HUD auto-start trial: ON (press to turn off)** on Home.
+4. To stop the trial, press **Overview → Auto-start with CarPlay: ON**.
 
 The helper now listens for CarPlay from boot, even before you opt in. Capture stays
 off until enabled. A foreground event received before opt-in is retained, so opening
@@ -48,11 +52,12 @@ stays hidden. No new firmware patch or automatic navigation route is used.
 
 ## Settings and missing streets
 
-The update explicitly enables menu buttons and declares ID7 parent-page links.
-HUD and startup switches also work directly on Home without a page transition.
-Fourteen native pages provide short menus, size presets, fine/coarse movement,
-background/corner controls and diagnostics. Choose **Map appearance → Original
-colors** to preserve faint pixels removed by the existing HUD dark-background
+The new graphical app has Overview, Map layout, Appearance, Startup and Help
+sections, with large touch targets and iDrive dial input. It fits inside the BMW
+app area and yields when another screen or popup takes focus. If graphics are
+unavailable, the fourteen native settings pages remain usable; you can also select
+**Help & setup → Classic settings**. In Classic settings, direct HUD and startup
+buttons remain on Home. Choose **Appearance → Original map colors** to preserve faint pixels removed by the existing HUD dark-background
 filter. This applies to the normal map feed. It cannot restore roads absent from
 Apple's source video or lock Apple Maps' geographic zoom. The reported loss on
 both cluster and HUD still needs a source capture to diagnose.

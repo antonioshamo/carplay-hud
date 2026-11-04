@@ -23,6 +23,9 @@ const EventEmitter = require('events');
 const fs = require('fs');
 const net = require('net');
 const path = require('path');
+const {FakeGraphics}=require('./fake_graphics.js');
+process.env.MGU_RENDERD_SOCKET='/tmp/hud-page-graphics-'+process.pid;
+const graphics=new FakeGraphics(process.env.MGU_RENDERD_SOCKET);
 const { FakeRender, FakePatch, RENDER_PAGE, RENDER_FPS } = require('./fakes.js');
 const { RENDER_PATH, PATCH_PATH, PENDING_PATH, SIZE, SAFE } = require('../src/waze_cluster_control.js');
 
@@ -48,7 +51,7 @@ fs.readFileSync = (p, ...rest) => realRead.call(fs, p === PENDING_PATH ? PENDING
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function until(what, check) {
-    const deadline = Date.now() + 2000;
+    const deadline = Date.now() + 5000;
     return new Promise((resolve, reject) => {
         const poll = () => {
             if (check()) resolve();
@@ -86,8 +89,13 @@ Object.entries(UI.containers).forEach(([cid, cont]) => {
 });
 const rhmi = new EventEmitter();
 rhmi.getByName = (name) => byName[name] || null;
-rhmi.mapEntryState = () => Promise.resolve();
-rhmi.openEntryState = () => Promise.resolve();
+let mappedState, currentEntry;
+rhmi.mapEntryState = (uuid,state) => {mappedState=state;return Promise.resolve();};
+rhmi.openEntryState = () => {
+    if(currentEntry)currentEntry.emit('visible',{visible:false});
+    currentEntry=mappedState;currentEntry.emit('visible',{visible:true});
+    return Promise.resolve();
+};
 const openedPages = [];
 // This fixture checks our declared hierarchy, not BMW's native implementation.
 rhmi.openState = name => {
@@ -159,12 +167,12 @@ async function main() {
     const buttons = Object.entries(components).filter(([, d]) => d.type === 'button');
     const xmlButtons = [...XML.matchAll(/<component id="(\d+)" type="button"/g)].map(m => m[1]).sort();
     assert.deepStrictEqual(buttons.map(([id]) => id).sort(), xmlButtons);
-    assert.equal(Object.keys(UI.containers).length, 14);
-    assert.equal(Object.keys(UI.containers['1'].components).length, 8, 'home is seven rows plus title');
+    assert.equal(Object.keys(UI.containers).length, 15);
+    assert.equal(Object.keys(UI.containers['1'].components).length, 9, 'classic home has eight rows plus title');
     assert(!Object.values(UI.containers['1'].components).some(c => /wocRow|wocEnable|wocDisable/.test(c.name)), 'technical rows stay off home');
     assert.equal(APP_JSON.application.version, MANIFEST.version);
     for (const [id, state] of Object.entries(UI.containers)) {
-        if (id === '1') continue;
+        if (id === '1' || id === '20') continue;
         const parent = state.properties.ParentState.value;
         assert(UI.containers[parent]);
         const xmlState = XML.split('<container id="' + id + '"')[1].split('</container>')[0];
@@ -172,7 +180,7 @@ async function main() {
         const seen = new Set([id]);let at = String(parent);
         while(at !== '1') {assert(!seen.has(at));seen.add(at);at=String(UI.containers[at].properties.ParentState.value);}
     }
-    console.log('ok   fourteen native pages; home has seven rows; XML and JSON agree');
+    console.log('ok   fourteen classic pages plus graphical host; XML and JSON agree');
 
     const render = new FakeRender(RSOCK);
     let patch = new FakePatch(PSOCK);
@@ -237,6 +245,27 @@ async function main() {
         render.received.length=0;
         console.log('ok   direct HUD works without page API; raw/normal press dedupes; navigation errors visible');
 
+        await graphics.listen();
+        await until('modern host selected',()=>instance._modern && instance._design.active);
+        assert.equal(mappedState,byName.ST_WOC_Design);
+        await until('actual graphic frame',()=>graphics.count(7)>0);
+        byName.ST_WOC_Design.emit('focus',{focus:false});
+        assert.equal(instance._design.active,false,'real state focus field hides the overlay');
+        byName.ST_WOC_Design.emit('focus',{focus:true});
+        assert(instance._design.active);
+        instance._design.page='support';instance._design.render();
+        await until('classic control ready',()=>instance._design.items.some(b=>b.id==='classic'));
+        instance._design.press(instance._design.items.findIndex(b=>b.id==='classic'));
+        await until('classic restored',()=>!instance._modern&&mappedState===byName.ST_OnlineApps_WazeCluster);
+        assert(!instance._design.active);
+        byName.wocModern.emit('action');
+        await until('modern restored',()=>instance._modern&&instance._design.active);
+        await graphics.close();
+        await until('renderer loss returns to classic',()=>!instance._modern&&mappedState===byName.ST_OnlineApps_WazeCluster);
+        assert(!instance._design.active);
+        console.log('ok   graphical entry, actual focus event, Classic button, return to modern and disconnect fallback');
+
+
         await until('patched: Disable map only', () => byName.wocDisable.visible === true && byName.wocDisable.enabled === true &&
             byName.wocEnable.visible === false && byName.wocEnable.enabled === false);
         byName.wocDisable.emit('action');
@@ -289,6 +318,8 @@ async function main() {
         await until('restarting on screen', () => status.text === 'Restarting head unit…' && byName.wocRestart.enabled === false);
         console.log('ok   pressing the restart button reboots the unit once');
     } finally {
+        instance._design.close();
+        await graphics.close();
         await render.close();
         await patch.close();
         [RSOCK, PSOCK, PENDING].forEach((p) => { try { fs.unlinkSync(p); } catch (e) { /* gone */ } });

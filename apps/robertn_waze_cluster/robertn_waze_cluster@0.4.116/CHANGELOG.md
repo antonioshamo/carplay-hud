@@ -1,3 +1,12 @@
+# 0.4.116 - BMW-inspired graphical settings
+
+- New dark navy panels, blue highlights, fixed left navigation and large touch targets; the iDrive dial also selects and presses controls.
+- Overview puts HUD selection and the saved CarPlay startup trial together. Map layout combines size presets, adjustment arrows and a labelled schematic preview.
+- Appearance offers original colors, clear background and corner choices, with unsupported controls visibly disabled. Help includes diagnostics and Classic settings.
+- Uses MGU Renderer 0.6.11 in the central display app area, with its foreground gate. Native BMW settings remain the automatic fallback if graphics are unavailable.
+- Bundles public MIT drawing/client code and OFL Inter fonts with their license notices. Tool remains 0.7.113; startup behavior is unchanged and still requires a parked car test.
+- Tested through the actual renderer wire client and fake map tools, plus native HMI entry/focus/fallback integration. PC images use the real drawing command stream with sample status; they are not car validation.
+
 # 0.4.115 - Accessible controls and startup connection timing
 
 - Explicitly enable navigation buttons and declare ID7 parent-state links in XML and JSON.

@@ -1,7 +1,7 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.115",
-  "description": "Puts the CarPlay Waze map on the instrument cluster: enable the patch from the HMI and the map follows CarPlay",
+  "version": "0.4.116",
+  "description": "CarPlay HUD settings with a BMW-inspired graphical interface, HUD layout controls and an experimental Dashboard startup option",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {
@@ -25,7 +25,8 @@
     "javascript",
     "manifest.json",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "licenses"
   ],
   "dependencies": {
     "oap-sdk": "24.10.2"

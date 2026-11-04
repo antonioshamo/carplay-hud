@@ -1,13 +1,21 @@
 {
   "schema": 1,
   "id": "robertn_waze_cluster",
-  "version": "0.4.115",
-  "tree": "robertn_waze_cluster@0.4.115",
+  "version": "0.4.116",
+  "tree": "robertn_waze_cluster@0.4.116",
   "modules": [
     "src/robertn_waze_cluster.js",
     "src/waze_cluster_control.js",
     "src/profile_sync.js",
-    "src/settings_control.js"
+    "src/settings_control.js",
+    "src/hud_screen.js",
+    "src/hud_view.js",
+    "src/mgu_render_client.js",
+    "src/kit_record.js",
+    "src/kit_canvas.js",
+    "src/kit_fonts.js",
+    "src/font_regular.js",
+    "src/font_semibold.js"
   ],
   "sdk": [
     "oap-sdk/src/core/OnlineApp.js",

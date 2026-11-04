@@ -4,10 +4,11 @@
 const fs=require('fs'),path=require('path');
 const L=(name,text)=>({name,text,type:'label'});
 const B=(name,text)=>({name,text,type:'button'});
+const {HOST,PROXIES}=require('../src/hud_screen.js');
 const pages=[
  [1,'ST_OnlineApps_WazeCluster','CarPlay HUD',[
   L('wocStatus','Connecting...'),B('wocDisplay','Use windshield HUD'),B('wocQuickStartup','Enable HUD auto-start (trial)'),B('wocSizePage','Map size'),
-  B('wocPositionPage','Map position'),B('wocAppearancePage','Map appearance'),B('wocSupportPage','Help & setup')]],
+  B('wocPositionPage','Map position'),B('wocAppearancePage','Map appearance'),B('wocSupportPage','Help & setup'),B('wocModern','Open modern settings')]],
  [8,'ST_WOC_Display','Choose a display',[
   L('displayStatus','Reading display...'),B('wocDisplayHud','Windshield HUD'),B('wocDisplayCluster','Instrument cluster'),
   B('wocStartupPage','Startup experiment'),L('displayHint','Your choice is saved for the next start')]],
@@ -51,6 +52,7 @@ const pages=[
 ];
 // ID7 child states need their parent in both descriptions, as in Store's ID7 layout.
 const parents={2:1,3:1,4:1,5:4,6:4,7:4,8:4,9:2,10:3,11:3,12:1,13:4,14:8};
+pages.push([20,HOST,'CarPlay HUD',Array.from({length:PROXIES},(_,i)=>B('designProxy'+i,'Settings'))]);
 function build(){
  const spec=JSON.parse(fs.readFileSync(path.join(__dirname,'../mgu-app.json'),'utf8'));
  const dest=path.join(__dirname,'..',spec.tree,'rhmiData/uiDescriptions/ID7');
