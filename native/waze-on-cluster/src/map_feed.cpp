@@ -168,6 +168,23 @@ void MapFeed::set_hud_offset(int dx, int dy)
     log_info("render: HUD map moved to %u,%u (offset %+d,%+d)", q.x, q.y, dx, dy);
 }
 
+bool MapFeed::set_hud_style(const std::string &setting, bool on)
+{
+    if (setting == "hud_black_background") cfg_.hud_black_background = on;
+    else if (setting == "hud_round_corners") cfg_.hud_round_corners = on;
+    else return false;
+    // Reprocess the next fresh decoded frame. Never reuse a filtered image
+    // to claim that its missing detail has been restored.
+    if (cfg_.target == "hud" && scaling_) {
+        if (setting == "hud_black_background") scaler_.set_black_background(cfg_.hud_black_background);
+        if (setting == "hud_round_corners") {
+            const uint32_t h = lo_.h;
+            scaler_.set_corner_radius(cfg_.hud_round_corners ? (h / 12 > 6 ? h / 12 : 6) : 0);
+        }
+    }
+    return true;
+}
+
 void MapFeed::set_hud_width(unsigned pct)
 {
     if (pct == cfg_.hud_width_pct)
@@ -314,6 +331,9 @@ FeedStatus MapFeed::status(const std::string &decode, const std::string &stream)
     s.hud_width_pct = cfg_.hud_width_pct;
     s.hud_offset_x = cfg_.hud_offset_x;
     s.hud_offset_y = cfg_.hud_offset_y;
+    s.hud_black_background = cfg_.hud_black_background;
+    s.hud_round_corners = cfg_.hud_round_corners;
+    s.hud_style_available = cfg_.scale_down;
     s.upload_cap_kb = cap_kb_;
     s.upload_reason = budget_reason_;
     char cap[96] = "";

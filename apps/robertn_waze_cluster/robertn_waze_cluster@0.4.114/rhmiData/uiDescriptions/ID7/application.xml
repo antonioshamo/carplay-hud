@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<application>
+  <container id="1" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1002" name="Titlebar"><component id="2000" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1003" name="List"><property id="3" value="1"/>
+      <component id="2001" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2002" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2003" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2004" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2005" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2006" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+    </layoutGroup>
+  </container>
+  <container id="8" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1016" name="Titlebar"><component id="2007" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1017" name="List"><property id="3" value="1"/>
+      <component id="2008" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2009" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2010" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2011" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2012" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="14" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1028" name="Titlebar"><component id="2013" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1029" name="List"><property id="3" value="1"/>
+      <component id="2014" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2015" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2016" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2017" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2018" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2019" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="2" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1004" name="Titlebar"><component id="2020" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1005" name="List"><property id="3" value="1"/>
+      <component id="2021" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2022" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2023" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2024" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2025" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2026" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="9" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1018" name="Titlebar"><component id="2027" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1019" name="List"><property id="3" value="1"/>
+      <component id="2028" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2029" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2030" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2031" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2032" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="3" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1006" name="Titlebar"><component id="2033" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1007" name="List"><property id="3" value="1"/>
+      <component id="2034" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2035" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2036" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2037" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2038" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2039" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="10" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1020" name="Titlebar"><component id="2040" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1021" name="List"><property id="3" value="1"/>
+      <component id="2041" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2042" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2043" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2044" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="11" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1022" name="Titlebar"><component id="2045" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1023" name="List"><property id="3" value="1"/>
+      <component id="2046" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2047" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2048" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2049" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="12" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1024" name="Titlebar"><component id="2050" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1025" name="List"><property id="3" value="1"/>
+      <component id="2051" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2052" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2053" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2054" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2055" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="4" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1008" name="Titlebar"><component id="2056" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1009" name="List"><property id="3" value="1"/>
+      <component id="2057" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2058" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2059" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2060" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2061" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2062" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+    </layoutGroup>
+  </container>
+  <container id="13" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1026" name="Titlebar"><component id="2063" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1027" name="List"><property id="3" value="1"/>
+      <component id="2064" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2065" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2066" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2067" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2068" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="5" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1010" name="Titlebar"><component id="2069" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1011" name="List"><property id="3" value="1"/>
+      <component id="2070" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2071" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2072" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2073" type="button" widget="LT_Button_1Row"><property id="2" value="0"/><property id="3" value="3"/></component>
+      <component id="2074" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="6" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1012" name="Titlebar"><component id="2075" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1013" name="List"><property id="3" value="1"/>
+      <component id="2076" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+      <component id="2077" type="button" widget="LT_Button_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2078" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="0"/></component>
+    </layoutGroup>
+  </container>
+  <container id="7" type="state" widget="LT_State_Wide">
+    <layoutGroup id="1014" name="Titlebar"><component id="2079" type="title"><property id="2" value="1"/></component></layoutGroup>
+    <layoutGroup id="1015" name="List"><property id="3" value="1"/>
+      <component id="2080" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2081" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2082" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2083" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2084" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2085" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2086" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2087" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2088" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2089" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2090" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2091" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2092" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2093" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2094" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2095" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2096" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2097" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2098" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2099" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2100" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2101" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2102" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2103" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2104" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2105" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2106" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2107" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2108" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+      <component id="2109" type="label" widget="LT_Label_1Row"><property id="2" value="1"/><property id="3" value="3"/></component>
+    </layoutGroup>
+  </container>
+</application>

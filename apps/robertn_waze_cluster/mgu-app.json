@@ -1,12 +1,13 @@
 {
   "schema": 1,
   "id": "robertn_waze_cluster",
-  "version": "0.4.113",
-  "tree": "robertn_waze_cluster@0.4.113",
+  "version": "0.4.114",
+  "tree": "robertn_waze_cluster@0.4.114",
   "modules": [
     "src/robertn_waze_cluster.js",
     "src/waze_cluster_control.js",
-    "src/profile_sync.js"
+    "src/profile_sync.js",
+    "src/settings_control.js"
   ],
   "sdk": [
     "oap-sdk/src/core/OnlineApp.js",

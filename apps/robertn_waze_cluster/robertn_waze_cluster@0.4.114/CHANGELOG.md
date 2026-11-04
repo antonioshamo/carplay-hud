@@ -1,3 +1,19 @@
+# 0.4.114 - HUD settings and optional startup trial
+
+- Fourteen focused native pages; the home screen contains six rows.
+- Explicit HUD/cluster choices, Compact/Balanced/Large size presets, and
+  fine (10 px) or coarse (40 px) movement. Center and standard-size resets.
+- Original map colors or clear dark background, plus rounded/square corners.
+  Appearance requires the accompanying tool revision 0.7.112.
+- Confirm settings using renderer status and save acknowledgements.
+- Appearance, like size and position, is saved per driver profile. Fine/coarse
+  step choice lasts for the current app process; it is not a vehicle setting.
+- Optional Dashboard auto-start experiment, off by default, with helper status
+  and an Off switch. Requires the map visible on the center screen.
+- No change to the CarPlay firmware patch. No-route startup remains unverified.
+- The background-filter bypass preserves faint detail present in source
+  pixels. It does not lock Apple Maps zoom or fix missing source map tiles.
+
 # Changelog
 
 ## 0.4.113 (eroobeeroo fork)

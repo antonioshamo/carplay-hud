@@ -88,6 +88,9 @@ const rhmi = new EventEmitter();
 rhmi.getByName = (name) => byName[name] || null;
 rhmi.mapEntryState = () => Promise.resolve();
 rhmi.openEntryState = () => Promise.resolve();
+const openedPages = [];
+rhmi.openState = name => { openedPages.push(name); return Promise.resolve(); };
+let instance;
 
 /* ---- fake SDK ----------------------------------------------------------------- */
 
@@ -100,6 +103,7 @@ const logger = {};
 class OnlineApp extends EventEmitter {
     constructor() {
         super();
+        instance = this;
         this._packageJson = JSON.parse(fs.readFileSync(path.join(PKG, 'package.json'), 'utf8'));
         this.appDescription = APP_JSON;
         this.rhmiApplication = rhmi;
@@ -145,20 +149,15 @@ function runSource() {
 /* ---- scenario ----------------------------------------------------------------- */
 
 async function main() {
-    const components = UI.containers['1'].components;
+    const components = Object.assign({}, ...Object.values(UI.containers).map(c => c.components));
     const buttons = Object.entries(components).filter(([, d]) => d.type === 'button');
-    const xmlButtons = [...XML.matchAll(/<component id="(\d+)" type="button"/g)].map((m) => m[1]).sort();
-    assert.deepStrictEqual(buttons.map(([id]) => id).sort(), xmlButtons, 'application.xml and uiDescription agree');
-    assert.deepStrictEqual(buttons.map(([, d]) => d.name).sort(), ['wocCapture', 'wocDisable', 'wocDisplay', 'wocEnable', 'wocHudCentre', 'wocHudDown', 'wocHudLeft', 'wocHudRight', 'wocHudSize', 'wocHudSmaller', 'wocHudUp', 'wocRestart']);
-    assert(!buttons.some(([, d]) => /^(Show|Stop)$/.test(d.rows[0].Text.value)), 'no Show or Stop button');
-    /* The restart button ships hidden; it shows only while a patch is deferred. */
-    assert.strictEqual(components['34'].properties.Visible.value, 0, 'wocRestart ships hidden');
-    console.log('ok   page buttons: Enable map, Disable map, Restart (hidden), Capture logs; no Show or Stop');
-    const setup = Object.entries(components).find(([, d]) => d.name === 'wocSetup');
-    assert(setup && setup[0] === '21' && setup[1].type === 'label' && setup[1].properties.Visible.value === 1 &&
-        setup[1].properties.Focusable.value === 0, 'wocSetup: a visible, unfocusable label right under wocStatus');
-    assert(/<component id="20" type="label"[^]*?<\/component>\s*<component id="21" type="label" widget="LT_Label_1Row">\s*<property id="2" value="1"\/>/.test(XML),
-        'application.xml: label 21, visible, right after the status');
+    const xmlButtons = [...XML.matchAll(/<component id="(\d+)" type="button"/g)].map(m => m[1]).sort();
+    assert.deepStrictEqual(buttons.map(([id]) => id).sort(), xmlButtons);
+    assert.equal(Object.keys(UI.containers).length, 14);
+    assert.equal(Object.keys(UI.containers['1'].components).length, 7, 'home is six rows plus title');
+    assert(!Object.values(UI.containers['1'].components).some(c => /wocRow|wocEnable|wocDisable/.test(c.name)), 'technical rows stay off home');
+    assert.equal(APP_JSON.application.version, MANIFEST.version);
+    console.log('ok   fourteen native pages; home has six rows; XML and JSON agree');
 
     const render = new FakeRender(RSOCK);
     let patch = new FakePatch(PSOCK);
@@ -174,14 +173,28 @@ async function main() {
         process.exit = (code) => { throw new Error(`process.exit(${code})`); };
         runSource();
         const status = byName.wocStatus;
-        await until('page shows the map', () => status.text === `Showing: ${RENDER_PAGE} — ${RENDER_FPS}`);
+        await until('page shows the map', () => status.text === 'Map active on cluster');
         assert(!logs.some((l) => /^error/.test(l)), logs.filter((l) => /^error/.test(l)).join('\n'));
         const bound = logs.filter((l) => l.startsWith('info: BIND OK: ')).map((l) => l.split(' ')[3]).sort();
-        assert.deepStrictEqual(bound, ['wocCapture', 'wocDisable', 'wocDisplay', 'wocEnable', 'wocHudCentre', 'wocHudDown', 'wocHudLeft', 'wocHudRight', 'wocHudSize', 'wocHudSmaller', 'wocHudUp', 'wocRestart'], 'bound buttons');
+        assert.deepStrictEqual(bound, buttons.map(([, d]) => d.name).sort(), 'every native button is bound');
         assert.strictEqual(byName.wocRestart.visible, false, 'restart button hidden while the map shows');
         console.log('ok   a page opened while the map is up shows it');
-        await until('the setup line', () => byName.wocSetup.text === 'Set Instrument cluster > Central display area to Map view');
-        console.log('ok   the page says to set Instrument cluster > Central display area to Map view');
+        byName.wocSizePage.emit('action');
+        await until('size page opens', () => openedPages.includes('ST_WOC_Size'));
+        byName.ST_OnlineApps_WazeCluster.emit('visible', {visible: false});
+        byName.ST_WOC_Size.emit('visible', {visible: true});
+        assert.equal(render._clients.size, 1, 'moving to a settings page keeps the socket open');
+        assert.equal(byName.wocHudSize.enabled, false, 'HUD adjustments disabled in cluster mode');
+        console.log('ok   native page navigation retains controls; cluster mode disables HUD adjustments');
+        for (const [button, state] of [['wocStartupPage','ST_WOC_Startup'], ['wocDisplay','ST_WOC_Display'], ['wocPresetsPage','ST_WOC_Presets'],
+            ['wocAppearancePage','ST_WOC_Appearance'], ['wocHorizontalPage','ST_WOC_Horizontal'],
+            ['wocVerticalPage','ST_WOC_Vertical'], ['wocTroubleshootPage','ST_WOC_Troubleshoot']]) {
+            byName[button].emit('action');
+            await until(state, () => openedPages.includes(state));
+        }
+        assert.equal(byName.wocOriginalColors.enabled, false);
+        assert.equal(byName.wocCorners.enabled, false);
+        console.log('ok   customization pages open; unsupported appearance controls are disabled');
 
         await until('patched: Disable map only', () => byName.wocDisable.visible === true && byName.wocDisable.enabled === true &&
             byName.wocEnable.visible === false && byName.wocEnable.enabled === false);
@@ -194,7 +207,7 @@ async function main() {
         assert.deepStrictEqual(render.received, [], 'no command to the render');
         console.log('ok   Disable map while patched, Enable map while not; presses go to the patch daemon, none to the render');
 
-        byName.ST_OnlineApps_WazeCluster.emit('visible', { visible: false });
+        instance.emit('changeVisibility', { visible: false });
         /* the page's own; the driver-profile link to patchd stays (profile_sync.js) */
         await until('sockets closed', () => render._clients.size === 0 && patch._clients.size === 1);
         console.log('ok   hiding the page closes both sockets');
@@ -202,7 +215,7 @@ async function main() {
         render.stream(false);
         patch.announce('patched', 'high', null);
         byName.ST_OnlineApps_WazeCluster.emit('visible', { visible: true });
-        await until('page reads the current state', () => status.text === 'Patched — waiting for CarPlay');
+        await until('page reads the current state', () => status.text === 'Waiting for a CarPlay map');
         console.log('ok   a page opened again reads the render\'s current state');
 
         /* The patch the install wrote, from the daemon: its line, no Enable
@@ -215,7 +228,7 @@ async function main() {
         console.log('ok   a pending patch from the daemon: its line, no Enable or Disable, the restart offered');
 
         /* Before the head-unit start that starts the daemon: from the marker. */
-        byName.ST_OnlineApps_WazeCluster.emit('visible', { visible: false });
+        instance.emit('changeVisibility', { visible: false });
         await until('closed', () => patch._clients.size === 1);
         await patch.close();
         fs.writeFileSync(PENDING, JSON.stringify({ action: 'apply' }) + '\n');

@@ -77,6 +77,8 @@ struct FeedStatus {
     std::string upload_reason;
     unsigned hud_width_pct = 0;   /* the HUD map's size setting (0: the default) */
     int hud_offset_x = 0, hud_offset_y = 0;   /* and where it is moved to from the centre */
+    bool hud_black_background = true, hud_round_corners = true;
+    bool hud_style_available = true;   /* processing needs HUD scaling enabled */
 };
 
 /* Whether a status is worth a log line: its state, reason or target differs
@@ -112,6 +114,7 @@ public:
     /* The HUD map moved (FeedConfig::hud_offset_x/y), at once: the layer
      * only changes place, no new texture. */
     void set_hud_offset(int dx, int dy);
+    bool set_hud_style(const std::string &setting, bool on);
     /* Whether the renderer has target `name` (true until connected). */
     bool knows(const std::string &name) const;
 

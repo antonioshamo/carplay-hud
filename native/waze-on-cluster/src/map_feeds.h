@@ -52,6 +52,7 @@ public:
     void set_hud_width(unsigned pct);
     /* The HUD map moved from its centred place (the HUD feed moves at once). */
     void set_hud_offset(int dx, int dy);
+    bool set_hud_style(const std::string &setting, bool on);
     int hud_offset_x() const { return base_.hud_offset_x; }
     int hud_offset_y() const { return base_.hud_offset_y; }
 

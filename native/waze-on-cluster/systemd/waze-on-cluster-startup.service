@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MPL-2.0
+[Unit]
+Description=Optional CarPlay Dashboard HUD startup experiment
+RequiresMountsFor=/var/opt
+After=local-fs.target cluster-render.service waze-on-cluster.service
+
+[Service]
+ExecStart=/usr/bin/node /var/opt/waze-on-cluster/current/startup/service.js
+Restart=always
+RestartSec=10
+TimeoutStopSec=5
+KillMode=control-group
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

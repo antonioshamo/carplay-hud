@@ -380,6 +380,23 @@ int main()
            feeds.status("decode").target == "map+hud");
     ok("map+hud: the HUD's map is fitted inside its 800x480 scene",
        bh && bh->params.rect.w <= 800 && bh->params.rect.h <= 480 && bh->params.rect.x + bh->params.rect.w <= 800);
+    ok("appearance accepts only supported HUD keys", !feeds.set_hud_style("target", false));
+    feeds.set_hud_style("hud_black_background", false);
+    feeds.set_hud_style("hud_round_corners", false);
+    bpump(1500, &f1);
+    ref.set_black_background(false);
+    ref.set_corner_radius(0);
+    ref.scale(f1.data(), &f1_hud);
+    on_hud = false; on_map = false;
+    gh = b.gpu.graph("hud"); gm = b.gpu.graph("map");
+    if (gh) for (const auto &kv : gh->shown.buffers)
+        on_hud = on_hud || (kv.second.f == crs::TexFormat::R8 && kv.second.px == f1_hud);
+    if (gm) for (const auto &kv : gm->shown.buffers)
+        on_map = on_map || (kv.second.f == crs::TexFormat::R8 && kv.second.px == f1);
+    ok("appearance changes real HUD texture while cluster pixels stay unchanged", on_hud && on_map &&
+        !feeds.status("decode").hud_black_background && !feeds.status("decode").hud_round_corners);
+    feeds.set_hud_style("hud_black_background", true);
+    feeds.set_hud_style("hud_round_corners", true);
 
     ok("set_targets: an invalid spec changes nothing", !feeds.set_targets("map+panel") && feeds.size() == 2);
     ok("set_targets: hud alone keeps the HUD's feed and drops the cluster's", feeds.set_targets("hud") && feeds.size() == 1 &&

@@ -1,3 +1,66 @@
+# CarPlay HUD for BMW iDrive 7
+
+Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps),
+with clearer native settings and an **optional experimental Dashboard startup mode**.
+
+Release candidate: app **0.4.114**, tool **0.7.112**. A source commit alone is not
+an installable release. Use the [Releases](https://github.com/antonioshamo/carplay-hud/releases)
+page to confirm that the `catalog` release and both versioned artifacts exist.
+
+## Install and test
+
+In MGU Store add the public GitHub source:
+
+```text
+https://github.com/antonioshamo/carplay-hud
+```
+
+If Waze on cluster is already installed from another source, Store will block
+this fork from replacing it. For a source migration, note your settings, remove
+**Waze on cluster (App)** and then **Waze on cluster (Tool)** from Installed.
+Leave the working **cluster-render** installed: it satisfies this fork's renderer
+dependency. Install Waze on cluster from **antonioshamo/carplay-hud**, then verify
+Installed shows App 0.4.114 and Tool 0.7.112. Follow any restart notice from Store.
+Removing a source alone does not transfer ownership of its installed packages.
+
+Open the app and choose **Display → Windshield HUD**. This saves the target for
+the next head-unit start. For the route-free trial, while parked:
+
+1. Open **Display → Startup experiment → Try Dashboard auto-start**.
+2. Reconnect CarPlay, leaving its **Dashboard map visible on the center screen**.
+3. Do not start a navigation route. Check whether a fresh map appears on the HUD.
+4. To return to normal behavior, choose **Off: use normal map stream**.
+
+The helper starts at boot after you opt in. The app can be closed. It requires a
+new foreground-CarPlay event; enabling it while CarPlay is already connected can
+require reconnecting. It yields to the normal secondary map feed and hides when
+CarPlay is covered by BMW menus or frames stop. Size and position follow the app's
+settings. Dashboard trial frames use original colors and square corners.
+
+**Not yet car-validated.** This mirrors the center-screen map; it does not force
+Apple to start an independent secondary map stream. The layout classifier, screen
+capture format, CarPlay event subscription and physical HUD output require a
+parked test on the target car. If the classifier rejects the screen, the trial
+stays hidden. No new firmware patch or automatic navigation route is used.
+
+## Settings and missing streets
+
+Fourteen native pages provide short menus, size presets, fine/coarse movement,
+background/corner controls and diagnostics. Choose **Map appearance → Original
+colors** to preserve faint pixels removed by the existing HUD dark-background
+filter. This applies to the normal map feed. It cannot restore roads absent from
+Apple's source video or lock Apple Maps' geographic zoom. The reported loss on
+both cluster and HUD still needs a source capture to diagnose.
+
+BMW's MPH and speed-limit widgets remain in their existing positions. This
+release does not move them, remove Apple's instruction banner, or implement
+CarPlay Ultra. No proprietary BMW SDK, car binaries, keys or private logs ship.
+
+[Startup experiment details](native/waze-on-cluster/startup/README.md) ·
+[Research and validation limits](docs/hud-research/SETTINGS.md)
+
+---
+
 # idrive-apps
 
 Tools and apps for the iDrive 7 head unit (MGU) of a BMW, installed from the
@@ -51,7 +114,7 @@ On the cluster, as before, the map fills the central area:
 
 ## Install
 
-In the Store, add the GitHub source `robertnisipeanu/idrive-apps` and install
+In the Store, add the GitHub source `antonioshamo/carplay-hud` and install
 **Waze on cluster**. The Store installs what it requires first: `mgu-deploy`
 0.7.0 from mgu-store, then `cluster-render` and the Waze tool from here. One
 head-unit start activates the CarPlay patch. The Store removes them again:

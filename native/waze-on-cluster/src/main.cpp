@@ -78,7 +78,10 @@ std::string status_line(const FeedStatus &s)
            ",\"upload_cap_kb_per_s\":" + std::to_string(s.upload_cap_kb) +
            ",\"upload_reason\":" + json_escape(s.upload_reason) +
            ",\"hud_width_pct\":" + std::to_string(s.hud_width_pct) +
-           ",\"hud_x\":" + std::to_string(s.hud_offset_x) + ",\"hud_y\":" + std::to_string(s.hud_offset_y) + "}";
+           ",\"hud_x\":" + std::to_string(s.hud_offset_x) + ",\"hud_y\":" + std::to_string(s.hud_offset_y) +
+           ",\"hud_black_background\":" + (s.hud_black_background ? "true" : "false") +
+           ",\"hud_round_corners\":" + (s.hud_round_corners ? "true" : "false") +
+           ",\"hud_style_available\":" + (s.hud_style_available ? "true" : "false") + "}";
 }
 
 class Server : public Control::Handler {
@@ -98,6 +101,12 @@ public:
         if (cmd == "start" && it != msg.end()) {
             log_info("start %s", it->second.c_str());
             feeds_->set_targets(it->second);
+        } else if (cmd == "hud-style") {
+            auto setting = msg.find("setting"), value = msg.find("value");
+            if (setting == msg.end() || value == msg.end() ||
+                (value->second != "0" && value->second != "1") ||
+                !feeds_->set_hud_style(setting->second, value->second == "1"))
+                log_warn("hud-style: invalid setting or value");
         } else if (cmd == "hud" && (pct != msg.end() || hx != msg.end() || hy != msg.end())) {
             /* the HUD map's size: 0 (the default box) or 20-100 % of its width */
             if (pct != msg.end()) {
