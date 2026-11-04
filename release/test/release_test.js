@@ -176,6 +176,20 @@ test('the Waze chain: app -> waze-on-cluster -> cluster-render and a hook-runnin
     assert.strictEqual(renderer.uninstallable, true);
 });
 
+test('HUD installation retains the pre-Studio interface contract', () => {
+    // BMW generates every requested interface before registering the app.
+    // Optional firmware-specific telemetry must not make the HUD uninstallable.
+    const root = path.join(__dirname, '..', '..');
+    const app = JSON.parse(fs.readFileSync(path.join(root, 'apps/robertn_waze_cluster/mgu-app.json')));
+    const staged = path.join(root, 'apps/robertn_waze_cluster', app.tree);
+    const manifest = JSON.parse(fs.readFileSync(path.join(staged, 'manifest.json')));
+    const baseline = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/hud-compatible-manifest.json')));
+    assert.deepStrictEqual(manifest, baseline, 'retain the 0.4.116 interface contract until vehicle-specific interfaces are verified');
+    const pkg = JSON.parse(fs.readFileSync(path.join(staged, 'package.json')));
+    assert.strictEqual(pkg.oapAppSettings.someipManifest, 'manifest.json');
+    assert.strictEqual(pkg.version, app.version);
+});
+
 let failed = 0;
 tests.forEach((t) => {
     try {
