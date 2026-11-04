@@ -121,6 +121,15 @@ bool MapFeeds::set_targets(const std::string &spec)
     return true;
 }
 
+bool MapFeeds::set_hud_style(const std::string &setting, bool on)
+{
+    if (setting == "hud_black_background") base_.hud_black_background = on;
+    else if (setting == "hud_round_corners") base_.hud_round_corners = on;
+    else return false;
+    for (auto &f : feeds_) f->set_hud_style(setting, on);
+    return true;
+}
+
 void MapFeeds::set_hud_width(unsigned pct)
 {
     if (pct > kHudMaxPct)
@@ -193,6 +202,9 @@ FeedStatus MapFeeds::status(const std::string &decode, const std::string &stream
     s.hud_width_pct = base_.hud_width_pct;
     s.hud_offset_x = base_.hud_offset_x;
     s.hud_offset_y = base_.hud_offset_y;
+    s.hud_black_background = base_.hud_black_background;
+    s.hud_round_corners = base_.hud_round_corners;
+    s.hud_style_available = base_.scale_down;
     return s;
 }
 

@@ -1,5 +1,10 @@
 # waze-on-cluster
 
+> Revision 0.7.112 adds live HUD appearance settings and an optional
+> [Dashboard startup experiment](startup/README.md) for app 0.4.114.
+> Car validation remains pending. It does not modify the CarPlay firmware
+> patch or implement geographic zoom control.
+
 Shows the CarPlay instrument-cluster map (Waze, Apple Maps or Google Maps)
 on the instrument cluster of a BMW with an iDrive 7 head unit (MGU), which
 the stock software does not do. It runs as root tools on the head unit and is
@@ -190,6 +195,13 @@ it fade to black, so the HUD shows the roads, route and labels without Waze's
 grey-blue field; a day map (light background) is left as it is.
 Green is never made black (parks are about as dark as the night field), and green
 doesn't count towards the background, so a park filling the frame can't become it.
+
+In local revision 0.7.112, **Original colors** disables the background filter
+to retain faint source detail; **Clear dark background** restores it. Rounded
+or square corners can also be selected. Both settings take effect on a fresh
+decoded frame and are saved per driver profile. Status reports their values
+and whether HUD scaling enables this processing; unavailable controls are
+disabled. The cluster is unchanged. See [protocol and validation](../../docs/hud-research/SETTINGS.md).
 
 **Per driver profile.** The app reads the head unit's current user account
 every 5 s (SOME/IP `SessionManager.currentUserAccountReference`) and tells

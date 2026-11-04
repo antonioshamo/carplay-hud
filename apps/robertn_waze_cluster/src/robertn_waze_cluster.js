@@ -1,33 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Robert Nisipeanu
-/**
- * robertn_waze_cluster - the control panel for the native
- * waze-on-cluster tool, which puts the CarPlay cluster map on the instrument
- * cluster. It drives the tool entirely from the HMI, so no shell is needed.
- *
- * One LT_State_Wide page: a status line combining the patch state and the
- * render state; the cluster setting the map needs; Show map on (Cluster or
- * HUD; each press switches, saved for the next start);
- * HUD map size (Standard, 70 %, 85 %, 40 %; enabled while the
- * map goes to the HUD); Enable map and Disable
- * map, which apply and revert the carplay patch; the diagnostic capture
- * button and its status; and a scrolling list of both tools' log lines,
- * newest first, one per LT_Label_1Row, redrawn at most every
- * LIST_RENDER_MS. Once patched, the render puts the map on the cluster
- * whenever CarPlay streams it, with no button.
- *
- * Enable map shows for an unpatched or unknown state and Disable map for a
- * patch, both only with no change pending (waze_cluster_control.js
- * canEnable/canDisable); capture is enabled while the patch daemon is
- * reachable. The app connects both sockets while its page is visible and
- * closes them when it is hidden or the app shuts down; the tools keep
- * running. waze_cluster_control.js holds the protocol.
- */
+/* Native CarPlay HUD settings. Each task has its own short page; the
+ * existing tools own rendering, startup and driver profile persistence. */
 'use strict';
 
 const OnlineApp = require('oap-sdk/src/core/OnlineApp.js');
 const logging = require('oap-sdk/src/logging/logging');
-const { WazeClusterControl, MAX_LINES } = require('./waze_cluster_control.js');
+const { MAX_LINES } = require('./waze_cluster_control.js');
+const { SettingsControl } = require('./settings_control.js');
 const { ProfileSync } = require('./profile_sync.js');
 
 const logger = logging.getSDKLogger();
@@ -52,7 +32,19 @@ const ROW_CHARS = 90;
 const PRESS_DEDUPE_MS = 400;
 /* in Map view the stock map is the fallback while CarPlay's cluster stream
  * is not live; the menu names are the HMI's en_GB ones */
-const SETUP_TEXT = 'Set Instrument cluster > Central display area to Map view';
+const SETUP_TEXT = 'Cluster mode: choose Map view in BMW display settings';
+const PAGES = { wocSizePage: 'ST_WOC_Size', wocPositionPage: 'ST_WOC_Position',
+    wocSupportPage: 'ST_WOC_Support', wocSetupPage: 'ST_WOC_Setup',
+    wocCapturePage: 'ST_WOC_Capture', wocLogPage: 'ST_WOC_Logs',
+    wocDisplay: 'ST_WOC_Display', wocPresetsPage: 'ST_WOC_Presets',
+    wocHorizontalPage: 'ST_WOC_Horizontal', wocVerticalPage: 'ST_WOC_Vertical',
+    wocStartupPage: 'ST_WOC_Startup', wocAppearancePage: 'ST_WOC_Appearance', wocTroubleshootPage: 'ST_WOC_Troubleshoot' };
+const EXTRA = ['startupStatus','startupResult','wocStartupOn','wocStartupOff','sizeStatus', 'sizeNotice', 'positionStatus', 'positionNotice',
+    'supportStatus', 'setupStatus', 'setupHint', 'captureHint', 'wocSizeStandard',
+    'displayStatus', 'displayHint', 'wocDisplayHud', 'wocDisplayCluster',
+    'presetStatus', 'presetNotice', 'wocPresetCompact', 'wocPresetBalanced', 'wocPresetLarge',
+    'wocMoveStep', 'horizontalStatus', 'verticalStatus', 'horizontalHint', 'verticalHint',
+    'appearanceStatus', 'appearanceNotice', 'wocOriginalColors', 'wocClearBackground', 'wocCorners', 'wocMissingCapture'];
 
 /* A line as one row: no line breaks, at most ROW_CHARS characters. */
 function oneRow(line) {
@@ -77,7 +69,7 @@ class WazeClusterApp extends OnlineApp {
         this._sawForeground = false;
         this._shutdownPromise = null;
         this._listTimer = null;
-        this._control = new WazeClusterControl({ log: logger });
+        this._control = new SettingsControl({ log: logger });
         this._control.on('change', () => {
             this._render();
             this._scheduleLists();
@@ -146,16 +138,29 @@ class WazeClusterApp extends OnlineApp {
         }
         const names = [STATUS_NAME, SETUP_NAME, DISPLAY_NAME, HUD_SIZE_NAME, HUD_SMALLER_NAME]
             .concat(Object.values(HUD_MOVE_NAMES), [HUD_CENTRE_NAME, ENABLE_NAME, DISABLE_NAME, RESTART_NAME, CAPTURE_NAME, CAPTURE_STATUS])
-            .concat(ROW_NAMES);
+            .concat(ROW_NAMES, Object.keys(PAGES), EXTRA);
         names.forEach((name) => { this._components[name] = rhmi.getByName(name); });
         const missing = names.filter((name) => !this._components[name]);
         if (missing.length) {
             return Promise.reject(new Error(`uiDescription lacks ${missing.join(', ')}`));
         }
-        this._bind(ENABLE_NAME, () => this._control.enableMap());
-        this._bind(DISABLE_NAME, () => this._control.disableMap());
+        Object.keys(PAGES).forEach(name => this._bind(name, () => this._openPage(PAGES[name])));
+        this._bind('wocStartupOn', () => this._control.setStartup('dashboard'));
+        this._bind('wocStartupOff', () => this._control.setStartup('off'));
+        this._bind('wocSizeStandard', () => this._control.setHudSize(0));
+        this._bind(ENABLE_NAME, () => { if (this._control.canEnable()) this._control.enableMap(); });
+        this._bind(DISABLE_NAME, () => { if (this._control.canDisable()) this._control.disableMap(); });
         this._bind(RESTART_NAME, () => this._control.requestRestart());
-        this._bind(DISPLAY_NAME, () => this._control.cycleDisplay());
+        this._bind('wocDisplayHud', () => this._control.setDisplay('hud'));
+        this._bind('wocDisplayCluster', () => this._control.setDisplay('map'));
+        this._bind('wocPresetCompact', () => this._control.setHudSize(40));
+        this._bind('wocPresetBalanced', () => this._control.setHudSize(60));
+        this._bind('wocPresetLarge', () => this._control.setHudSize(75));
+        this._bind('wocMoveStep', () => this._control.cycleMoveStep());
+        this._bind('wocOriginalColors', () => this._control.setHudStyle('hud_black_background', false));
+        this._bind('wocClearBackground', () => this._control.setHudStyle('hud_black_background', true));
+        this._bind('wocCorners', () => this._control.setHudStyle('hud_round_corners', !this._control.hudStyle('hud_round_corners')));
+        this._bind('wocMissingCapture', () => this._openPage('ST_WOC_Capture'));
         this._bind(HUD_SIZE_NAME, () => this._control.stepHudSize(1));
         this._bind(HUD_SMALLER_NAME, () => this._control.stepHudSize(-1));
         Object.keys(HUD_MOVE_NAMES).forEach((dir) => this._bind(HUD_MOVE_NAMES[dir], () => this._control.moveHud(dir)));
@@ -189,18 +194,25 @@ class WazeClusterApp extends OnlineApp {
             this._render();
             this._renderLists();
         });
-        this._state.on('visible', (event) => {
-            const visible = isTrue(event && event.visible);
-            if (visible) {
+        const states = [this._state].concat(Object.values(PAGES).map(name => rhmi.getByName(name)));
+        if (states.some(state => !state)) return Promise.reject(new Error('missing settings page'));
+        states.forEach(state => state.on('visible', event => {
+            if (isTrue(event && event.visible)) {
                 this._sawForeground = true;
+                this._setVisible(true);
             }
-            this._setVisible(visible);
-        });
-        return Promise.resolve(this._state.updateResources()).then(() => {
+        }));
+        return Promise.all(states.map(state => state.updateResources())).then(() => {
             logger.info(`page ready: ${names.length} components found`);
             this._render();
             this._renderLists();
         });
+    }
+
+    _openPage(name) {
+        this._render();
+        Promise.resolve(this.rhmiApplication.openState(name))
+            .catch(err => logger.warn(`open page: ${err && err.message}`));
     }
 
     _bind(name, handler) {
@@ -323,19 +335,70 @@ class WazeClusterApp extends OnlineApp {
         if (!this._state || this._shutdownPromise) {
             return;
         }
-        this._write(STATUS_NAME, this._control.statusText());
-        this._write(SETUP_NAME, SETUP_TEXT);
-        /* Cluster, HUD, or both: each press moves the map to the next one */
-        this._write(DISPLAY_NAME, this._control.displayText());
-        this._setEnabled(DISPLAY_NAME, this._control.canChangeDisplay());
-        /* the HUD map's size: enabled while the map goes to the HUD */
-        this._write(HUD_SIZE_NAME, this._control.hudLargerText());
-        this._setEnabled(HUD_SIZE_NAME, this._control.canHudLarger());
-        this._setEnabled(HUD_SMALLER_NAME, this._control.canHudSmaller());
-        /* where it is: enabled while the map goes to the HUD */
-        Object.values(HUD_MOVE_NAMES).forEach((n) => this._setEnabled(n, this._control.canChangeHudSize()));
-        this._write(HUD_CENTRE_NAME, this._control.centreHudText());
-        this._setEnabled(HUD_CENTRE_NAME, this._control.canChangeHudSize());
+        const c = this._control;
+        const target = c.displayTarget();
+        this._write('startupStatus', c.startupText());
+        this._write('startupResult', c.startupResult());
+        this._setEnabled('wocStartupOn', target === 'hud' && c.canChangeStartup());
+        this._setEnabled('wocStartupOff', c.canChangeStartup());
+        const width = c.hudWidth();
+        const size = width === null ? 'Waiting for tool' : width === 0 ? 'Standard' : `${width}%`;
+        const pos = c.hudOffset();
+        const position = !pos ? 'Waiting for tool' : !pos[0] && !pos[1] ? 'Centered' :
+            [pos[0] ? `${Math.abs(pos[0])} px ${pos[0] > 0 ? 'right' : 'left'}` : '',
+                pos[1] ? `${Math.abs(pos[1])} px ${pos[1] > 0 ? 'down' : 'up'}` : ''].filter(Boolean).join(' / ');
+        const rs = c.renderStatus;
+        const concise = c.patchStatus && c.patchStatus.state === 'patched' && !c.pending() ?
+            rs && rs.state === 'showing' ? `Map active on ${target === 'hud' ? 'HUD' : 'cluster'}` :
+                rs && rs.state === 'frozen' ? 'Map paused — reconnect CarPlay' : 'Waiting for a CarPlay map' : c.statusText();
+        this._write(STATUS_NAME, c._busy() ? c.settingsNotice() : concise);
+        this._write('supportStatus', c.statusText());
+        this._write('setupStatus', c.statusText());
+        this._write(SETUP_NAME, target === 'hud' ? 'HUD selected; the tools run when this app is closed' : SETUP_TEXT);
+        const display = target === 'hud' ? 'Windshield HUD' : target === 'map' ? 'Instrument cluster' : 'Waiting for tool';
+        this._write(DISPLAY_NAME, `Display: ${display}`);
+        this._write('displayStatus', `Selected: ${display}`);
+        this._write('displayHint', c.settingsNotice());
+        this._setEnabled('wocDisplayHud', c.canChangeDisplay());
+        this._setEnabled('wocDisplayCluster', c.canChangeDisplay());
+        this._write('wocSizePage', `Map size: ${size}`);
+        this._write('wocPositionPage', `Map position: ${position}`);
+        this._write('sizeStatus', `Current map width: ${size}`);
+        this._write('positionStatus', position);
+        this._write('horizontalStatus', position);
+        this._write('verticalStatus', position);
+        this._write('presetStatus', `Current map width: ${size}`);
+        const hint = target !== 'hud' ? 'Select HUD on the main page to adjust the map' :
+            width === null ? 'This map tool does not report HUD size' : c.settingsNotice();
+        this._write('sizeNotice', target === 'hud' && width !== null && !c._busy() && !c._notice ?
+            'Changes the map rectangle, not street zoom' : hint);
+        this._write('positionNotice', target === 'hud' && !pos ? 'This map tool does not report HUD position' :
+            target === 'hud' && !c._busy() && !c._notice ? 'Moves the map; BMW gauges stay in place' : hint);
+        this._write('horizontalHint', hint);
+        this._write('verticalHint', hint);
+        this._write('presetNotice', c._busy() || c._notice ? c.settingsNotice() : 'Map size changes the rectangle, not street zoom');
+        this._write('wocMoveStep', `Adjustment: ${c.moveStep === 10 ? 'Fine (10 px)' : 'Coarse (40 px)'}`);
+        Object.keys(HUD_MOVE_NAMES).forEach(dir => this._write(HUD_MOVE_NAMES[dir], `Move ${dir}  ${c.moveStep} px`));
+        ['wocPresetCompact', 'wocPresetBalanced', 'wocPresetLarge'].forEach(n => this._setEnabled(n, c.canChangeHudSize()));
+        const background = c.hudStyle('hud_black_background'), corners = c.hudStyle('hud_round_corners');
+        this._write('appearanceStatus', c.patchStatus && c.patchStatus.startup_mode === 'dashboard' && rs && rs.state === 'idle' ? 'Dashboard trial uses original colors and square corners' :
+            rs && rs.hud_style_available === false ? 'Appearance unavailable: HUD scaling is off' :
+            background === null || !(c.patchStatus && c.patchStatus.hud_style) ? 'Appearance needs the updated map tool' :
+            background ? 'Background: clear dark areas' : 'Background: original map colors');
+        this._write('wocCorners', corners === null ? 'Corners: unavailable' : `Corners: ${corners ? 'Rounded' : 'Square'}`);
+        this._setEnabled('wocOriginalColors', c.canChangeStyle('hud_black_background'));
+        this._setEnabled('wocClearBackground', c.canChangeStyle('hud_black_background'));
+        this._setEnabled('wocCorners', c.canChangeStyle('hud_round_corners'));
+        this._write('appearanceNotice', target !== 'hud' ? 'Select HUD to change its appearance' :
+            c._busy() || c._notice ? c.settingsNotice() : 'Clear background can hide faint roads');
+        this._write(HUD_SIZE_NAME, 'Larger  +5%');
+        this._write(HUD_SMALLER_NAME, 'Smaller  -5%');
+        this._setEnabled(HUD_SIZE_NAME, c.canHudLarger());
+        this._setEnabled(HUD_SMALLER_NAME, c.canHudSmaller());
+        this._setEnabled('wocSizeStandard', c.canChangeHudSize());
+        Object.values(HUD_MOVE_NAMES).forEach(n => this._setEnabled(n, c.canMoveHud()));
+        this._write(HUD_CENTRE_NAME, 'Center map');
+        this._setEnabled(HUD_CENTRE_NAME, c.canMoveHud());
         this._write(CAPTURE_NAME, this._control.captureButtonText());
         this._write(CAPTURE_STATUS, this._control.captureText());
         const patch = this._control.connectedPatch();

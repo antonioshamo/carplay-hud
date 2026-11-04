@@ -130,6 +130,7 @@ class FakeRender extends LineServer {
 
     _status() {
         return { ev: 'status', state: this.state, target: this.target, page: this.page, reason: this.reason,
+            ...(this.styleSupported ? {hud_style_available: true, hud_black_background: this.blackBackground !== false, hud_round_corners: this.roundCorners !== false} : {}),
             hud_width_pct: this.hudWidth || 0, hud_x: this.hudX || 0, hud_y: this.hudY || 0 };
     }
 
@@ -164,6 +165,11 @@ class FakeRender extends LineServer {
             if (msg.hud_y !== undefined) this.hudY = Number(msg.hud_y);
             this._broadcast(this._status());
         }
+        if (this.styleSupported && msg.cmd === 'hud-style') {
+            if (msg.setting === 'hud_black_background') this.blackBackground = msg.value === '1';
+            if (msg.setting === 'hud_round_corners') this.roundCorners = msg.value === '1';
+            this._broadcast(this._status());
+        }
     }
 }
 
@@ -194,6 +200,7 @@ class FakePatch extends LineServer {
 
     _status() {
         return { ev: 'status', state: this.busy ? 'busy' : this.state, panel: this.panel,
+            hud_style: this.styleSupported === true,
             res: this.res, safe: this.safe, carplay: this.carplay, reason: this.reason,
             pending: this.pending, conflict: this.conflict };
     }

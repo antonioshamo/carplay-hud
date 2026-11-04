@@ -56,7 +56,7 @@ function ask(obj) {
             buf.split('\n').forEach(function (l) {
                 var m = null;
                 try { m = JSON.parse(l); } catch (e) {}
-                if (m && (m.ev === 'target-reply' || m.ev === 'hud-size-reply' || m.ev === 'hud-pos-reply')) { s.end(); resolve(m); }
+                if (m && m.ev === obj.cmd + '-reply') { s.end(); resolve(m); }
             });
         });
         s.on('error', reject);
@@ -73,7 +73,14 @@ function ok(name, cond) {
 
 (async function () {
     for (var t = 0; t < 5000 && !fs.existsSync(SOCK); t += 50) await sleep(50);
-    var r = await ask({ cmd: 'target', target: 'map+hud' });
+    var startupFile=path.join(dir,'startup-mode');
+    var r=await ask({cmd:'startup-mode',mode:'dashboard'});
+    ok('startup dashboard preference saved without navigation or firmware changes',r.ok && fs.readFileSync(startupFile,'utf8')==='dashboard\n');
+    r=await ask({cmd:'startup-mode',mode:'invalid'});
+    ok('unknown startup mode refused',!r.ok && fs.readFileSync(startupFile,'utf8')==='dashboard\n');
+    r=await ask({cmd:'startup-mode',mode:'off'});
+    ok('startup can be switched off',r.ok && fs.readFileSync(startupFile,'utf8')==='off\n');
+    r = await ask({ cmd: 'target', target: 'map+hud' });
     var conf = fs.readFileSync(CONF, 'utf8');
     ok('map+hud (both) is refused: one or the other', !r.ok && conf === 'upload_kb_per_s = 3000\ntarget = map\ntarget_fps = 15\n');
     r = await ask({ cmd: 'target', target: 'hud' });
@@ -105,6 +112,22 @@ function ok(name, cond) {
     ok('an out-of-range position is refused, nothing written', !r.ok && /hud_offset_x = 0\n/.test(fs.readFileSync(CONF, 'utf8')));
     r = await ask({ cmd: 'hud-pos', hud_x: 1.5, hud_y: 0 });
     ok('a position that is not whole pixels is refused', !r.ok);
+    r = await ask({ cmd: 'profile', id: 'driver-a' });
+    ok('new profile keeps existing default appearance', r.ok && r.hud_black_background === true && r.hud_round_corners === true);
+    r = await ask({ cmd: 'hud-style', setting: 'hud_black_background', value: false });
+    ok('original map colors persist as disabled background filtering', r.ok && r.value === false && /hud_black_background = 0\n/.test(fs.readFileSync(CONF,'utf8')));
+    r = await ask({ cmd: 'hud-style', setting: 'hud_round_corners', value: false });
+    ok('square corners persist independently', r.ok && /hud_round_corners = 0\n/.test(fs.readFileSync(CONF,'utf8')));
+    conf = fs.readFileSync(CONF,'utf8');
+    r = await ask({ cmd: 'hud-style', setting: 'target_fps', value: false });
+    ok('appearance cannot write unrelated configuration', !r.ok && fs.readFileSync(CONF,'utf8') === conf);
+    r = await ask({ cmd: 'hud-style', setting: 'hud_black_background', value: 'false' });
+    ok('string boolean is refused without changes', !r.ok && fs.readFileSync(CONF,'utf8') === conf);
+    await ask({ cmd: 'profile', id: 'driver-b' });
+    await ask({ cmd: 'hud-style', setting: 'hud_black_background', value: true });
+    r = await ask({ cmd: 'profile', id: 'driver-a' });
+    ok('returning driver restores their appearance', r.ok && r.hud_black_background === false && r.hud_round_corners === false &&
+        /hud_black_background = 0\n/.test(fs.readFileSync(CONF,'utf8')));
 })().catch(function (e) {
     ok('no error: ' + e.message, false);
 }).then(function () {

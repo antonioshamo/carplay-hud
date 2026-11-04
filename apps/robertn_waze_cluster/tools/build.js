@@ -36,6 +36,7 @@ function donorArg(argv) {
 }
 
 function main() {
+    require('./build_ui.js').build();
     const donor = donorArg(process.argv.slice(2));
     const m = link.readManifest(HERE);
     const src = path.join(HERE, `${m.id}@${m.version}.src.tgz`);

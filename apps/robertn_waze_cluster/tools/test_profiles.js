@@ -77,7 +77,8 @@ async function main() {
         assert(!render.received.some((m) => m.cmd === 'start'));
     });
     /* driver A picks the HUD at 70 % (the page's presses, which patchd keeps for A) */
-    patch.saved.driverA = { target: 'hud', hud_width_pct: 70 };
+    render.styleSupported = true;
+    patch.saved.driverA = { target: 'hud', hud_width_pct: 70, hud_black_background: false, hud_round_corners: false };
     profile = 'driverB';
     await check('a new profile, first seen: it keeps what is set, the render is left alone', async () => {
         await until('profile B', () => patch.profile === 'driverB');
@@ -87,6 +88,8 @@ async function main() {
     profile = 'driverA';
     await check('back to A with the page closed: the render moves to the HUD at 70 % over a short connection', async () => {
         await until('render on the HUD', () => render.target === 'hud' && render.hudWidth === 70);
+        await until('appearance restored', () => render.blackBackground === false && render.roundCorners === false);
+        assert(render.received.some(m => m.cmd === 'hud-style' && m.setting === 'hud_black_background' && m.value === '0'));
     });
     const c = new WazeClusterControl({ renderPath: RSOCK, patchPath: `/tmp/woc-none-${process.pid}.sock`, retryMs: 50 });
     await until('short connection gone', () => true);

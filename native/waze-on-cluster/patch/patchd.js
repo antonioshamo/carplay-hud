@@ -103,6 +103,7 @@ var cp = require('child_process');
 var lock = require('./remount_lock.js');
 
 var HERE = __dirname;
+var startup = require(path.join(HERE, fs.existsSync(path.join(HERE, 'startup')) ? 'startup' : '../startup', 'settings.js'));
 var PATCHER = path.join(HERE, 'carplay_patch.js');
 var TARGET = process.env.WOC_CARPLAY || '/usr/bin/carplay';
 var FIFO = process.env.WOC_FIFO || '/run/waze-on-cluster/alt.h264';
@@ -136,6 +137,7 @@ var DISPLAY_TARGETS = ['map', 'hud'];
  * profile seen again gets its own back. */
 var PROFILES_FILE = process.env.WOC_PROFILES || path.join(path.dirname(LOCAL_CONF), 'profiles.json');
 var currentProfile = null;
+var HUD_STYLE_KEYS = ['hud_black_background', 'hud_round_corners'];
 
 /* Writes key = value into the local conf, replacing any line of that key;
  * the other lines stay as they are. Atomic: a temporary file renamed over it. */
@@ -176,7 +178,9 @@ function offset(v) {
 function currentSettings() {
     var t = readSetting('target'), pct = Number(readSetting('hud_width_pct'));
     return { target: DISPLAY_TARGETS.indexOf(t) >= 0 ? t : 'map', hud_width_pct: isFinite(pct) ? Math.min(pct, HUD_MAX_PCT) : 0,
-        hud_x: offset(readSetting('hud_offset_x')), hud_y: offset(readSetting('hud_offset_y')) };
+        hud_x: offset(readSetting('hud_offset_x')), hud_y: offset(readSetting('hud_offset_y')),
+        hud_black_background: readSetting('hud_black_background') !== '0',
+        hud_round_corners: readSetting('hud_round_corners') !== '0' };
 }
 /* A change of key kept for the current profile too. */
 function rememberForProfile(key, value) {
@@ -401,6 +405,10 @@ function readState(cb) {
 function status(extra) {
     readState(function (st) {
         var msg = { ev: 'status', state: busy ? 'busy' : st.state, panel: st.panel, mode: st.mode, res: st.res, safe: st.safe };
+        msg.hud_style = true;
+        msg.startup_trial = true;
+        msg.startup_mode = startup.readMode();
+        msg.startup_state = startup.readStatus(Date.now());
         if (!busy && st.reason) msg.reason = st.reason;
         if (!busy && st.carplay) msg.carplay = st.carplay;
         if (!busy && st.pending) msg.pending = st.pending;
@@ -1074,12 +1082,42 @@ function handle(line, sock) {
             if (want.hud_width_pct !== cur.hud_width_pct) saveSetting('hud_width_pct', String(want.hud_width_pct), function () {});
             if (want.hud_x !== cur.hud_x) saveSetting('hud_offset_x', String(want.hud_x), function () {});
             if (want.hud_y !== cur.hud_y) saveSetting('hud_offset_y', String(want.hud_y), function () {});
+            var migratedStyle = false;
+            HUD_STYLE_KEYS.forEach(function (key) {
+                // Old profiles inherit the current appearance once; do not
+                // silently switch their filtering when updating the tool.
+                want[key] = typeof saved[key] === 'boolean' ? saved[key] : cur[key];
+                if (typeof saved[key] !== 'boolean') { saved[key] = want[key]; migratedStyle = true; }
+                if (want[key] !== cur[key]) saveSetting(key, want[key] ? '1' : '0', function () {});
+            });
+            if (migratedStyle) writeProfiles(profiles);
         } else {
             profiles[id] = cur;
             writeProfiles(profiles);
         }
         if (changed) log('driver profile ' + id + ': ' + want.target + (want.target === 'hud' ? ', HUD map ' + (want.hud_width_pct || 'standard') + (want.hud_width_pct ? ' %' : '') : '') + (saved ? '' : ' (first seen: the current settings kept for it)'));
-        try { sock.write(JSON.stringify({ ev: 'profile-reply', ok: true, id: id, known: !!saved, target: want.target, hud_width_pct: want.hud_width_pct, hud_x: want.hud_x, hud_y: want.hud_y }) + '\n'); } catch (e) {}
+        try { sock.write(JSON.stringify({ ev: 'profile-reply', ok: true, id: id, known: !!saved, target: want.target, hud_width_pct: want.hud_width_pct, hud_x: want.hud_x, hud_y: want.hud_y,
+            hud_black_background: want.hud_black_background, hud_round_corners: want.hud_round_corners }) + '\n'); } catch (e) {}
+        return;
+    }
+    if (msg.cmd === 'startup-mode') {
+        var startupError = null;
+        try { startup.saveMode(msg.mode); } catch (e) { startupError = e; }
+        try { sock.write(JSON.stringify({ev:'startup-mode-reply',ok:!startupError,
+            mode:startup.readMode(),reason:startupError ? startupError.message : undefined}) + '\n'); } catch (e) {}
+        status();
+        return;
+    }
+    if (msg.cmd === 'hud-style') {
+        var styleKey = msg.setting, styleValue = msg.value;
+        if (HUD_STYLE_KEYS.indexOf(styleKey) < 0 || typeof styleValue !== 'boolean') {
+            try { sock.write(JSON.stringify({ ev: 'hud-style-reply', ok: false, setting: styleKey, reason: 'Unknown appearance setting or non-boolean value' }) + '\n'); } catch (e) {}
+            return;
+        }
+        saveSetting(styleKey, styleValue ? '1' : '0', function (err) {
+            if (!err) rememberForProfile(styleKey, styleValue);
+            try { sock.write(JSON.stringify({ ev: 'hud-style-reply', ok: !err, setting: styleKey, value: styleValue, reason: err ? err.message : undefined }) + '\n'); } catch (e) {}
+        });
         return;
     }
     if (msg.cmd === 'hud-size') {

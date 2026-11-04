@@ -38,6 +38,22 @@ int main()
 {
     AtlasScaler s;
     std::vector<uint8_t> out;
+    {
+        // Reproduce detail loss independently of Apple Maps: a faint road
+        // 4 luma levels above the night background is removed by keying.
+        // Original-color mode must preserve it when keying is turned off.
+        auto dim = atlas(64, 32, 60, 140, 128);
+        for (unsigned y = 12; y < 16; y++)
+            for (unsigned x = 0; x < 64; x++) dim[y * 64 + x] = 64;
+        AtlasScaler detail;
+        detail.configure(64, 32, 64, 32, 0);
+        detail.set_black_background(true);
+        detail.scale(dim.data(), &out);
+        ok("faint night road reproduces background-filter loss", out[13 * 64 + 20] == 16);
+        detail.set_black_background(false);
+        detail.scale(dim.data(), &out);
+        ok("original colors restore faint road and background from fresh pixels", out == dim);
+    }
 
     ok("refuses odd, upscaled or empty sizes",
        !s.configure(1088, 480, 453, 200, 0) && !s.configure(1088, 480, 1200, 200, 0) &&
