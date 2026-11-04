@@ -1,9 +1,11 @@
-# CarPlay HUD for BMW iDrive 7
+# CarPlay HUD and Cluster Studio for BMW iDrive 7
+
+**New: CarPlay HUD 0.4.117 + Cluster Studio 0.1.0.** Open Overview → Cluster Studio for a full-cluster designer, 100 preset combinations, Ultra-inspired styling, movable widgets, saved designs and an X4 M welcome. Full-screen output is a guarded 10-second parked test, not a road-ready factory-gauge replacement. [Guide and previews](docs/cluster-studio/README.md).
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps),
 with BMW-inspired graphical settings and an **optional experimental Dashboard startup mode**.
 
-Update versions: app **0.4.116**, map tool **0.7.113**, and **MGU Renderer 0.6.11**.
+Update versions: app **0.4.117**, map tool **0.7.113**, and **MGU Renderer 0.6.11**.
 MGU Renderer comes from the official MGU Store source; it draws the settings app
 and is separate from the existing cluster-render tool.
 

@@ -1,0 +1,96 @@
+{
+  "id": "cluster-studio",
+  "kind": "tool",
+  "version": "0.1.0",
+  "license": "GPL-3.0-or-later",
+  "title": "Cluster Studio",
+  "description": "Custom cluster layouts, 100 theme/layout presets, saved designs and read-only vehicle widgets. Full-screen output is a guarded 10-second parked test.",
+  "requires": {
+    "mgu-deploy": "0.7.0",
+    "cluster-render": "0.3.102"
+  },
+  "uninstallable": true,
+  "mguHmi": [
+    "ID7"
+  ],
+  "build": [
+    "node",
+    "build.js"
+  ],
+  "files": [
+    {
+      "path": "service.js",
+      "mode": "0644"
+    },
+    {
+      "path": "engine.js",
+      "mode": "0644"
+    },
+    {
+      "path": "telemetry.js",
+      "mode": "0644"
+    },
+    {
+      "path": "LICENSE",
+      "mode": "0644"
+    },
+    {
+      "path": "LICENSE-kit.txt",
+      "mode": "0644"
+    },
+    {
+      "path": "LICENSE-Inter.txt",
+      "mode": "0644"
+    },
+    {
+      "path": "LICENSE-MPL.txt",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/studio_model.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/studio_draw.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/kit_canvas.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/kit_fonts.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/font_regular.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/font_semibold.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/cluster_render_client.js",
+      "mode": "0644"
+    }
+  ],
+  "units": [
+    {
+      "name": "cluster-studio.service",
+      "from": "systemd/cluster-studio.service"
+    }
+  ],
+  "enable": [
+    {
+      "unit": "cluster-studio.service",
+      "target": "multi-user.target"
+    }
+  ],
+  "recmgr": [
+    "cluster-studio"
+  ],
+  "restart": [
+    "cluster-studio.service"
+  ]
+}

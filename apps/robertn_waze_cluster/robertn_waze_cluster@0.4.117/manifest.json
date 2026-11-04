@@ -63,6 +63,39 @@
       "attributes": {
         "currentUserAccountReference": "r"
       }
+    },
+    "de.bmw.infotainment.vehicle.Vehicle2": {
+      "instances": [
+        "1"
+      ],
+      "attributes": {
+        "statusCarSpeed2": "r"
+      }
+    },
+    "de.bmw.infrastructure.VehicleInformation": {
+      "instances": [
+        "1"
+      ],
+      "attributes": {
+        "statusGearboxDrive": "r"
+      }
+    },
+    "de.bmw.infrastructure.VehicleCondition": {
+      "instances": [
+        "1"
+      ],
+      "attributes": {
+        "VehicleCondition": "r"
+      }
+    },
+    "de.bmw.infotainment.vehicle.CDS": {
+      "instances": [
+        "1"
+      ],
+      "attributes": {
+        "statusEngineSpeed2": "r",
+        "statusEngineTemperature": "r"
+      }
     }
   },
   "services": {

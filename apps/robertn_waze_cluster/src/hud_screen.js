@@ -4,19 +4,21 @@ const EventEmitter=require('events');
 const {RenderClient}=require('./mgu_render_client.js');
 const kit=require('./kit_record.js');
 const view=require('./hud_view.js');
+const {StudioScreen}=require('./studio_screen.js');
 const HOST='ST_WOC_Design',PROXIES=24;
 class HudScreen extends EventEmitter {
  constructor(host,options) {
   super();this.host=host;this.gpu=options&&options.client||new RenderClient('robertn_waze_cluster',host.log,{kit,mode:'layer'});
   this.page='overview';this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
   this.active=false;this.info=null;this.scale=1;this.closed=false;this.touch=null;this.ccu=null;this.last={};this.dirty=false;this.suspended=false;
+  this.studio=new StudioScreen(()=>{this.dirty=true;});
   this.gpu.fps(20);
   this.gpu.on('ready',(screen,info)=>this._ready(info));
   this.gpu.on('close',()=>{this.ready=false;this.hide();this.emit('mode',false);});
   this.gpu.on('closed',()=>{this.suspended=true;this.hide();this.emit('mode',false);});
   this.gpu.on('touch',(p,x,y)=>this._touch(p,x,y));
   this.gpu.on('ccu',e=>this._ccu(e));
-  this.gpu.on('tick',()=>{if(this.dirty)this.render();});
+  this.gpu.on('tick',()=>{if(this.dirty||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<3000))this.render();});
   this.timer=setInterval(()=>{if(this.active)this.render();},1000);
   if(this.timer.unref)this.timer.unref();
  }
@@ -40,12 +42,12 @@ class HudScreen extends EventEmitter {
   this.active=true;this.gpu.claim([{x:0,y:0,w:view.W,h:view.H}]);this.gpu.grab(!!this.info.controller);
   this.render();if(this.active)this.gpu.show(true);
  }
- hide(){this.active=false;this.touch=null;this.ccu=null;this.gpu.claim([]);this.gpu.grab(false);this.gpu.show(false);}
+ hide(){this.active=false;if(this.studio)this.studio.drag=null;this.touch=null;this.ccu=null;this.gpu.claim([]);this.gpu.grab(false);this.gpu.show(false);}
  render(){
   if(!this.active||!this.ready||this.closed)return;
   if(this.gpu.waiting){this.dirty=true;return;}
   try {
-   const f=view.frame(view.model(this.host.control),this.page,this.focus,this.logPage,this.scale);
+   const f=this.page==='studio'?this.studio.frame(this.focus,this.scale):view.frame(view.model(this.host.control),this.page,this.focus,this.logPage,this.scale);
    this.items=f.items;this.focus=Math.max(0,Math.min(this.focus,this.items.length-1));
    this.host.proxies(this.items);
    // A false socket.write result means backpressure, not a lost frame.
@@ -61,9 +63,11 @@ class HudScreen extends EventEmitter {
  press(i){
   if(!this.active||!this.items[i])return false;
   const id=this.items[i].id;
-  const fresh=view.layout(view.model(this.host.control),this.page,this.logPage).find(b=>b.id===id);
+  const fresh=(this.page==='studio'?require('./studio_view.js').items(this.studio):view.layout(view.model(this.host.control),this.page,this.logPage)).find(b=>b.id===id);
   if(!fresh||!fresh.enabled)return false;
   const now=Date.now();if(now-(this.last[id]||0)<300)return false;this.last[id]=now;
+  if(this.page==='studio'){if(id==='exit'){this.page='overview';this.studio.drag=null;this.focus=0;}else this.studio.press(id);this.render();return true;}
+  if(id==='open-studio'){this.page='studio';this.studio.open();this.focus=0;this.render();return true;}
   if(id.indexOf('nav:')===0){this.page=id.slice(4);this.logPage=0;this.focus=Math.max(0,view.tabs.findIndex(t=>t[0]===this.page));this.touch=null;this.ccu=null;this.render();return true;}
   const c=this.host.control;
   switch(id){
@@ -95,6 +99,7 @@ class HudScreen extends EventEmitter {
  hit(x,y){return this.items.findIndex(b=>x>=b.x&&x<b.x+b.w&&y>=b.y&&y<b.y+b.h);}
  _touch(phase,x,y){
   if(!this.active||!Number.isFinite(x)||!Number.isFinite(y))return;
+  if(this.page==='studio'&&this.studio.touch(phase,x,y)){this.touch=null;return;}
   if(phase==='down'){this.touch={i:this.hit(x,y),x,y,page:this.page};return;}
   const t=this.touch;if(!t)return;
   if(Math.hypot(x-t.x,y-t.y)>20)t.cancel=true;
@@ -109,6 +114,6 @@ class HudScreen extends EventEmitter {
   }
   if((e.press===1||e.press===2)&&e.press!==prev.press&&e.seq!==prev.seq)this.press(this.focus);
  }
- close(){this.closed=true;clearInterval(this.timer);this.hide();this.gpu.removeAllListeners('close');this.gpu.close();}
+ close(){this.closed=true;this.studio.close();clearInterval(this.timer);this.hide();this.gpu.removeAllListeners('close');this.gpu.close();}
 }
 module.exports={HudScreen,HOST,PROXIES};
