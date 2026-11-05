@@ -15,7 +15,7 @@ class HudScreen extends EventEmitter {
   this.gpu.fps(60);
   this.gpu.on('ready',(screen,info)=>this._ready(info));
   this.gpu.on('close',()=>{this.ready=false;this.hide();this.emit('mode',false);});
-  this.gpu.on('closed',()=>{this.suspended=true;this.hide();this.emit('mode',false);});
+  this.gpu.on('closed',()=>{this.suspended=true;this.hide();}); // Hidden by the foreground gate, still capable of modern settings.
   this.gpu.on('touch',(p,x,y)=>this._touch(p,x,y));
   this.gpu.on('ccu',e=>this._ccu(e));
   this.gpu.on('tick',()=>{if(this.dirty||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
