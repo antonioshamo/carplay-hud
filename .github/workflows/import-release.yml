@@ -21,10 +21,10 @@ jobs:
       - name: Import the reviewed source commit
         run: |
           if [ -f release-import.bundle ]; then
-            echo '89b4435858ed04825e8dc125a7a970bf33f64175c8f85239472e0aad86c56b5c  release-import.bundle' | sha256sum -c -
+            echo '916da56be4c04cb5d149f73c6b2719cf3c8d450dc8d3209e982d7ec930f2b629  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
             git fetch ./release-import.bundle refs/heads/shamo/hud-settings-research:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '5d2598e58db656d4398c548f49bec8f98315eb6e'
+            test "$(git rev-parse refs/remotes/import/release)" = '0bc8a849b3c5aa496fcbaef8b9447a1e4d9ffd7d'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
@@ -32,12 +32,13 @@ jobs:
             git commit -m 'Remove source transport bundle after verified import'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 5d2598e58db656d4398c548f49bec8f98315eb6e HEAD
+          git merge-base --is-ancestor 0bc8a849b3c5aa496fcbaef8b9447a1e4d9ffd7d HEAD
       - run: node native/hud-startup-diagnostics/test.js
       - run: node apps/robertn_waze_cluster/tools/test_trace.js
       - run: node apps/robertn_waze_cluster/tools/check_rhmi.js
       - run: node apps/robertn_waze_cluster/tools/test_page.js
       - run: node apps/robertn_waze_cluster/tools/test_design.js
+      - run: node apps/robertn_waze_cluster/tools/test_settings.js
       - name: Check the collector with Node 8 on Linux
         run: |
           set -eu
@@ -50,9 +51,10 @@ jobs:
           "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/check_rhmi.js
           "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_trace.js
           "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_startup.js
+          "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_settings_startup.js
       - run: node release/test/release_test.js
       - run: node release/release.js check robertn_waze_cluster
-      - name: Publish app RHMI compatibility update
+      - name: Publish verified app opening fix
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
