@@ -163,6 +163,14 @@ function runSource() {
 /* ---- scenario ----------------------------------------------------------------- */
 
 async function main() {
+    const checkRhmi=require('./check_rhmi.js').check;
+    checkRhmi(XML,UI);
+    assert.throws(()=>checkRhmi(XML.replace('<property id="2"','<property id="1" value="1"/><property id="2"'),UI),/Enabled/);
+    const invalidUi=JSON.parse(JSON.stringify(UI));
+    const firstButton=Object.values(invalidUi.containers['1'].components).find(c=>c.type==='button');
+    firstButton.properties.Enabled={value:1,type:'UInt'};
+    assert.throws(()=>checkRhmi(XML,invalidUi),/startup properties/);
+    console.log('ok   RHMI startup contract rejects the removed static Enabled declarations');
     const components = Object.assign({}, ...Object.values(UI.containers).map(c => c.components));
     const buttons = Object.entries(components).filter(([, d]) => d.type === 'button');
     const xmlButtons = [...XML.matchAll(/<component id="(\d+)" type="button"/g)].map(m => m[1]).sort();

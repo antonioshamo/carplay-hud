@@ -27,10 +27,6 @@
           "type": "label",
           "name": "wocStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -53,10 +49,6 @@
           "type": "button",
           "name": "wocDisplay",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -79,10 +71,6 @@
           "type": "button",
           "name": "wocQuickStartup",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -105,10 +93,6 @@
           "type": "button",
           "name": "wocSizePage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -131,10 +115,6 @@
           "type": "button",
           "name": "wocPositionPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -157,10 +137,6 @@
           "type": "button",
           "name": "wocAppearancePage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -183,10 +159,6 @@
           "type": "button",
           "name": "wocSupportPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -209,10 +181,6 @@
           "type": "button",
           "name": "wocModern",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -259,10 +227,6 @@
           "type": "label",
           "name": "sizeStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -285,10 +249,6 @@
           "type": "button",
           "name": "wocHudSize",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -311,10 +271,6 @@
           "type": "button",
           "name": "wocHudSmaller",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -337,10 +293,6 @@
           "type": "button",
           "name": "wocPresetsPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -363,10 +315,6 @@
           "type": "button",
           "name": "wocSizeStandard",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -389,10 +337,6 @@
           "type": "label",
           "name": "sizeNotice",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -445,10 +389,6 @@
           "type": "label",
           "name": "positionStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -471,10 +411,6 @@
           "type": "button",
           "name": "wocHorizontalPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -497,10 +433,6 @@
           "type": "button",
           "name": "wocVerticalPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -523,10 +455,6 @@
           "type": "button",
           "name": "wocMoveStep",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -549,10 +477,6 @@
           "type": "button",
           "name": "wocHudCentre",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -575,10 +499,6 @@
           "type": "label",
           "name": "positionNotice",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -631,10 +551,6 @@
           "type": "label",
           "name": "supportStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -657,10 +573,6 @@
           "type": "button",
           "name": "wocDisplayPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -683,10 +595,6 @@
           "type": "label",
           "name": "wocSetup",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -709,10 +617,6 @@
           "type": "button",
           "name": "wocSetupPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -735,10 +639,6 @@
           "type": "button",
           "name": "wocTroubleshootPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -761,10 +661,6 @@
           "type": "button",
           "name": "wocCapturePage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -787,10 +683,6 @@
           "type": "button",
           "name": "wocLogPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -843,10 +735,6 @@
           "type": "label",
           "name": "setupStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -869,10 +757,6 @@
           "type": "button",
           "name": "wocEnable",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -895,10 +779,6 @@
           "type": "button",
           "name": "wocDisable",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -921,10 +801,6 @@
           "type": "button",
           "name": "wocRestart",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 0,
               "type": "UInt"
@@ -947,10 +823,6 @@
           "type": "label",
           "name": "setupHint",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1003,10 +875,6 @@
           "type": "label",
           "name": "wocCaptureStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1029,10 +897,6 @@
           "type": "button",
           "name": "wocCapture",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1055,10 +919,6 @@
           "type": "label",
           "name": "captureHint",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1111,10 +971,6 @@
           "type": "label",
           "name": "wocRow01",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1137,10 +993,6 @@
           "type": "label",
           "name": "wocRow02",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1163,10 +1015,6 @@
           "type": "label",
           "name": "wocRow03",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1189,10 +1037,6 @@
           "type": "label",
           "name": "wocRow04",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1215,10 +1059,6 @@
           "type": "label",
           "name": "wocRow05",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1241,10 +1081,6 @@
           "type": "label",
           "name": "wocRow06",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1267,10 +1103,6 @@
           "type": "label",
           "name": "wocRow07",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1293,10 +1125,6 @@
           "type": "label",
           "name": "wocRow08",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1319,10 +1147,6 @@
           "type": "label",
           "name": "wocRow09",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1345,10 +1169,6 @@
           "type": "label",
           "name": "wocRow10",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1371,10 +1191,6 @@
           "type": "label",
           "name": "wocRow11",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1397,10 +1213,6 @@
           "type": "label",
           "name": "wocRow12",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1423,10 +1235,6 @@
           "type": "label",
           "name": "wocRow13",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1449,10 +1257,6 @@
           "type": "label",
           "name": "wocRow14",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1475,10 +1279,6 @@
           "type": "label",
           "name": "wocRow15",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1501,10 +1301,6 @@
           "type": "label",
           "name": "wocRow16",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1527,10 +1323,6 @@
           "type": "label",
           "name": "wocRow17",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1553,10 +1345,6 @@
           "type": "label",
           "name": "wocRow18",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1579,10 +1367,6 @@
           "type": "label",
           "name": "wocRow19",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1605,10 +1389,6 @@
           "type": "label",
           "name": "wocRow20",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1631,10 +1411,6 @@
           "type": "label",
           "name": "wocRow21",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1657,10 +1433,6 @@
           "type": "label",
           "name": "wocRow22",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1683,10 +1455,6 @@
           "type": "label",
           "name": "wocRow23",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1709,10 +1477,6 @@
           "type": "label",
           "name": "wocRow24",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1735,10 +1499,6 @@
           "type": "label",
           "name": "wocRow25",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1761,10 +1521,6 @@
           "type": "label",
           "name": "wocRow26",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1787,10 +1543,6 @@
           "type": "label",
           "name": "wocRow27",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1813,10 +1565,6 @@
           "type": "label",
           "name": "wocRow28",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1839,10 +1587,6 @@
           "type": "label",
           "name": "wocRow29",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1865,10 +1609,6 @@
           "type": "label",
           "name": "wocRow30",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1921,10 +1661,6 @@
           "type": "label",
           "name": "displayStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1947,10 +1683,6 @@
           "type": "button",
           "name": "wocDisplayHud",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1973,10 +1705,6 @@
           "type": "button",
           "name": "wocDisplayCluster",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -1999,10 +1727,6 @@
           "type": "button",
           "name": "wocStartupPage",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2025,10 +1749,6 @@
           "type": "label",
           "name": "displayHint",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2081,10 +1801,6 @@
           "type": "label",
           "name": "presetStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2107,10 +1823,6 @@
           "type": "button",
           "name": "wocPresetCompact",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2133,10 +1845,6 @@
           "type": "button",
           "name": "wocPresetBalanced",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2159,10 +1867,6 @@
           "type": "button",
           "name": "wocPresetLarge",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2185,10 +1889,6 @@
           "type": "label",
           "name": "presetNotice",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2241,10 +1941,6 @@
           "type": "label",
           "name": "horizontalStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2267,10 +1963,6 @@
           "type": "button",
           "name": "wocHudLeft",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2293,10 +1985,6 @@
           "type": "button",
           "name": "wocHudRight",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2319,10 +2007,6 @@
           "type": "label",
           "name": "horizontalHint",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2375,10 +2059,6 @@
           "type": "label",
           "name": "verticalStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2401,10 +2081,6 @@
           "type": "button",
           "name": "wocHudUp",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2427,10 +2103,6 @@
           "type": "button",
           "name": "wocHudDown",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2453,10 +2125,6 @@
           "type": "label",
           "name": "verticalHint",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2509,10 +2177,6 @@
           "type": "label",
           "name": "appearanceStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2535,10 +2199,6 @@
           "type": "button",
           "name": "wocOriginalColors",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2561,10 +2221,6 @@
           "type": "button",
           "name": "wocClearBackground",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2587,10 +2243,6 @@
           "type": "button",
           "name": "wocCorners",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2613,10 +2265,6 @@
           "type": "label",
           "name": "appearanceNotice",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2669,10 +2317,6 @@
           "type": "label",
           "name": "missingHint1",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2695,10 +2339,6 @@
           "type": "label",
           "name": "missingHint2",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2721,10 +2361,6 @@
           "type": "label",
           "name": "missingHint3",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2747,10 +2383,6 @@
           "type": "button",
           "name": "wocMissingCapture",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2773,10 +2405,6 @@
           "type": "label",
           "name": "missingHint4",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2829,10 +2457,6 @@
           "type": "label",
           "name": "startupStatus",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2855,10 +2479,6 @@
           "type": "button",
           "name": "wocStartupOn",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2881,10 +2501,6 @@
           "type": "button",
           "name": "wocStartupOff",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2907,10 +2523,6 @@
           "type": "label",
           "name": "startupHint",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2933,10 +2545,6 @@
           "type": "label",
           "name": "startupLimit",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -2959,10 +2567,6 @@
           "type": "label",
           "name": "startupResult",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3015,10 +2619,6 @@
           "type": "button",
           "name": "designProxy0",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3041,10 +2641,6 @@
           "type": "button",
           "name": "designProxy1",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3067,10 +2663,6 @@
           "type": "button",
           "name": "designProxy2",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3093,10 +2685,6 @@
           "type": "button",
           "name": "designProxy3",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3119,10 +2707,6 @@
           "type": "button",
           "name": "designProxy4",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3145,10 +2729,6 @@
           "type": "button",
           "name": "designProxy5",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3171,10 +2751,6 @@
           "type": "button",
           "name": "designProxy6",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3197,10 +2773,6 @@
           "type": "button",
           "name": "designProxy7",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3223,10 +2795,6 @@
           "type": "button",
           "name": "designProxy8",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3249,10 +2817,6 @@
           "type": "button",
           "name": "designProxy9",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3275,10 +2839,6 @@
           "type": "button",
           "name": "designProxy10",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3301,10 +2861,6 @@
           "type": "button",
           "name": "designProxy11",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3327,10 +2883,6 @@
           "type": "button",
           "name": "designProxy12",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3353,10 +2905,6 @@
           "type": "button",
           "name": "designProxy13",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3379,10 +2927,6 @@
           "type": "button",
           "name": "designProxy14",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3405,10 +2949,6 @@
           "type": "button",
           "name": "designProxy15",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3431,10 +2971,6 @@
           "type": "button",
           "name": "designProxy16",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3457,10 +2993,6 @@
           "type": "button",
           "name": "designProxy17",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3483,10 +3015,6 @@
           "type": "button",
           "name": "designProxy18",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3509,10 +3037,6 @@
           "type": "button",
           "name": "designProxy19",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3535,10 +3059,6 @@
           "type": "button",
           "name": "designProxy20",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3561,10 +3081,6 @@
           "type": "button",
           "name": "designProxy21",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3587,10 +3103,6 @@
           "type": "button",
           "name": "designProxy22",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"
@@ -3613,10 +3125,6 @@
           "type": "button",
           "name": "designProxy23",
           "properties": {
-            "Enabled": {
-              "value": 1,
-              "type": "UInt"
-            },
             "Visible": {
               "value": 1,
               "type": "UInt"

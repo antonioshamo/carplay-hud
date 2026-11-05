@@ -1,3 +1,11 @@
+## 0.4.125
+
+- The affected car's 0.4.124 startup trace reaches OnlineApp.start, then RemoteHmi rejects RhmiApplication.init with `INAVLID_PARAMETER` before the SDK initialized event. Installation, the stock runner and SDK import all succeeded.
+- Remove the static Enabled/property 1 declarations introduced in 0.4.115 from all button and label resources, restoring the startup property set used by the earlier opening layout and upstream ID7 app. Runtime setEnabled controls are retained. This is a targeted compatibility candidate: the generic remote error does not identify the exact rejected parameter, and successful vehicle startup is not yet verified.
+- Keep all 15 screens, component IDs, parent relationships, features, settings, dependencies, startup recording and vehicle safety gates unchanged.
+- Validate shipped XML/JSON properties, IDs, types, widgets, text cells and parent relationships during the build; regression checks reject reintroduced Enabled declarations. Controlled SDK tests are not a BMW RHMI emulator.
+- Update the CarPlay HUD App only. Existing Tools do not need reinstallation. If an old failed process remains resident, restart the head unit while parked before retrying. The existing diagnostics Tool can collect the new app's persisted result if needed.
+
 ## 0.4.124
 
 - Records bounded private startup milestones and app-handled errors in the app data directory before SDK imports and through screen initialization. Errors in the recorder do not block launch; the stock runner and startup behavior remain intact.
