@@ -21,10 +21,10 @@ jobs:
       - name: Import the reviewed source commit
         run: |
           if [ -f release-import.bundle ]; then
-            echo '368a4521ca4ee265e564b5e3db28ee16c2e535f4acc2dd1089227d23976e69da  release-import.bundle' | sha256sum -c -
+            echo '5688d11d1f313c55d6e695f0bcc45cb05afdd3ee551a777cb4b5f9b14d10a6eb  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
             git fetch ./release-import.bundle refs/heads/shamo/hud-settings-research:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '7ab540aad1b283768d05a257c6d52b19e5bfb826'
+            test "$(git rev-parse refs/remotes/import/release)" = '9473bc3e931671210d08f7844e2d9b54bb221d83'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
@@ -32,7 +32,7 @@ jobs:
             git commit -m 'Remove source transport bundle after verified import'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 7ab540aad1b283768d05a257c6d52b19e5bfb826 HEAD
+          git merge-base --is-ancestor 9473bc3e931671210d08f7844e2d9b54bb221d83 HEAD
       - run: node apps/robertn_waze_cluster/tools/test_control.js
       - run: sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
       - run: node apps/robertn_waze_cluster/tools/test_page.js
