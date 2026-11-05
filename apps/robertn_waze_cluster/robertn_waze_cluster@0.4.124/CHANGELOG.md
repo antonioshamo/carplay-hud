@@ -1,3 +1,8 @@
+## 0.4.124
+
+- Records bounded private startup milestones and app-handled errors in the app data directory before SDK imports and through screen initialization. Errors in the recorder do not block launch; the stock runner and startup behavior remain intact.
+- This is a diagnostic build for an unresolved vehicle launch failure, not a confirmed repair. Use startup diagnostics Tool 0.1.1 after attempting a launch to collect the retained record.
+
 ## 0.4.123
 
 - Explicitly enable `rhmiLoadingEnabled` and `entryPointLoadingEnabled` in the app configuration. Some SDK 27.x donors default these off, leaving installed apps stuck at Loading app. See [upstream report and confirmed fix](https://github.com/cauliflowermossgrape/idrive7-apps/issues/39#issuecomment-6546607787).

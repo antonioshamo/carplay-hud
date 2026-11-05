@@ -16,6 +16,7 @@ write(source+'/javascript/app.js',"throw Error('THE_APP_MUST_NOT_BE_EXECUTED');\
 write(source+'/rhmiData/uiDescriptions/ID7/uiDescription.json',{containers:{1:{},20:{}}});
 write('proc/100/status','Name:\tnode\nState:\tS (sleeping)\nUid:\t12226 12226 12226 12226\nVmRSS:\t42000 kB\n');
 write('proc/101/status','Name:\tnode\nUid:\t999 999 999 999\n');
+write(home+'/data/hud-startup.log','2026-11-05T00:00:00Z startup bundle-entered\n2026-11-05T00:00:01Z startup start-failed: Error: trace fixture token=PRIVATE\n');
 let calls=[];
 function run(file,args){
  calls.push([file,args]);
@@ -33,6 +34,7 @@ async function main(){
  assert(report.includes('TypeError: screen initialization failed'));assert(report.includes('cannot open RHMI'));
  for(const value of ['NEVER_INCLUDE','PRIVATE','42.123','-83.123','WBA12345678901234','OTHER_APP_SECRET','a@example.com','https://example.com','THE_APP_MUST_NOT_BE_EXECUTED'])assert(!report.includes(value),value);
  assert(report.includes('rhmiLoadingEnabled: true'));assert(report.includes('HUD STARTUP REPORT END'));
+ assert(report.includes('Persisted startup: 2026-11-05T00:00:01Z startup start-failed'));
  assert.equal(calls.filter(x=>x[0]===process.execPath).length,2);
  console.log('PASS installed package, UID process isolation, syntax-only commands, relevant logs and redaction');
 
@@ -57,6 +59,7 @@ async function main(){
  const spawn=(file,args)=>{assert.equal(file,'dlt-receive');assert.deepEqual(args,['-a','localhost']);const c=new EventEmitter();c.stdout=new PassThrough();c.stderr=new PassThrough();c.kill=()=>{killed++;};setImmediate(()=>{c.stdout.write('OTHER TypeError unrelated\nWOCA info unrelated\nWOCA error start');c.stdout.write('up failed\n');});return c;};
  const result=await dltSample(l=>received.push(l),spawn,25);assert.equal(result.matched,1);assert.equal(received[0],'WOCA error startup failed');assert.equal(killed,1);
  const missing=await dltSample(()=>{throw Error('must not receive');},()=>{throw Error('not installed');},25);assert.equal(missing.reason,'unavailable');
+ const closed=await dltSample(()=>{},()=>{const c=new EventEmitter();c.stdout=new PassThrough();c.stderr=new PassThrough();c.kill=()=>{};setImmediate(()=>{c.stderr.write('connection refused token=PRIVATE');c.emit('close',1,null);});return c;},100);assert(closed.reason.includes('code=1'));assert(closed.detail.includes('connection refused'));assert(!closed.detail.includes('PRIVATE'));
  const flood=await dltSample(()=>{},(file,args)=>{const c=new EventEmitter();c.stdout=new PassThrough();c.stderr=new PassThrough();c.kill=()=>{};setImmediate(()=>c.stdout.write('x'.repeat(5*1024*1024)));return c;},100);assert.equal(flood.reason,'input limit reached');
  console.log('PASS passive DLT framing, app filtering, timeout, missing receiver and flood limit');
 

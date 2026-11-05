@@ -30,12 +30,12 @@ function run(file,args){
 }
 function dltSample(onLine,spawn,milliseconds){
  return new Promise(resolve=>{
-  let child,buffer='',lines=0,bytes=0,done=false,timer;
-  const finish=reason=>{if(done)return;done=true;clearTimeout(timer);if(child){child.stdout.removeAllListeners('data');child.stderr.removeAllListeners('data');child.stdout.resume();child.stderr.resume();try{child.kill('SIGKILL');}catch(e){}}resolve({reason,matched:lines});};
+  let child,buffer='',lines=0,bytes=0,done=false,timer,stderr='';
+  const finish=reason=>{if(done)return;done=true;clearTimeout(timer);if(child){child.stdout.removeAllListeners('data');child.stderr.removeAllListeners('data');child.stdout.resume();child.stderr.resume();try{child.kill('SIGKILL');}catch(e){}}resolve({reason,matched:lines,detail:redact(stderr).slice(0,500)});};
   try{child=spawn('dlt-receive',['-a','localhost'],{stdio:['ignore','pipe','pipe']});}catch(e){finish('unavailable');return;}
   timer=setTimeout(()=>finish('sample ended'),milliseconds);
-  child.on('error',()=>finish('unavailable'));child.on('close',()=>finish('receiver closed'));
-  child.stderr.on('data',()=>{});
+  child.on('error',()=>finish('unavailable'));child.on('close',(code,signal)=>finish('receiver closed; code='+code+'; signal='+(signal||'none')));
+  child.stderr.on('data',data=>{if(stderr.length<2048)stderr+=String(data).slice(0,2048-stderr.length);});
   child.stdout.setEncoding('utf8');child.stdout.on('data',chunk=>{
    bytes+=Buffer.byteLength(chunk);if(bytes>4*LIMIT){finish('input limit reached');return;}
    buffer+=chunk;if(buffer.length>65536){buffer='';return;}
@@ -49,7 +49,7 @@ async function collect(options){
  const o=options||{},root=o.root||'',exec=o.run||run,output=[];
  const at=p=>path.join(root,p),put=(k,v)=>output.push(k+': '+redact(v).replace(/\s+/g,' ').slice(0,700));
  const attempt=(name,fn)=>{try{return fn();}catch(e){put(name,e.code||e.message);return null;}};
- output.push('=== HUD STARTUP REPORT 0.1.0 BEGIN ===');put('Captured',new Date().toISOString());put('Collector Node',process.version);
+ output.push('=== HUD STARTUP REPORT 0.1.1 BEGIN ===');put('Captured',new Date().toISOString());put('Collector Node',process.version);
  const reg=attempt('Registry',()=>json(at('/var/opt/public/oap/oap_12201/data/apps/'+ID+'.json')));
  const uid=reg&&Number(reg.userId);
  if(!Number.isInteger(uid)||uid<12202||uid>65534){put('App','No valid registered UID; no app directories or app logs inspected');output.push('=== HUD STARTUP REPORT END ===');return output;}
@@ -60,6 +60,7 @@ async function collect(options){
  const pkg=attempt('Package',()=>json(at(source+'/package.json')));
  if(!pkg||pkg.name!==ID){put('App','Registered source is missing or has another identity; stopped');output.push('=== HUD STARTUP REPORT END ===');return output;}
  put('Installed app',pkg.name+' '+pkg.version);put('Main',pkg.main);
+ put('Declared SDK',pkg.dependencies&&pkg.dependencies['oap-sdk']);
  const config=attempt('Configuration',()=>json(at(source+'/config/base.json')));
  if(config)for(const k of ['rhmiLoadingEnabled','entryPointLoadingEnabled'])put(k,config[k]===undefined?'unset':config[k]===true?'true':config[k]===false?'false':'unexpected type');
  const build=attempt('Linked build',()=>json(at(source+'/javascript/build.json')));
@@ -93,6 +94,7 @@ async function collect(options){
  }));put('App process count',processes);
  let errors=0;
  const log=(label,text,own)=>String(text).split('\n').filter(l=>STARTUP.test(l)&&(own||l.indexOf(ID)>=0||new RegExp('\\b'+uid+'\\b').test(l))).slice(-25).forEach(l=>{put(label,l);errors++;});
+ try{log('Persisted startup',read(at(home+'/data/hud-startup.log'),65536).toString('utf8'),true);}catch(e){put('Persisted startup','not available; the app bundle may not have been reached, or this build has no recorder');}
  for(const item of [['App journal',['_UID='+uid],true],['Manager journal',['-u','oapcontroller.service'],false]]){
   const result=exec('journalctl',['-b','--since','-20min','-n','500','--no-pager','-o','cat'].concat(item[1]));
   put(item[0]+' read',result.status===0?'OK':result.error||'unavailable');log(item[0],result.stdout,item[2]);
@@ -100,7 +102,7 @@ async function collect(options){
  // This file is optional: this app currently uses SDK logging; some runners
  // also retain a local log. Never read the rest of the app's private data.
  try{log('App file log',read(at(home+'/data/'+ID+'.log'),LIMIT).toString('utf8'),true);}catch(e){put('App file log','not available');}
- const dlt=await(o.sample||((fn)=>dltSample(fn,cp.spawn,4000)))(line=>{put('App DLT',line);errors++;});put('DLT',dlt.reason+'; '+dlt.matched+' matching lines');
+ const dlt=await(o.sample||((fn)=>dltSample(fn,cp.spawn,4000)))(line=>{put('App DLT',line);errors++;});put('DLT',dlt.reason+'; '+dlt.matched+' matching lines');if(dlt.detail)put('DLT receiver detail',dlt.detail);
  put('Startup lines collected',errors);put('Result',errors?'Startup evidence collected; diagnosis still required':'No matching startup lines found; this is not evidence of a successful launch');
  output.push('=== HUD STARTUP REPORT END ===');return output;
 }

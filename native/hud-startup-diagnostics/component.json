@@ -1,7 +1,7 @@
 {
   "id": "hud-startup-diagnostics",
   "kind": "tool",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "title": "CarPlay HUD startup diagnostics",
   "description": "Read-only launch report in Store phone access > Logs > mgu-updater.log. Collects on installation; does not repair or restart the app.",
   "requires": { "mgu-deploy": "0.7.0" },
