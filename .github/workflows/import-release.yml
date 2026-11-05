@@ -21,10 +21,10 @@ jobs:
       - name: Import the reviewed source commit
         run: |
           if [ -f release-import.bundle ]; then
-            echo '5d191a18062571576debbda3382ac5b33f580e7b90fe8e5d03e224d8b3bce83e  release-import.bundle' | sha256sum -c -
+            echo '174d540cc201a9d85eed77ee19f9445a3b006fb74d4527375453fb40ffe1fc35  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
             git fetch ./release-import.bundle refs/heads/shamo/hud-settings-research:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '0ba09a488f93c9ab0f6177173d699591b53a7d2b'
+            test "$(git rev-parse refs/remotes/import/release)" = 'a225f4d1dd1c1bddc70b4996f2838a0547edc9da'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
@@ -32,22 +32,27 @@ jobs:
             git commit -m 'Remove source transport bundle after verified import'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 0ba09a488f93c9ab0f6177173d699591b53a7d2b HEAD
+          git merge-base --is-ancestor a225f4d1dd1c1bddc70b4996f2838a0547edc9da HEAD
       - run: node native/hud-startup-diagnostics/test.js
+      - run: node apps/robertn_waze_cluster/tools/test_trace.js
+      - run: node apps/robertn_waze_cluster/tools/test_page.js
+      - run: node apps/robertn_waze_cluster/tools/test_design.js
       - name: Check the collector with Node 8 on Linux
         run: |
           set -eu
           runtime_dir=$(mktemp -d)
           trap 'rm -rf "$runtime_dir"' EXIT
-          curl --fail --silent --show-error --location --max-time 90 https://nodejs.org/download/release/v8.17.0/node-v8.17.0-linux-x64.tar.gz -o "$runtime_dir/node.tar.gz"
-          printf '%s  %s\n' 8b2c9e1f84317c4b02736c4c50db4dd2cd6c4f0ba910fa81f887c8c9294af596 "$runtime_dir/node.tar.gz" | sha256sum -c -
+          curl --fail --silent --show-error --location --max-time 90 https://nodejs.org/download/release/v8.16.2/node-v8.16.2-linux-x64.tar.gz -o "$runtime_dir/node.tar.gz"
+          printf '%s  %s\n' 722d07291a8886384388c6795a747ec2055073f83dc73c0a97efba0022cc23ff "$runtime_dir/node.tar.gz" | sha256sum -c -
           tar -xzf "$runtime_dir/node.tar.gz" -C "$runtime_dir"
-          "$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/hud-startup-diagnostics/test.js
+          "$runtime_dir/node-v8.16.2-linux-x64/bin/node" native/hud-startup-diagnostics/test.js
+          "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_trace.js
+          "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_startup.js
       - run: node release/test/release_test.js
-      - run: node release/release.js check hud-startup-diagnostics
-      - name: Publish diagnostics only and preserve existing app artifacts
+      - run: node release/release.js check robertn_waze_cluster hud-startup-diagnostics
+      - name: Publish app startup recorder and updated diagnostic collector
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish hud-startup-diagnostics
+        run: node release/release.js publish robertn_waze_cluster hud-startup-diagnostics
