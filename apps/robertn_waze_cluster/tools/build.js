@@ -37,6 +37,7 @@ function donorArg(argv) {
 
 function main() {
     require('./build_ui.js').build();
+    require('./check_rhmi.js').checkTree(path.join(HERE, link.readManifest(HERE).tree));
     require('./build_icon.js').build();
     const donor = donorArg(process.argv.slice(2));
     const m = link.readManifest(HERE);

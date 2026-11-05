@@ -69,8 +69,11 @@ function build(){
    `    <layoutGroup id="${1001+sid*2}" name="List"><property id="3" value="1"/>`);
   for(const row of rows){
    const cid=id++,visible=row.visible===0?0:1,focus=row.focus===3||row.type==='button'?3:0;
-   components[cid]={type:row.type,name:row.name,properties:{Enabled:prop(1),Visible:prop(visible),Focusable:prop(focus)},rows:[{Text:{value:row.text,type:'Text'}}]};
-   xml.push(`      <component id="${cid}" type="${row.type}" widget="LT_${row.type==='button'?'Button':'Label'}_1Row"><property id="1" value="1"/><property id="2" value="${visible}"/><property id="3" value="${focus}"/></component>`);
+   // Keep the startup properties used by the working upstream ID7 layout.
+   // Enabled is set through the SDK at runtime, not declared on every label
+   // and button while RemoteHmi initializes the application's resources.
+   components[cid]={type:row.type,name:row.name,properties:{Visible:prop(visible),Focusable:prop(focus)},rows:[{Text:{value:row.text,type:'Text'}}]};
+   xml.push(`      <component id="${cid}" type="${row.type}" widget="LT_${row.type==='button'?'Button':'Label'}_1Row"><property id="2" value="${visible}"/><property id="3" value="${focus}"/></component>`);
   }
   ui.containers[sid]={type:'state',name,components};
   if(parents[sid])ui.containers[sid].properties={ParentState:prop(parents[sid])};
