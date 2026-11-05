@@ -1,10 +1,12 @@
 {
   "schema": 1,
   "id": "robertn_waze_cluster",
-  "version": "0.4.123",
-  "tree": "robertn_waze_cluster@0.4.123",
+  "version": "0.4.124",
+  "tree": "robertn_waze_cluster@0.4.124",
   "modules": [
+    "src/startup.js",
     "src/robertn_waze_cluster.js",
+    "src/startup_trace.js",
     "src/waze_cluster_control.js",
     "src/profile_sync.js",
     "src/settings_control.js",

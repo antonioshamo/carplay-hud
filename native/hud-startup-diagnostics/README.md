@@ -7,18 +7,22 @@ files, restart anything, or upload data.
 
 While parked:
 
-1. After a failed CarPlay HUD launch, return to MGU Store.
-2. Refresh `antonioshamo/carplay-hud` and install **CarPlay HUD startup diagnostics**
-   (Tool). Leave CarPlay HUD and its existing tools installed.
-3. In Store, select **Settings > Phone access > On**. Scan its QR code using a
+1. Refresh `antonioshamo/carplay-hud` in MGU Store and update **CarPlay HUD (App)**
+   to **0.4.124**. This build adds a private startup record; it is not a confirmed repair.
+2. Try opening CarPlay HUD, then return to Store after the launch attempt.
+3. Update **CarPlay HUD startup diagnostics (Tool)** to **0.1.1**. Collection runs
+   during that update. If it was already updated before the launch attempt,
+   remove and reinstall this diagnostics tool only to collect a fresh report.
+4. In Store, select **Settings > Phone access > On**. Scan its QR code using a
    phone connected to the car's hotspot.
-4. On the phone page select **Logs > mgu-updater.log > Show**. Copy only the
+5. On the phone page select **Logs > mgu-updater.log > Show**. Copy only the
    block between `HUD STARTUP REPORT ... BEGIN` and `HUD STARTUP REPORT END`
    into the private support chat. Review it first; do not post the entire log
    or the access QR code publicly. Turn Phone access off afterward.
 
 The report includes the registered/installed app version, donor/runner identity,
 screen-loading flags, file hashes, JavaScript syntax results, process state,
+the app-owned `hud-startup.log` record,
 and available recent startup messages. The app UID comes from its own registry
 entry; no fixed UID is assumed. Missing logs or services are reported explicitly.
 URLs, common token formats, email addresses, VIN-shaped strings, network addresses
@@ -30,8 +34,14 @@ miss an earlier failure if the vehicle has no retained journal or DLT messages.
 In that case the report supplies metadata only, not a diagnosed cause. A later
 live connection or a bounded launch recording will still be needed.
 
-The collector's Node 8 and fixture tests are offline tests. The target BMW has
-not yet run this collector. No repair or successful vehicle launch is claimed.
+The collector's Node 8 and fixture tests are offline tests. Collector 0.1.0 ran on the target BMW and returned metadata but no startup errors.
+Collector 0.1.1 and the app recorder still need target verification. No repair or successful vehicle launch is claimed.
 
 For a fresh snapshot later, remove and reinstall this diagnostics tool only.
 It keeps no service or separate report file to clean up.
+
+App 0.4.124 resets its private log at each bundle start and caps it at 64 KiB.
+It records no navigation data, screenshots, settings, or credentials, and it
+never uploads the log. If execution fails before the app bundle is loaded,
+this recorder cannot capture that earlier failure; absence of a record is
+reported without diagnosing a cause.

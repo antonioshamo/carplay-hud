@@ -1,7 +1,7 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.123",
-  "description": "CarPlay HUD: enables screen and entry-point loading with newer donor SDKs; vehicle launch confirmation pending",
+  "version": "0.4.124",
+  "description": "CarPlay HUD: persistent startup diagnostics; the affected vehicle launch failure remains under investigation",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {

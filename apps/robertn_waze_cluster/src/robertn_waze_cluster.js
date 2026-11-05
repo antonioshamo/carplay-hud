@@ -4,6 +4,8 @@
  * existing tools own rendering, startup and driver profile persistence. */
 'use strict';
 
+const trace = require('./startup_trace.js');
+trace.record('sdk-import-begin');
 const OnlineApp = require('oap-sdk/src/core/OnlineApp.js');
 const logging = require('oap-sdk/src/logging/logging');
 const { MAX_LINES } = require('./waze_cluster_control.js');
@@ -13,6 +15,7 @@ const { ProfileSync } = require('./profile_sync.js');
 const HOST = 'ST_WOC_Design', PROXIES = 24;
 
 const logger = logging.getSDKLogger();
+trace.record('sdk-import-complete');
 
 const STATE_NAME = 'ST_OnlineApps_WazeCluster';
 const STATUS_NAME = 'wocStatus';
@@ -62,6 +65,7 @@ function isTrue(raw) {
 class WazeClusterApp extends OnlineApp {
     constructor() {
         super();
+        trace.record('constructor-super-complete');
         this._state = null;
         this._components = {};
         this._actionById = {};
@@ -88,11 +92,19 @@ class WazeClusterApp extends OnlineApp {
         this._profiles = null;
 
         this.on('initialized', () => {
-            this._appInitialized()
-                .catch((err) => logger.error(`robertn_waze_cluster init failed: ${err && err.message}`));
+            trace.record('sdk-initialized-event');
+            try { this._appInitialized()
+                .catch((err) => {
+                    trace.error('initialization-failed', err);
+                    logger.error(`robertn_waze_cluster init failed: ${err && err.message}`);
+                });
+            } catch (err) { trace.error('initialization-threw', err); throw err; }
         });
         this.on('shutdown', (reason) => this._handleShutdown(reason));
-        this.on('error', (err) => logger.warn(`OnlineApp error: ${err && err.message}`));
+        this.on('error', (err) => {
+            trace.error('sdk-error', err);
+            logger.warn(`OnlineApp error: ${err && err.message}`);
+        });
         this.on('entryPointExecute', (uuid) => this._onEntryPointExecute(uuid));
         this.on('changeVisibility', (data) => {
             if (data && data.visible === false) {
@@ -102,15 +114,22 @@ class WazeClusterApp extends OnlineApp {
     }
 
     _appInitialized() {
+        trace.record('app-initializing', this._packageJson.version);
         logger.info(`robertn_waze_cluster ${this.getAppId()} v${this._packageJson.version} starting`);
         if (!this.rhmiApplication) {
+            trace.record('rhmi-unavailable', this.startReason);
             logger.info('no RhmiApplication for this start reason; initializing without a screen');
             return this.initialized();
         }
         const foregroundStart = this._startedForeground();
+        trace.record('rhmi-setup-begin', 'reason=' + this.startReason + '; foreground=' + foregroundStart);
         return this._setupRhmi()
-            .then(() => this._registerEntryPoints())
             .then(() => {
+                trace.record('rhmi-setup-complete');
+                return this._registerEntryPoints();
+            })
+            .then(() => {
+                trace.record('entry-registration-complete');
                 // A foreground start declares itself ACTIVE before initialized()
                 // reports the first app status, so the manager keeps it running.
                 if (foregroundStart) {
@@ -119,6 +138,7 @@ class WazeClusterApp extends OnlineApp {
                 return this.initialized();
             })
             .then(() => {
+                trace.record('manager-initialized-ack');
                 if (foregroundStart) {
                     this._sawForeground = true;
                     this._setVisible(true);
@@ -132,7 +152,10 @@ class WazeClusterApp extends OnlineApp {
                 // Some firmware does not replay the launch event after initialization.
                 // Explicitly open the mapped native home before optional graphics.
                 return (lastUuid ? this._onEntryPointExecute(lastUuid) : Promise.resolve())
-                    .then(() => { this._optionalTimer = setImmediate(() => this._startOptional()); });
+                    .then(() => {
+                        trace.record('native-entry-request-complete', lastUuid ? 'entry available' : 'no entry UUID');
+                        this._optionalTimer = setImmediate(() => this._startOptional());
+                    });
             });
     }
 
@@ -362,6 +385,7 @@ class WazeClusterApp extends OnlineApp {
     }
 
     _onEntryPointExecute(uuid) {
+        trace.record('entry-event', this._startupReady ? 'ready' : 'waiting for initialization');
         if (this._shutdownPromise || !this.rhmiApplication || !uuid) {
             return Promise.resolve();
         }
@@ -372,7 +396,10 @@ class WazeClusterApp extends OnlineApp {
         this._sawForeground = true;
         this._setVisible(true);
         return Promise.resolve().then(()=>this.rhmiApplication.openEntryState(uuid))
-            .catch((err) => logger.warn(`openEntryState failed: ${err && err.message}`));
+            .catch((err) => {
+                trace.error('open-entry-failed', err);
+                logger.warn(`openEntryState failed: ${err && err.message}`);
+            });
     }
 
     /* ---- visibility ---- */
@@ -551,6 +578,7 @@ class WazeClusterApp extends OnlineApp {
 
     /* ---- shutdown ---- */
     _handleShutdown(reason) {
+        trace.record('shutdown-requested');
         if (this._shutdownPromise) {
             return this._shutdownPromise;
         }
@@ -568,8 +596,11 @@ class WazeClusterApp extends OnlineApp {
     }
 }
 
+trace.record('constructor-begin');
 const app = new WazeClusterApp();
+trace.record('start-called');
 app.start().catch((err) => {
+    trace.error('start-failed', err);
     /* Stays resident so the manager can stop or restart it. */
     logger.error(`robertn_waze_cluster failed to start: ${err && err.message}`);
 });
