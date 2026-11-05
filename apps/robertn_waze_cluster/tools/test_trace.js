@@ -17,7 +17,9 @@ if(process.argv[2]==='child'){
         if(name==='oap-sdk/src/logging/logging')return {getSDKLogger:()=>logger};
         return load.call(this,name,parent,main);
     };
+    if (scenario === 'sdk-exit') process.on('uncaughtException', () => process.exit(23));
     require('../src/startup.js');
+    if (scenario === 'async' || scenario === 'sdk-exit') setImmediate(() => { throw Error('async failure token=PRIVATE'); });
 }else{
     const dir=fs.mkdtempSync(path.join(os.tmpdir(),'hud-trace-'));
     try{
@@ -32,12 +34,12 @@ if(process.argv[2]==='child'){
         const bad=trace.create(file);bad.begin();bad.record('test');assert.equal(fs.readFileSync(target,'utf8'),'preserve');fs.unlinkSync(file);
         const denied=trace.create('/missing-parent/hud-startup.log');assert.doesNotThrow(()=>{denied.begin();denied.error('failed',Error('ignored'));});
         console.log('PASS bounded private log, redaction, reset, symlink refusal and unwritable-path tolerance');
-        for(const scenario of ['import','constructor','start','initialization']){
+        for(const scenario of ['import','constructor','start','initialization','async','sdk-exit']){
             const r=cp.spawnSync(process.execPath,[__filename,'child',scenario,file],{encoding:'utf8',timeout:5000});
-            assert(!r.error,String(r.error));assert.equal(r.status,scenario==='import'||scenario==='constructor'?1:0);
+            assert(!r.error,String(r.error));assert.equal(r.status,scenario==='sdk-exit'?23:['import','constructor','async'].includes(scenario)?1:0);
             const log=fs.readFileSync(file,'utf8');
             assert(log.includes('bundle-entered'));assert(log.includes('process-exit'));
-            assert(log.includes({import:'entry-failed',constructor:'entry-failed',start:'start-failed',initialization:'initialization-failed'}[scenario]),log);
+            assert(log.includes({import:'entry-failed',constructor:'entry-failed',start:'start-failed',initialization:'initialization-failed',async:'uncaught-exception','sdk-exit':'uncaught-exception'}[scenario]),log);
             assert(!log.includes('PRIVATE'));
             console.log('PASS actual app '+scenario+' failure persists after child exit; original exit behavior preserved');
         }
