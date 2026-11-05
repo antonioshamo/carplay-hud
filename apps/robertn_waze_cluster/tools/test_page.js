@@ -92,6 +92,9 @@ rhmi.getByName = (name) => byName[name] || null;
 let mappedState, currentEntry;
 rhmi.mapEntryState = (uuid,state) => {mappedState=state;return Promise.resolve();};
 rhmi.openEntryState = () => {
+    // The observed ID7 failure: re-opening the remapped modern tile UUID is
+    // rejected. Direct openState must handle the in-app transition instead.
+    if(mappedState === byName.ST_WOC_Design)return Promise.reject(new Error('INVALID_UUID'));
     if(currentEntry)currentEntry.emit('visible',{visible:false});
     currentEntry=mappedState;currentEntry.emit('visible',{visible:true});
     return Promise.resolve();
@@ -100,8 +103,14 @@ const openedPages = [];
 // This fixture checks our declared hierarchy, not BMW's native implementation.
 rhmi.openState = name => {
     const state = byName[name];
-    assert(state && state.desc.properties && state.desc.properties.ParentState, 'ID7 child state declares ParentState');
-    assert(UI.containers[state.desc.properties.ParentState.value], 'parent exists');
+    assert(state && UI.containers[state.id], 'target is a declared RHMI state');
+    const root = state.id === 1 || state.id === 20;
+    if(!root){
+        assert(state.desc.properties && state.desc.properties.ParentState, 'ID7 child state declares ParentState');
+        assert(UI.containers[state.desc.properties.ParentState.value], 'parent exists');
+    }
+    if(currentEntry)currentEntry.emit('visible',{visible:false});
+    currentEntry=state;currentEntry.emit('visible',{visible:true});
     openedPages.push(name); return Promise.resolve();
 };
 let instance;
