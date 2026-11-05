@@ -305,19 +305,23 @@ class WazeClusterApp extends OnlineApp {
 
     _useModern(wanted) {
         const on=!!wanted&&this._design.ready;
+        trace.record('graphics-mode-request', 'wanted='+wanted+'; ready='+this._design.ready+'; visible='+this._visible);
         if(!this._entryUuid)return Promise.resolve();
         this._uiChange=this._uiChange.catch(()=>{}).then(()=>{
-            if(this._modern===on)return;
+            if(this._modern===on)return this._visible?this.rhmiApplication.openState(on?HOST:STATE_NAME):undefined;
             this._design.hostVisible(false);
+            // Map the tile for future launches, but navigate within this running
+            // app by state. Reopening its entry UUID here is rejected by the
+            // affected ID7 unit after remapping (INVALID_UUID).
             const state=this.rhmiApplication.getByName(on?HOST:STATE_NAME);
             return this._ensureResources(on?HOST:STATE_NAME)
                 .then(()=>{this._modern=on;this._design.proxyKey=null;return this.rhmiApplication.mapEntryState(this._entryUuid,state);})
-                .then(()=>this._visible?this.rhmiApplication.openEntryState(this._entryUuid):undefined);
+                .then(()=>this._visible?this.rhmiApplication.openState(on?HOST:STATE_NAME):undefined);
         }).catch(err=>{
-            logger.warn(`modern settings: ${err&&err.message}`);
+            trace.error('graphics-mode-failed',err);logger.warn(`modern settings: ${err&&err.message}`);
             this._modern=false;this._design.hostVisible(false);
             return Promise.resolve(this.rhmiApplication.mapEntryState(this._entryUuid,this._state))
-                .then(()=>this._visible?this.rhmiApplication.openEntryState(this._entryUuid):undefined)
+                .then(()=>this._visible?this.rhmiApplication.openState(STATE_NAME):undefined)
                 .catch(e=>logger.warn('Classic settings restore: '+e.message));
         });
         this._render();return this._uiChange;
@@ -395,7 +399,7 @@ class WazeClusterApp extends OnlineApp {
         }
         this._sawForeground = true;
         this._setVisible(true);
-        return Promise.resolve().then(()=>this._design.ready && !this._modern ?
+        return Promise.resolve().then(()=>this._design.ready ?
             this._useModern(true) : this.rhmiApplication.openEntryState(uuid))
             .catch((err) => {
                 trace.error('open-entry-failed', err);

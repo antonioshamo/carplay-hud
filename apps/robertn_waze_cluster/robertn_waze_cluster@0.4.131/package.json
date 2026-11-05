@@ -1,7 +1,7 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.129",
-  "description": "CarPlay HUD: ID7 startup resource compatibility candidate for the reported RemoteHmi INAVLID_PARAMETER failure; vehicle confirmation pending",
+  "version": "0.4.131",
+  "description": "CarPlay HUD: open modern settings by screen state after the observed INVALID_UUID failure; vehicle retest pending",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {

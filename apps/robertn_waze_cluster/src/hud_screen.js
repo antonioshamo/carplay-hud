@@ -4,6 +4,7 @@ const EventEmitter=require('events');
 const {RenderClient}=require('./mgu_render_client.js');
 const kit=require('./kit_record.js');
 const view=require('./hud_view.js');
+const trace=require('./startup_trace.js');
 const {StudioScreen}=require('./studio_screen.js');
 const HOST='ST_WOC_Design',PROXIES=24;
 class HudScreen extends EventEmitter {
@@ -12,10 +13,17 @@ class HudScreen extends EventEmitter {
   this.page='overview';this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
   this.active=false;this.info=null;this.scale=1;this.closed=false;this.touch=null;this.ccu=null;this.last={};this.dirty=false;this.suspended=false;
   this.studio=new StudioScreen(()=>{this.dirty=true;});
+  this.sentAt=0;this.reshowTimer=null;
   this.gpu.fps(60);
   this.gpu.on('ready',(screen,info)=>this._ready(info));
   this.gpu.on('close',()=>{this.ready=false;this.hide();this.emit('mode',false);});
-  this.gpu.on('closed',()=>{this.suspended=true;this.hide();}); // Hidden by the foreground gate, still capable of modern settings.
+  this.gpu.on('closed',()=>{
+   trace.record('graphics-dismissed');this.suspended=true;this.hide();clearTimeout(this.reshowTimer);
+   // An outside touch can leave this same host visible. Let the HMI finish
+   // the transition, then recover only if it still owns the visible page.
+   this.reshowTimer=setTimeout(()=>{this.suspended=false;this.updateShow();},700);
+  });
+  this.gpu.on('state',s=>trace.record('graphics-state',JSON.stringify(s)));
   this.gpu.on('touch',(p,x,y)=>this._touch(p,x,y));
   this.gpu.on('ccu',e=>this._ccu(e));
   this.gpu.on('tick',()=>{if(this.dirty||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
@@ -24,6 +32,7 @@ class HudScreen extends EventEmitter {
  }
  connect(){this.gpu.connect();}
  _ready(info){
+  trace.record('graphics-ready',JSON.stringify(info));
   this.info=info;this.studio.videoSupported=!!(info&&info.video);
   // A legacy renderer without a foreground gate must never cover BMW screens.
   const b=info&&info.appArea;
@@ -34,18 +43,20 @@ class HudScreen extends EventEmitter {
   this.gpu.place({x:b.x,y:b.y,w:b.w,h:b.h,scale:this.scale,ox:(b.w-view.W*this.scale)/2,oy:(b.h-view.H*this.scale)/2});
   this.suspended=false;this.ccu=null;this.emit('mode',true);this.updateShow();
  }
- hostVisible(on){this.visible=!!on;if(on){this.suspended=false;this.focused=true;}this.updateShow();}
- hostFocus(on){this.focused=!!on;if(on){this.suspended=false;this.ccu=null;}this.updateShow();}
+ hostVisible(on){if(this.visible!==!!on)trace.record('graphics-host-visible',!!on);this.visible=!!on;if(on){this.suspended=false;this.focused=true;}this.updateShow();}
+ hostFocus(on){if(this.focused!==!!on)trace.record('graphics-host-focus',!!on);this.focused=!!on;if(on){this.suspended=false;this.ccu=null;}this.updateShow();}
  updateShow(){
   const on=this.ready&&this.visible&&this.focused&&!this.closed&&!this.suspended;
   if(!on){this.hide();return;}
   this.active=true;this.gpu.claim([{x:0,y:0,w:view.W,h:view.H}]);this.gpu.grab(!!this.info.controller);
-  this.render();if(this.active)this.gpu.show(true);
+  this.render(true);if(this.active)this.gpu.show(true);
  }
  hide(){this.active=false;if(this.studio)this.studio.drag=null;this.touch=null;this.ccu=null;this.gpu.claim([]);this.gpu.grab(false);this.gpu.show(false);}
- render(){
+ render(force){
   if(!this.active||!this.ready||this.closed)return;
-  if(this.gpu.waiting){this.dirty=true;return;}
+  // A hidden compositor surface may never acknowledge its previous frame.
+  // Force the first frame on return; keep subsequent recovery at 1 Hz.
+  if(!force&&this.gpu.waiting&&Date.now()-this.sentAt<1000){this.dirty=true;return;}
   try {
    const f=this.page==='studio'?this.studio.frame(this.focus,this.scale):view.frame(view.model(this.host.control),this.page,this.focus,this.logPage,this.scale);
    const media=this.studio.client.status&&this.studio.client.status.media;const showVideo=this.page==='studio'&&this.studio.page==='media'&&media&&media.target==='center'&&media.playing&&Date.now()-(this.studio.client.statusAt||0)<2000&&this.studio.videoSupported;
@@ -54,10 +65,10 @@ class HudScreen extends EventEmitter {
    const proxyKey=JSON.stringify(this.items.map(b=>[b.id,b.label,!!b.enabled]));
    if(proxyKey!==this.proxyKey){this.host.proxies(this.items);this.proxyKey=proxyKey;}
    // A false socket.write result means backpressure, not a lost frame.
-   this.gpu.frame(f.record);
+   this.sentAt=Date.now();this.gpu.frame(f.record);
    this.dirty=false;
   } catch(err) {
-   this.host.log.warn('Settings graphics: '+err.message);
+   trace.error('graphics-render-failed',err);this.host.log.warn('Settings graphics: '+err.message);
    this.ready=false;this.hide();this.emit('mode',false);
   }
  }
@@ -118,6 +129,6 @@ class HudScreen extends EventEmitter {
   }
   if((e.press===1||e.press===2)&&e.press!==prev.press&&e.seq!==prev.seq)this.press(this.focus);
  }
- close(){this.closed=true;this.studio.close();clearInterval(this.timer);this.hide();this.gpu.removeAllListeners('close');this.gpu.close();}
+ close(){this.closed=true;clearTimeout(this.reshowTimer);this.studio.close();clearInterval(this.timer);this.hide();this.gpu.removeAllListeners('close');this.gpu.close();}
 }
 module.exports={HudScreen,HOST,PROXIES};
