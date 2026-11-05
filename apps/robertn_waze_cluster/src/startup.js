@@ -5,8 +5,13 @@
 const trace = require('./startup_trace.js');
 trace.begin();
 // Record asynchronous failures before the stock SDK's existing exit handler.
-process.prependListener('uncaughtException', error => trace.error('uncaught-exception', error));
-process.prependListener('unhandledRejection', error => trace.error('unhandled-rejection', error));
+function recordUncaught(error) {
+    trace.error('uncaught-exception', error);
+    // Without the SDK handler, adding this observer must not turn a fatal
+    // import/constructor/async exception into a successful process exit.
+    if (process.listenerCount('uncaughtException') === 1) process.exit(1);
+}
+process.prependListener('uncaughtException', recordUncaught);
 process.once('exit', code => trace.record('process-exit', code));
 try {
     require('./robertn_waze_cluster.js');
