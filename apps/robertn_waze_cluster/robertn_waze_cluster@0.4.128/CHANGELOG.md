@@ -1,3 +1,11 @@
+## 0.4.128
+
+- Fix a live startup crash when the renderer reports HUD status before the patch helper sends its initial capabilities. Settings remain disabled until both statuses arrive, including after reconnection.
+- Preserve the modern settings entry when the renderer dismisses its foreground surface, and select it again when the app is reopened. Native settings remain the fallback if graphics are unavailable.
+- Record asynchronous startup exceptions before the stock SDK exit handler.
+- Tested on Node 8.16.2 with both status-arrival orders and reconnection, socket-based settings checks, controlled startup failure cases and modern touch/rotary checks. Installed on the affected MGU; the owner confirmed it stays open and reopens into modern settings. The process also stayed alive through the engine off/on test.
+- This update does not implement independent, route-free Apple Maps startup. Dashboard mirroring is not that feature.
+
 ## 0.4.125
 
 - The affected car's 0.4.124 startup trace reaches OnlineApp.start, then RemoteHmi rejects RhmiApplication.init with `INAVLID_PARAMETER` before the SDK initialized event. Installation, the stock runner and SDK import all succeeded.

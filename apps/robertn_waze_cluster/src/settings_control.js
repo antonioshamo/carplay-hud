@@ -84,7 +84,9 @@ class SettingsControl extends WazeClusterControl {
         return s && Number.isFinite(s.hud_x) && Number.isFinite(s.hud_y) ? [s.hud_x, s.hud_y] : null;
     }
     canChangeDisplay() {
-        return this.connectedRender() && this.connectedPatch() && !!this.renderStatus && !(this.patchStatus&&this.patchStatus.bmw_defaults) &&
+        // Both sockets can connect before either helper sends its first status.
+        // Do not render enabled settings against an unknown patch capability.
+        return this.connectedRender() && this.connectedPatch() && !!this.renderStatus && !!this.patchStatus && !this.patchStatus.bmw_defaults &&
             !this._restoring && !this.restartRequested() && !this.pending() &&
             !(this.patchStatus && this.patchStatus.state === 'busy') && !this._busy();
     }

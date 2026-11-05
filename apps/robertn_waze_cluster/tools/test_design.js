@@ -41,6 +41,7 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   g.touch(1,b.x+10,b.y+10);g.touch(3,b.x+10,b.y+10);await wait(20);assert.equal(c.hudWidth(),size,'hidden controls cannot act');
   h.hostVisible(true);assert(h.active,'returning to host resets focus');await settled();
   console.log('ok touch-drag cancellation; popup hides graphics and releases touch/dial; hidden input ignored');
+  const beforeCloseModes=modes.length;client.emit('closed');assert(h.ready&&!h.active,'foreground exit keeps graphics capability');assert.equal(modes.length,beforeCloseModes,'exit does not remap the entry to classic');h.hostVisible(true);await settled();assert(h.active,'modern host reopens after a foreground exit');
   h.focus=0;g.ccu(1,100,1);await wait(20);assert.equal(h.focus,0,'first controller sample is a baseline');
   g.ccu(2,102,0);await until(()=>h.focus===2);g.ccu(3,102,1);await until(()=>h.page==='appearance');
   assert.equal(h.focus,2);g.ccu(4,10000,0);await wait(20);assert.equal(h.focus,2,'reconnect jumps do not change selection');

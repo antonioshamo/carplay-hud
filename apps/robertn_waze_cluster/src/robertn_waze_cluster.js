@@ -395,7 +395,8 @@ class WazeClusterApp extends OnlineApp {
         }
         this._sawForeground = true;
         this._setVisible(true);
-        return Promise.resolve().then(()=>this.rhmiApplication.openEntryState(uuid))
+        return Promise.resolve().then(()=>this._design.ready && !this._modern ?
+            this._useModern(true) : this.rhmiApplication.openEntryState(uuid))
             .catch((err) => {
                 trace.error('open-entry-failed', err);
                 logger.warn(`openEntryState failed: ${err && err.message}`);

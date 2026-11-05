@@ -4,6 +4,9 @@
 // loading SDK modules, so an SDK/import/constructor failure leaves evidence.
 const trace = require('./startup_trace.js');
 trace.begin();
+// Record asynchronous failures before the stock SDK's existing exit handler.
+process.prependListener('uncaughtException', error => trace.error('uncaught-exception', error));
+process.prependListener('unhandledRejection', error => trace.error('unhandled-rejection', error));
 process.once('exit', code => trace.record('process-exit', code));
 try {
     require('./robertn_waze_cluster.js');
