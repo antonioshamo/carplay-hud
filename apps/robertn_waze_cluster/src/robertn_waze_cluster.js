@@ -305,6 +305,7 @@ class WazeClusterApp extends OnlineApp {
 
     _useModern(wanted) {
         const on=!!wanted&&this._design.ready;
+        trace.record('graphics-mode-request', 'wanted='+wanted+'; ready='+this._design.ready+'; visible='+this._visible);
         if(!this._entryUuid)return Promise.resolve();
         this._uiChange=this._uiChange.catch(()=>{}).then(()=>{
             if(this._modern===on)return;
@@ -314,7 +315,7 @@ class WazeClusterApp extends OnlineApp {
                 .then(()=>{this._modern=on;this._design.proxyKey=null;return this.rhmiApplication.mapEntryState(this._entryUuid,state);})
                 .then(()=>this._visible?this.rhmiApplication.openEntryState(this._entryUuid):undefined);
         }).catch(err=>{
-            logger.warn(`modern settings: ${err&&err.message}`);
+            trace.error('graphics-mode-failed',err);logger.warn(`modern settings: ${err&&err.message}`);
             this._modern=false;this._design.hostVisible(false);
             return Promise.resolve(this.rhmiApplication.mapEntryState(this._entryUuid,this._state))
                 .then(()=>this._visible?this.rhmiApplication.openEntryState(this._entryUuid):undefined)

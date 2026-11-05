@@ -38,6 +38,7 @@ jobs:
       - run: node apps/robertn_waze_cluster/tools/check_rhmi.js
       - run: node apps/robertn_waze_cluster/tools/test_page.js
       - run: node apps/robertn_waze_cluster/tools/test_design.js
+      - run: node apps/robertn_waze_cluster/tools/test_design_lifecycle.js
       - run: node apps/robertn_waze_cluster/tools/test_settings.js
       - name: Check the collector with Node 8 on Linux
         run: |
@@ -52,6 +53,7 @@ jobs:
           "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_trace.js
           "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_startup.js
           "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_settings_startup.js
+          "$runtime_dir/node-v8.16.2-linux-x64/bin/node" apps/robertn_waze_cluster/tools/test_design_lifecycle.js
       - run: node release/test/release_test.js
       - run: node release/release.js check robertn_waze_cluster
       - name: Publish verified app opening fix

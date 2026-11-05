@@ -1,3 +1,11 @@
+## 0.4.130
+
+- Recover graphical settings after an unacknowledged frame when reopening the app. Keep renderer recovery bounded to the normal keepalive instead of waiting indefinitely.
+- Resume after a temporary outside-touch dismissal only while the same host remains visible and focused. Keep popup, foreground and hidden-input gates intact.
+- Record bounded renderer readiness, visibility, focus and mode-failure milestones for vehicle diagnosis.
+- Socket regression tests cover missing frame acknowledgments, reopen, bounded recovery, outside-touch dismissal, leaving the app and popups. Vehicle confirmation is pending.
+- Independent route-free Apple Maps startup remains unresolved. This app update does not change the map helper.
+
 ## 0.4.129
 
 - Package the opening and modern-default repair verified in the car on 0.4.128 as an in-place update for that test build.

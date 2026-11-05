@@ -9,3 +9,4 @@ printf '%s  %s\n' 8b2c9e1f84317c4b02736c4c50db4dd2cd6c4f0ba910fa81f887c8c9294af5
 tar -xzf "$runtime_dir/node.tar.gz" -C "$runtime_dir"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_startup.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_settings_startup.js"
+"$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_design_lifecycle.js"
