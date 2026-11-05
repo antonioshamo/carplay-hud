@@ -1,3 +1,10 @@
+## 0.4.123
+
+- Explicitly enable `rhmiLoadingEnabled` and `entryPointLoadingEnabled` in the app configuration. Some SDK 27.x donors default these off, leaving installed apps stuck at Loading app. See [upstream report and confirmed fix](https://github.com/cauliflowermossgrape/idrive7-apps/issues/39#issuecomment-6546607787).
+- Add Node 8 linked-package regression scenarios for each disabled donor default. Both fail with the old empty configuration and pass with this override. Run the generated package entry point, and read the configuration from the linked artifact.
+- Version 0.4.122 still failed to open on the affected car. This release fixes a documented compatibility defect; its cause and successful launch on that car are not yet confirmed. No BMW SDK or vehicle emulator was available for testing.
+- App-only update; helpers, interface manifest, saved settings and feature safety gates are unchanged. After installation, restart the head unit while parked before testing, because the previous resident process may retain the failed launch state.
+
 ## 0.4.122
 
 - Startup recovery: explicitly open the native home after initialization even when the firmware does not replay the entry-point UUID. Queue early tile clicks until that mapping is ready.
