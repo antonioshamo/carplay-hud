@@ -1,15 +1,15 @@
-**CarPlay HUD 0.4.128: app opening verified on the affected car.** Fixes a startup crash caused by renderer status arriving before the patch helper's status. The owner confirmed the app stays open and reopens into modern settings. Native settings remain available when the graphics service is unavailable. App-only update; the existing tools do not need reinstalling.
+**CarPlay HUD 0.4.129 packages the app-opening fix verified on the affected car in test build 0.4.128.** Fixes a startup crash caused by renderer status arriving before the patch helper's status. The owner confirmed the app stays open and reopens into modern settings. Native settings remain available when the graphics service is unavailable. App-only update; the existing tools do not need reinstalling.
 
 **Independent Apple Maps startup without navigation remains unresolved.** A primary-screen Dashboard mirror is not a second map and does not meet that requirement. The live mirroring trial was stopped. Full factory-gauge replacement and lighting-control writes have not been verified.
 
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-**CarPlay HUD 0.4.128 + Cluster Studio 0.1.3.** Open Overview → Cluster Studio for a full-cluster designer, 100 preset combinations, Ultra-inspired styling, movable widgets, saved designs, X4 M / Apple / personal welcome animations, and a single Restore BMW defaults action. Full-screen output is a guarded 10/30/60-second parked test, not a road-ready factory-gauge replacement. [Guide and previews](docs/cluster-studio/README.md). New experimental parked phone clips, full-screen app movie view and read-only lighting/media capability scan: [test instructions and limitations](docs/cluster-studio/EXPERIMENTS.md).
+**CarPlay HUD 0.4.129 + Cluster Studio 0.1.3.** Open Overview → Cluster Studio for a full-cluster designer, 100 preset combinations, Ultra-inspired styling, movable widgets, saved designs, X4 M / Apple / personal welcome animations, and a single Restore BMW defaults action. Full-screen output is a guarded 10/30/60-second parked test, not a road-ready factory-gauge replacement. [Guide and previews](docs/cluster-studio/README.md). New experimental parked phone clips, full-screen app movie view and read-only lighting/media capability scan: [test instructions and limitations](docs/cluster-studio/EXPERIMENTS.md).
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps),
 with BMW-inspired graphical settings and an **optional experimental Dashboard startup mode**.
 
-Update versions: app **0.4.128**, map tool **0.7.114**, and **MGU Renderer 0.6.11**.
+Update versions: app **0.4.129**, map tool **0.7.114**, and **MGU Renderer 0.6.11**.
 MGU Renderer comes from the official MGU Store source; it draws the settings app
 and is separate from the existing cluster-render tool.
 
@@ -30,7 +30,7 @@ this fork from replacing it. For a source migration, note your settings, remove
 **Waze on cluster (App)** and then **Waze on cluster (Tool)** from Installed.
 Leave the working **cluster-render** installed: it satisfies this fork's renderer
 dependency. Install Waze on cluster from **antonioshamo/carplay-hud**, then verify
-Installed shows App 0.4.128 and Tool 0.7.114. Follow any restart notice from Store.
+Installed shows App 0.4.129 and Tool 0.7.114. Follow any restart notice from Store.
 Removing a source alone does not transfer ownership of its installed packages.
 
 Already using this repository? Refresh Store and update the App and Tool in place; no removal is needed.

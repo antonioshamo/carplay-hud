@@ -1,3 +1,9 @@
+## 0.4.129
+
+- Package the opening and modern-default repair verified in the car on 0.4.128 as an in-place update for that test build.
+- Align all app and RHMI version metadata. Preserve normal fatal exit behavior when the startup recorder runs without an SDK handler, and defer to the SDK exit policy when its handler is installed.
+- App-only release. Independent map-only startup without navigation is still unresolved.
+
 ## 0.4.128
 
 - Fix a live startup crash when the renderer reports HUD status before the patch helper sends its initial capabilities. Settings remain disabled until both statuses arrive, including after reconnection.
