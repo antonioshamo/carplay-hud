@@ -1,7 +1,7 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.122",
-  "description": "CarPlay HUD startup recovery: explicit first-screen launch with native controls available before optional graphics and Studio",
+  "version": "0.4.123",
+  "description": "CarPlay HUD: enables screen and entry-point loading with newer donor SDKs; vehicle launch confirmation pending",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {
