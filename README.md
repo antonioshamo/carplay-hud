@@ -1,4 +1,4 @@
-**CarPlay HUD 0.4.130 is a settings redraw test build; vehicle confirmation is pending.** Version 0.4.129 repaired an app-startup crash, but subsequent vehicle tests exposed intermittent missing graphics and visible native proxy buttons. The new build recovers after missing renderer frame acknowledgments and temporary dismissals while preserving foreground and popup gating. It adds lifecycle diagnostics and socket regression coverage on Node 8.16.2. It is not yet a confirmed repair for the reported screen inconsistency.
+**CarPlay HUD 0.4.131 targets the modern-settings transition failure observed on the car; vehicle retest is pending.** The 0.4.130 trace showed a healthy graphics connection followed by BMW rejecting `openEntryState` with `INVALID_UUID`. This build opens the already-running app's screen by RHMI state, keeps the tile mapped for future launches, and retains bounded redraw recovery. A regression reproduces the rejection and exercises initial entry plus three reopenings. The car was disconnected before this build could be tested there.
 
 **Independent Apple Maps startup without navigation remains unresolved.** A primary-screen Dashboard mirror is not a second map and does not meet that requirement. The live mirroring trial was stopped. Full factory-gauge replacement and lighting-control writes have not been verified.
 
@@ -9,7 +9,7 @@
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps),
 with BMW-inspired graphical settings and an **optional experimental Dashboard startup mode**.
 
-Published versions: app **0.4.129**, map tool **0.7.114**, and **MGU Renderer 0.6.11**.
+Release candidate: app **0.4.131**, map tool **0.7.114**, and **MGU Renderer 0.6.11**.
 MGU Renderer comes from the official MGU Store source; it draws the settings app
 and is separate from the existing cluster-render tool.
 
@@ -30,7 +30,7 @@ this fork from replacing it. For a source migration, note your settings, remove
 **Waze on cluster (App)** and then **Waze on cluster (Tool)** from Installed.
 Leave the working **cluster-render** installed: it satisfies this fork's renderer
 dependency. Install Waze on cluster from **antonioshamo/carplay-hud**, then verify
-Installed shows App 0.4.129 and Tool 0.7.114. Follow any restart notice from Store.
+Installed shows App 0.4.131 and Tool 0.7.114. Follow any restart notice from Store.
 Removing a source alone does not transfer ownership of its installed packages.
 
 Already using this repository? Refresh Store and update the App and Tool in place; no removal is needed.

@@ -1,4 +1,13 @@
+## 0.4.131
+
+- Address the 0.4.130 vehicle trace: graphics connected, but opening the remapped entry UUID returned `INVALID_UUID`. Navigate to the modern screen by its RHMI state, matching the upstream Store transition pattern. Keep tile mapping for later launches.
+- Use the same direct-state path on repeat entry and when restoring native settings. Preserve initialization order and graphics foreground/focus gates.
+- A controlled Node 8 regression reproduces the observed UUID rejection before this change and checks initial modern entry plus three repeated openings afterward. This is not a vehicle emulator; a car retest is pending.
+- Retain the bounded redraw recovery and diagnostics from 0.4.130. Independent map-only startup without a route remains unresolved.
+
 ## 0.4.130
+
+- Vehicle follow-up: this test build did not fix the reported menu. Its new diagnostics exposed `openEntryState` returning `INVALID_UUID`, addressed separately in 0.4.131.
 
 - Recover graphical settings after an unacknowledged frame when reopening the app. Keep renderer recovery bounded to the normal keepalive instead of waiting indefinitely.
 - Resume after a temporary outside-touch dismissal only while the same host remains visible and focused. Keep popup, foreground and hidden-input gates intact.
