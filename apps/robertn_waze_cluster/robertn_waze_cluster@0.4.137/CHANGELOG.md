@@ -1,3 +1,10 @@
+# 0.4.137
+
+- Arrange has Add widget, with available types, immediate positioning, Undo/Redo and live saving.
+- Reduce diagonal line rasterization work without changing pixels.
+- Requires Cluster Studio 0.1.14 for faster live readings and call recovery, plus cluster-render 0.3.103.
+- Offline verified; simultaneous full cluster and HUD still need a separate parked display-resource test.
+
 # 0.4.136
 
 - Three editable iDrive 8-inspired templates: Sport, Classic and Minimal.

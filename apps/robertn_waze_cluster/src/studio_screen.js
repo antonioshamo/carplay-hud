@@ -38,6 +38,14 @@ class StudioScreen {
   if(id==='gauge'||id==='widget-gauge'){this.styleTarget=id==='gauge'?'design':this.selected;this.page='gauges';return true;}
   if(id==='play'){I.prepare(this.design);this.animationAt=Date.now();return true;}
   if(id==='select'){this.page='widgets';return true;}
+  if(id.startsWith('add-widget:')){
+   const w=this.design.widgets.find(w=>w.type===id.slice(11));
+   if(!w||w.on)return true;
+   this.checkpoint();w.on=true;w.locked=false;this.selected=w.type;
+   // Bring the newly added widget into view, even in overlapping layouts.
+   this.design.widgets.splice(this.design.widgets.indexOf(w),1);this.design.widgets.push(w);
+   this.page='edit';this.notice=M.LABELS[w.type]+' added · drag to position';return true;
+  }
   if(id.startsWith('widget:')){this.selected=id.slice(7);this.page='edit';return true;}
   if(id==='precision'){this.moveStep=this.moveStep===.01?.05:.01;return true;}
   if(id==='undo'){if(this.history.length){this.redo.push(M.clone(this.design));this.design=this.history.pop();this.dirty=true;}return true;}

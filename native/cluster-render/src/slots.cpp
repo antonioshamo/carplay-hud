@@ -99,7 +99,12 @@ int SlotManager::by_published(uint64_t scene_id) const
 bool SlotManager::scene_busy(int i) const
 {
     for (size_t j = 0; j < specs_.size(); j++)
-        if ((int)j != i && specs_[j].scene_id == specs_[i].scene_id && t_[j].requested)
+        // A BMW call/lock can remove the mapping while the existing layer
+        // still wants to resume. Keep that published scene reserved for
+        // its target until demand ends; otherwise a queued shared target
+        // steals it during the interruption and the saved display is lost.
+        if ((int)j != i && specs_[j].scene_id == specs_[i].scene_id &&
+            (t_[j].requested || (t_[j].scene && t_[j].wanted)))
             return true;
     return false;
 }

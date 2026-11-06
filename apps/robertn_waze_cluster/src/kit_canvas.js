@@ -363,7 +363,21 @@ class Canvas {
         const y0 = Math.max(0, Math.floor(Math.min(ya, yb) - hw - 1)), y1 = Math.min(this.h, Math.ceil(Math.max(ya, yb) + hw + 1));
         const vx = xb - xa, vy = yb - ya, len2 = vx * vx + vy * vy || 1;
         for (let py = y0; py < y1; py++) {
-            for (let px = x0; px < x1; px++) {
+            // A round-capped segment can only cover this row within hw+.5
+            // of a point on the segment. Bound those points by their Y first
+            // so diagonal gauge rails do not scan their entire empty box.
+            // Keep one extra pixel around the interval; coverage below is
+            // unchanged, including fractional coordinates and alpha edges.
+            let left = x0, right = x1;
+            if (vy !== 0) {
+                const a = (py + 0.5 - hw - 1 - ya) / vy;
+                const b = (py + 0.5 + hw + 1 - ya) / vy;
+                const ta = clamp01(Math.min(a, b)), tb = clamp01(Math.max(a, b));
+                const ax = xa + vx * ta, bx = xa + vx * tb;
+                left = Math.max(x0, Math.floor(Math.min(ax, bx) - hw - 1));
+                right = Math.min(x1, Math.ceil(Math.max(ax, bx) + hw + 1));
+            }
+            for (let px = left; px < right; px++) {
                 const qx = px + 0.5 - xa, qy = py + 0.5 - ya;
                 const t = clamp01((qx * vx + qy * vy) / len2);
                 const ex = qx - vx * t, ey = qy - vy * t;

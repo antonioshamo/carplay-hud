@@ -51,7 +51,9 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   await tap('page:edit');assert.equal(h.studio.page,'edit');await settled();
   const sw=h.studio.widget(),sx=274+(sw.x+sw.w/2)*976,sy=153+(sw.y+sw.h/2)*366,sold=sw.x;
   g.touch(1,sx,sy);g.touch(2,sx+60,sy+10);g.touch(3,sx+60,sy+10);await wait(30);assert(h.studio.widget().x>sold,'real touch wire drags Studio widget');
-  await tap('select');assert.equal(h.studio.page,'widgets');await tap('widget:oil');assert.equal(h.studio.selected,'oil');await tap('toggle');assert(h.studio.widget().on);
+  await tap('page:add');assert.equal(h.studio.page,'add');await tap('add-widget:oil');assert.equal(h.studio.page,'edit');assert.equal(h.studio.selected,'oil');assert(h.studio.widget().on);
+  const added=h.studio.widget(),ax=274+(added.x+added.w/2)*976,ay=153+(added.y+added.h/2)*366,oldY=added.y;
+  g.touch(1,ax,ay);g.touch(2,ax,ay+36);g.touch(3,ax,ay+36);await wait(30);assert(h.studio.widget().y>oldY,'added widget can immediately be dragged through real input packets');
   await tap('page:properties');const oilWidth=h.studio.widget().w;await tap('width-more');assert(h.studio.widget().w>oilWidth);await tap('widget-color');assert.equal(h.studio.widget().color,'#ffffff');await tap('lock');const lockedWidth=h.studio.widget().w;await tap('width-less');assert.equal(h.studio.widget().w,lockedWidth,'disabled locked controls ignore the real touch wire');
   await wait(310);await tap('page:edit');await tap('undo');assert(!h.studio.widget().locked);await tap('redo');assert(h.studio.widget().locked);
   console.log('ok new widget chooser, geometry, color, lock and undo/redo through actual graphical input packets');

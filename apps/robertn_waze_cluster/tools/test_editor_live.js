@@ -26,9 +26,23 @@ class Client extends EventEmitter {
  s.press('live-toggle');s.press('left');const saved=M.clone(c.status.design);s.press('save-slot:1');c.ack();await wait(0);assert(s.dirty,'slot save does not claim the active draft was applied');assert.deepEqual(c.status.design,saved);
  s.nav=[];s.page='gallery';s.press('edit');s.press('select');s.press('widget:rpm');assert.equal(s.page,'edit');s.press('navigate-back');assert.equal(s.page,'widgets');s.press('navigate-back');assert.equal(s.page,'edit');s.press('navigate-back');assert.equal(s.page,'gallery');assert.equal(s.press('navigate-back'),false,'root Back leaves Studio');
  s.press('page:style');s.press('gauge');s.press('pick-gauge:needle');assert.equal(s.design.gauge,'needle');s.press('page:edit');s.press('widget-gauge');s.press('pick-gauge:dots');assert.equal(s.widget().gauge,'dots');
- const pages=['gallery','idrive','layouts','themes','gauges','widgets','edit','properties','style','intro','library','phone','output','assistance','features','media','tools'];
+ // Add restores a real widget type, selects/unlocks it for immediate dragging,
+ // and preserves live-save/undo semantics rather than resetting the layout.
+ s.page='edit';s.design=M.idrivePreset(2);s.liveChanges=false;
+ assert(V.items(s).some(b=>b.id==='page:add'&&b.label==='Add widget'));
+ for(const type of M.TYPES){
+  const w=s.design.widgets.find(w=>w.type===type);w.on=false;w.locked=true;
+  const before=M.clone(s.design);s.press('page:add');assert(V.items(s).find(b=>b.id==='add-widget:'+type).enabled);
+  s.press('add-widget:'+type);assert.equal(s.page,'edit');assert.equal(s.selected,type);assert(s.widget().on);assert(!s.widget().locked);assert.equal(s.design.widgets.length,M.TYPES.length);
+  const added=M.clone(s.design);s.press('undo');assert.deepEqual(s.design,before);s.press('redo');assert.deepEqual(s.design,added);
+  s.press('page:add');assert(!V.items(s).find(b=>b.id==='add-widget:'+type).enabled);s.press('add-widget:'+type);assert.deepEqual(s.design,added,'already added cannot duplicate a widget');s.press('navigate-back');
+ }
+ s.press('add-widget:invalid');M.validate(s.design);
+ s.selected='coolant';s.press('toggle');s.press('page:add');s.liveChanges=true;c.statusAt=Date.now();s.press('add-widget:coolant');
+ const n=c.calls.length;await wait(340);assert.equal(c.calls.length,n+1,'new widget is live-saved');assert(c.calls[n].extra.design.widgets.find(w=>w.type==='coolant').on);c.ack();await wait(0);assert(!s.dirty);s.liveChanges=false;
+ const pages=['gallery','idrive','layouts','themes','gauges','widgets','add','edit','properties','style','intro','library','phone','output','assistance','features','media','tools'];
  for(const page of pages){s.page=page;const items=s.frame(0,1).items;assert(items.length<=24,page+' fits installed RHMI proxy contract');for(const id of ['navigate-back','apply','live-toggle'])assert(items.some(b=>b.id===id),page+' has '+id);const seen=new Set();items.forEach((a,i)=>{assert(!seen.has(a.id),page+' unique button '+a.id);seen.add(a.id);assert(a.x>=0&&a.y>=0&&a.x+a.w<=1600&&a.y+a.h<535);items.slice(i+1).forEach(b=>assert(!(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y),page+' overlapping '+a.id+' '+b.id));});}
  for(const style of M.STYLES){const d=M.preset(11);d.gauge=style[0];M.validate(d);const cv=new Canvas(480,180);D.draw(cv,d,{x:0,y:0,w:480,h:180},s.previewData());assert(cv.d.some(v=>v));}
  s.liveChanges=true;s.dirty=true;c.statusAt=Date.now();s.scheduleLive();const before=c.calls.length;s.close();await wait(350);assert.equal(c.calls.length,before,'closing cancels queued writes');
- console.log('ok live coalescing, sequential acknowledgements, late replies, draft/Apply, Park/freshness, disconnect retry, slots, Back history, all 17 pages and 12 real dial styles');
+ console.log('ok live coalescing, sequential acknowledgements, late replies, draft/Apply, Park/freshness, disconnect retry, slots, Back history, Add widget live-save/undo, all 18 pages and 12 real dial styles');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
