@@ -1,7 +1,7 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.131",
-  "description": "CarPlay HUD: open modern settings by screen state after the observed INVALID_UUID failure; vehicle retest pending",
+  "version": "0.4.135",
+  "description": "Personal cockpit editor with Back and Apply on every screen, live parked editing, 10 dial styles, 100 layout/color combinations and saved designs.",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {

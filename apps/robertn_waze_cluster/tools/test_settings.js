@@ -133,6 +133,15 @@ patch.on('command', m => {
         c._onPatch({ev:'startup-mode-reply',ok:true,mode:'dashboard'});
         assert(!c._startupPending);
         console.log('ok one-press HUD startup waits for saved/live target; failed saves cannot enable it');
+        before=starts();assert(c.useIndependentHud());await until(()=>starts()===before+1);
+        assert.equal(patch.received.filter(m=>m.cmd==='startup-mode').slice(-1)[0].mode,'off','separate map never enables full-screen mirroring');
+        c._onPatch({ev:'startup-mode-reply',ok:true,mode:'off'});
+        const acquireBefore=render.received.filter(m=>m.cmd==='start').length;
+        assert(c.applyCurrent());await until(()=>!c._busy());assert.equal(c.settingsNotice(),'Applied and saved');
+        assert.equal(render.received.filter(m=>m.cmd==='start').length,acquireBefore,'Apply does not switch or reacquire the map scene');
+        reject=true;assert(c.applyCurrent());await until(()=>!c._busy());assert.match(c.settingsNotice(),/Could not save/,'Apply stops on failure and never claims the whole batch succeeded');reject=false;
+        console.log('ok separate map shortcut and sequential Apply acknowledgements without scene churn');
+
         patch._status=()=>Object.assign(oldStatus(),{restore_defaults:true,startup_trial:true});
         c._onPatch(patch._status());
         let restoreResult={ok:true},studioCalls=0;

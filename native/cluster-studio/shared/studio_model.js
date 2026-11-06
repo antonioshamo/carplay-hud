@@ -11,7 +11,9 @@ const LAYOUTS=['Ultra / blue rings','M Competition','Grand touring','Minimal','P
 const TYPES=['speed','rpm','gear','clock','date','badge','flag','coolant','oil','accent','signature','connection'];
 const LABELS={speed:'Speed',rpm:'Engine RPM',gear:'Gear',clock:'Clock',date:'Date',badge:'X4 M badge',flag:'Racing flag',coolant:'Coolant',oil:'Oil temperature',accent:'M stripes',signature:'Signature',connection:'Data status'};
 const ACCENTS=['theme','#ffffff','#57c5fa','#e64a64','#ffb85c','#83f0ec','#c6a4ff','#89e0b3','#e5d4ae','#c8f760'];
-const GAUGES=['inherit','ring','digital','bar','ultra'];
+const STYLES=[['ring','Sport rings'],['digital','Digital cards'],['bar','Horizontal bars'],['ultra','Ultra rings'],['needle','Classic needles'],['segments','Segmented rings'],['sweep','Racing sweep'],['vertical','Vertical rails'],['minimal','Minimal arc'],['dots','Dot matrix dial']];
+const GAUGES=['inherit'].concat(STYLES.map(s=>s[0]));
+const gaugeLabel=id=>id==='inherit'?'Use design style':(STYLES.find(s=>s[0]===id)||[id,id])[1];
 const TITLES=['X4 M COMPETITION','ANTONIO / X4 M','BUILT FOR THE DRIVE','MY COMPETITION','MOTORSPORT'];
 const minimum=type=>type==='speed'||type==='rpm'?[.18,.36]:type==='accent'?[.04,.02]:[.04,.03];
 const clone=v=>JSON.parse(JSON.stringify(v));
@@ -36,7 +38,7 @@ function preset(n){
 function validate(v){
  if(!v||v.schema!==1||!Number.isInteger(v.theme)||v.theme<0||v.theme>=10||!Number.isInteger(v.preset)||v.preset<0||v.preset>=100)throw Error('Invalid design');
  for(const k of ['clock24','borders','snap','introEnabled'])if(typeof v[k]!=='boolean')throw Error('Invalid '+k);
- for(const pair of [['gauge',['ring','digital','bar','ultra']],['background',['gradient','black','transparent']],['units',['mph','km/h']],['intro',['slide','reveal','apple','welcome','none']]])if(!pair[1].includes(v[pair[0]]))throw Error('Invalid '+pair[0]);
+ for(const pair of [['gauge',GAUGES.slice(1)],['background',['gradient','black','transparent']],['units',['mph','km/h']],['intro',['slide','reveal','apple','welcome','none']]])if(!pair[1].includes(v[pair[0]]))throw Error('Invalid '+pair[0]);
  if(!Number.isInteger(v.title)||v.title<0||v.title>=TITLES.length||!Array.isArray(v.widgets)||v.widgets.length!==TYPES.length)throw Error('Invalid widgets');
  const seen=new Set();
  v.widgets.forEach(w=>{if(!w||!TYPES.includes(w.type)||seen.has(w.type)||typeof w.on!=='boolean')throw Error('Invalid widget');seen.add(w.type);
@@ -77,4 +79,4 @@ for(const w of config.widgets){
 }
 config.name='Antonio M Competition';return validate(config);
 }
-module.exports={acceptedDesign,ACCENTS,GAUGES,dimension,align,cleanText,THEMES,LAYOUTS,TYPES,LABELS,TITLES,preset,validate,clone,clamp,move,resize};
+module.exports={STYLES,gaugeLabel,acceptedDesign,ACCENTS,GAUGES,dimension,align,cleanText,THEMES,LAYOUTS,TYPES,LABELS,TITLES,preset,validate,clone,clamp,move,resize};

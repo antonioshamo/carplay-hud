@@ -38,7 +38,7 @@ async function until(fn){for(let i=0;i<100;i++){if(fn())return;await wait(10);}t
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'studio-app-')),socket=path.join(dir,'ctl');
  const engine={cr:{ready:true},state:'Waiting',configure(){},preview(){},stopPreview(){}};const telemetry={parked:()=>true,snapshot:()=>({})};
  const service=new StudioService({file:path.join(dir,'studio.json'),engine,telemetry});await service.listen(socket);const c=new StudioClient(socket);c.connect();await until(()=>c.status);
- await c.send('apply',{design:M.preset(11)});assert(c.status.enabled);assert.equal(c.status.design.preset,11);await c.send('slot',{slot:3,design:M.preset(23)});assert.equal(c.status.slots[3].preset,23);
+ await c.send('apply',{design:M.preset(11)});assert(c.status.enabled);assert.equal(c.status.design.preset,11);const saving=c.send('save',{design:M.preset(11)});let idle=false;const idleWait=c.ready().then(()=>{idle=true;});await Promise.resolve();assert(!idle,'restore waits for an in-flight save');await saving;await idleWait;assert(idle);await c.send('slot',{slot:3,design:M.preset(23)});assert.equal(c.status.slots[3].preset,23);
  await assert.rejects(c.send('slot',{slot:99,design:M.preset(0)}),/Invalid slot/);assert.equal(c.status.slots[3].preset,23);await c.send('off');assert(!c.status.enabled);
  service.close();await until(()=>!c.status);await assert.rejects(c.send('save',{design:M.preset(0)}),/Install Cluster Studio/);c.close();fs.rmSync(dir,{recursive:true,force:true});
  console.log('ok real Unix socket apply/save/slot acknowledgments, rejection, disconnect and offline behavior');

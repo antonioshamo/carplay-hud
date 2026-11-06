@@ -1,3 +1,19 @@
+# CarPlay HUD 0.4.135
+
+Update CarPlay HUD (App), Cluster Studio (Tool) to 0.1.12, and Waze on cluster (Tool) to 0.7.115 through MGU Store. Modern settings retain the vehicle-verified opening path.
+
+Back and Apply stay in the top corners. Open **Cluster designer**, pick a template, then use **Arrange** to select and drag widgets or **Style** to choose among ten dial styles and ten palettes. Speed and RPM can use different styles. Undo/Redo, locking, independent width/height, centering and layering remain available. **My designs** holds five slots and opens the paired phone designer for names, exact colors and import/export.
+
+**Live changes** starts on. Once an output is enabled, edits update and save that layout while Park and the helper connection are fresh. Turn it off to work on a draft. Failed or unconfirmed saves are shown explicitly; newer edits are never replaced by an older reply. **In the car** chooses center output, saved full-cluster output in Park, or restores the BMW display. Editing does not silently turn an inactive output on. Phone edits use the same saved design.
+
+**Startup → Apple Maps on HUD** selects the independent stream and disables dashboard mirroring. Tool 0.7.115 supplies route-free startup on the previously verified CarPlay build; this app does not install CarPlay Ultra.
+
+Full-cluster output preserves the accepted opening around BMW's native gear indicator. It returns to BMW gauges when moving or vehicle data becomes stale. HUD and full-panel output share a renderer scene and cannot be promised simultaneously. BMW gauges remain responsible for active cruise, distance and lane warnings.
+
+The editor and helper are tested offline; this new build still needs a physical-car check. See [verification and usage](../../docs/cluster-studio/EDITOR-0.4.135.md).
+
+## Historical settings implementation
+
 # CarPlay HUD settings 0.4.117
 
 Includes [Cluster Studio](../../docs/cluster-studio/README.md): visual customization, saved templates and a guarded parked full-screen test.

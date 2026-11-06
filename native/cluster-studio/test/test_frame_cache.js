@@ -22,3 +22,6 @@ check(cache,d,data,true);data.rpm=707;check(cache,d,data,true);const prefix=cach
 // Transparent/black backgrounds are also byte-identical, including P clearance.
 for(const background of ['transparent','black']){d.background=background;check(cache,d,data,true,true);}
 console.log('ok 100 templates: cached/full byte parity, live/stale values, overlaps, reorder, clock/date, background and native P clearance');
+
+for(const style of M.STYLES){d.gauge=style[0];const c=new FrameCache(1920,720,true);data.rpm=750;check(c,d,data,true);data.rpm=1400;check(c,d,data,true);d.widgets.find(w=>w.type==='speed').gauge=style[0];check(c,d,data,true,true);}
+console.log('ok all 10 dial styles retain exact cached/full renderer parity');
