@@ -1,3 +1,10 @@
+# 0.4.138
+
+- Separate the saved full-cluster selection from temporary-test availability; show the selected output even when the renderer is waiting.
+- Add Retry saved display without overwriting the design or changing the chosen output. Show renderer visibility and failure reasons instead of treating a prepared layer as visible.
+- Requires Cluster Studio 0.1.15: bounded recovery for renderer rejections and repeated unexplained display losses, retaining saved layouts and native P clearance.
+- Tested offline, including the real renderer protocol with simulated display hardware. The reported vehicle incident has not been reproduced in the car. Simultaneous HUD and full-cluster output remains unsupported.
+
 # 0.4.137
 
 - Arrange has Add widget, with available types, immediate positioning, Undo/Redo and live saving.

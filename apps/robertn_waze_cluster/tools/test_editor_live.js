@@ -26,6 +26,15 @@ class Client extends EventEmitter {
  s.press('live-toggle');s.press('left');const saved=M.clone(c.status.design);s.press('save-slot:1');c.ack();await wait(0);assert(s.dirty,'slot save does not claim the active draft was applied');assert.deepEqual(c.status.design,saved);
  s.nav=[];s.page='gallery';s.press('edit');s.press('select');s.press('widget:rpm');assert.equal(s.page,'edit');s.press('navigate-back');assert.equal(s.page,'widgets');s.press('navigate-back');assert.equal(s.page,'edit');s.press('navigate-back');assert.equal(s.page,'gallery');assert.equal(s.press('navigate-back'),false,'root Back leaves Studio');
  s.press('page:style');s.press('gauge');s.press('pick-gauge:needle');assert.equal(s.design.gauge,'needle');s.press('page:edit');s.press('widget-gauge');s.press('pick-gauge:dots');assert.equal(s.widget().gauge,'dots');
+ s.page='output';c.statusAt=Date.now();c.status.canPreview=false;c.status.canSelectPanel=true;c.status.canRetry=true;c.status.displayVisible=false;c.status.state='Full cluster waiting for HUD release';
+ assert(V.items(s).find(b=>b.id==='apply-panel').enabled,'saved output can be selected while HUD blocks a temporary test');
+ assert(!V.items(s).find(b=>b.id==='preview').enabled,'blocked test stays blocked');
+ s.dirty=false;assert(/waiting for HUD/.test(s.editStatus()),'prepared panel cannot claim to be shown');
+ s.liveChanges=false;s.press('right');const draft=M.clone(s.design),stored=M.clone(c.status.design);
+ s.press('retry');assert.equal(c.pending.call.cmd,'retry');assert.deepEqual(c.pending.call.extra,{},'retry cannot overwrite saved design with an unsaved draft');c.ack();await wait(0);
+ assert.deepEqual(c.status.design,stored);assert.deepEqual(s.design,draft);assert(s.dirty);
+ c.statusAt=Date.now()-2500;assert(!V.items(s).find(b=>b.id==='retry').enabled);assert(!V.items(s).find(b=>b.id==='apply-panel').enabled);c.statusAt=Date.now();
+ c.status.canSelectPanel=false;assert(!V.items(s).find(b=>b.id==='apply-panel').enabled);c.status.canSelectPanel=true;
  // Add restores a real widget type, selects/unlocks it for immediate dragging,
  // and preserves live-save/undo semantics rather than resetting the layout.
  s.page='edit';s.design=M.idrivePreset(2);s.liveChanges=false;

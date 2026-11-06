@@ -1,5 +1,7 @@
 # Cluster Studio
 
+Version 0.1.15 adds bounded renderer recovery, exact output status, and an explicit saved-display retry. See [offline validation and limits](../../docs/cluster-studio/RECOVERY-0.4.138.md).
+
 See the [user guide, capabilities and limitations](../../docs/cluster-studio/README.md).
 
 This Node 8 tool runs at head-unit startup. State is stored at

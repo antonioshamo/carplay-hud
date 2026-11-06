@@ -3,7 +3,7 @@
 const assert=require('assert'),fs=require('fs'),path=require('path'),os=require('os'),http=require('http');
 const M=require('../shared/studio_model'),{StudioService}=require('../service'),{ParkedMedia}=require('../parked_media');
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'phone-designer-'));let now=1000,parked=true;
-const engine={hud:'idle',panelUntil:0,cr:{ready:true},configure(){},stopPreview(){}},telemetry={parked:()=>parked,snapshot:()=>({})};const service=new StudioService({file:path.join(dir,'studio.json'),engine,telemetry});
+const engine={hud:'idle',panelUntil:0,cr:{ready:true,targets:'panel:1920x720'},now:Date.now,health:()=>({paused:false,retryInMs:0}),display:()=>({visible:false}),configure(){},stopPreview(){}},telemetry={parked:()=>parked,snapshot:()=>({})};const service=new StudioService({file:path.join(dir,'studio.json'),engine,telemetry});
 const media=new ParkedMedia({engine,telemetry,cr:engine.cr,now:()=>now,address:'127.0.0.1',port:0,file:path.join(dir,'frame'),designRead:()=>({design:service.store.design,slots:service.store.slots}),designSave:m=>service.command(m)});
 function request(route,body,options){options=options||{};return new Promise((resolve,reject)=>{const bytes=Buffer.from(JSON.stringify(body||{})),u=new URL(media.base+route);const req=http.request(u,{method:'POST',headers:{Origin:options.origin||media.base,Authorization:options.auth||'Bearer '+media.token,'Content-Type':'application/json','Content-Length':bytes.length}},res=>{let data='';res.on('data',b=>data+=b);res.on('end',()=>resolve({status:res.statusCode,value:JSON.parse(data)}));});req.on('error',reject);req.end(bytes);});}
 (async()=>{try{
