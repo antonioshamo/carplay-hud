@@ -154,7 +154,8 @@ test('the Waze chain: app -> waze-on-cluster -> cluster-render and a hook-runnin
     assert.deepStrictEqual(app.mguHmi, ['ID7']);
     assert.deepStrictEqual(Object.keys(app.requires), ['waze-on-cluster', 'mgu-render', 'cluster-studio']);
     const studio=byId('cluster-studio');
-    assert(studio && studio.version===app.requires['cluster-studio']);
+    assert(studio && catalog.compareVersions(studio.version, app.requires['cluster-studio']) >= 0,
+        'the Studio helper meets the app minimum, including independent helper updates');
     assert(catalog.compareVersions(renderer.version, studio.requires['cluster-render'])>=0);
     assert.strictEqual(app.requires['mgu-render'], '0.6.11', 'graphics renderer is supplied by the official Store source');
     assert.ok(catalog.compareVersions(tool.version, app.requires['waze-on-cluster']) >= 0,
