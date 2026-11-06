@@ -1,4 +1,4 @@
-name: Import and publish iDrive 8 gauge templates
+name: Import and publish gauge call recovery
 on:
   workflow_dispatch:
 permissions:
@@ -18,21 +18,21 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import tested editor source
+      - name: Import tested call recovery source
         run: |
           if [ -f release-import.bundle ]; then
-            echo '2989896e34428cd3eb805c4584040fe90010f916a923577897ead35f3b98c517  release-import.bundle' | sha256sum -c -
+            echo '5bbfea52247766ee3d7748f94956a63e3ccf53d76fba5030be7137c0091f96e5  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
-            git fetch ./release-import.bundle refs/heads/shamo/idrive8-gauges:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '41bc43ffb7a57062513057e1f395f674650df3c5'
+            git fetch ./release-import.bundle refs/heads/shamo/call-recovery:refs/remotes/import/release
+            test "$(git rev-parse refs/remotes/import/release)" = 'efdd7d115e53aaaee897e5d459751b905576deed'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
             git rm release-import.bundle
-            git commit -m 'Remove tested editor source transport bundle'
+            git commit -m 'Remove tested recovery source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 41bc43ffb7a57062513057e1f395f674650df3c5 HEAD
+          git merge-base --is-ancestor efdd7d115e53aaaee897e5d459751b905576deed HEAD
       - name: Test all app controls, editing and startup
         run: |
           set -eu
@@ -45,8 +45,8 @@ jobs:
           for test in test test_telemetry test_stability test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_features; do
             node "native/cluster-studio/test/$test.js"
           done
-          make -C native/cluster-render build/host/slots_test
-          native/cluster-render/build/host/slots_test
+          make -C native/cluster-render test
+          make -C native/cluster-render test-x86 target
           node release/test/release_test.js
       - name: Test new runtime paths on Node 8
         run: |
@@ -63,10 +63,10 @@ jobs:
             "$runtime_dir/node-v8.16.2-linux-x64/bin/node" "apps/robertn_waze_cluster/tools/$test.js"
           done
       - name: Verify reproducible app and helper artifacts
-        run: node release/release.js check robertn_waze_cluster cluster-studio
-      - name: Publish offline-tested editor 0.4.136 and helper 0.1.13
+        run: node release/release.js check cluster-render cluster-studio
+      - name: Publish offline-tested renderer 0.3.103 and helper 0.1.14
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish cluster-studio robertn_waze_cluster
+        run: node release/release.js publish cluster-render cluster-studio
