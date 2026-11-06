@@ -58,6 +58,8 @@ test: test-cpp
 	$(NODE) startup/test/controller.test.js
 	$(NODE) startup/test/service.test.js
 	$(NODE) patch/test/locate_test.js
+	$(NODE) patch/test/map_startup_test.js
+	$(NODE) patch/test/startup_trial_test.js
 	$(NODE) patch/test/patch_test.js
 	$(NODE) patch/test/patchd_patch_test.js
 	$(NODE) patch/test/patchd_activate_test.js

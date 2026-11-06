@@ -36,6 +36,7 @@ var RES_STOCK = ['48baea0000006e000000', '48b88007000084030000', '48b80000000064
 var RES_DEFAULT = ['48ba8a0000003d000000', '48b840040000e0010000', '48b800000000f8010000', '48b8700100001e014800'];
 /* The same size with the safe area the whole frame (--safe full). */
 var RES_FULLSAFE = ['48ba8a0000003d000000', '48b840040000e0010000', '48b80000000040040000', '48b8e001000000000000'];
+function inStartupRegion(x) { return [[208,16],[502053,4],[3378480,32],[1576672,5]].some(function(r){return x>=r[0]&&x<r[0]+r[1];}); }
 function inResRegion(x) { return RES_OFFS.some(function (o) { return x >= o + 2 && x < o + 10; }); }
 /* Build an "older patch" binary: variant + sink applied, self-start still stock
  * (what the car runs today). Patches the bytes directly, bypassing the patcher. */
@@ -86,7 +87,7 @@ try {
     ok('backup is pristine', sha256(tgt + '.woc-orig') === ORIG_SHA);
     var d = diffs(SRCBUF, fs.readFileSync(tgt));
     ok('avb-mode diff stays in the slot, the call rel32 and the res immediates', d.length >= 2 &&
-        d.every(function (x) { return (x >= SLOT && x < SLOT + 4) || (x >= CALL && x < CALL + CALL_LEN) || inResRegion(x); }),
+        d.every(function (x) { return (x >= SLOT && x < SLOT + 4) || (x >= CALL && x < CALL + CALL_LEN) || inResRegion(x) || inStartupRegion(x); }),
         JSON.stringify(d.map(function (x){return '0x'+x.toString(16);})));
     ok('slot = IC_HIGH (bcf2f7ff)', fs.readFileSync(tgt).slice(SLOT, SLOT + 4).toString('hex') === 'bcf2f7ff');
     ok('call retargeted to requestStream', callBytes(fs.readFileSync(tgt)) === CALL_SELF, callBytes(fs.readFileSync(tgt)));
@@ -113,7 +114,7 @@ try {
     ok('redirect NUL-padded, no overrun into the next string', b.slice(SINK + SINK_LEN, SINK + SINK_LEN + 5).equals(SRCBUF.slice(SINK + SINK_LEN, SINK + SINK_LEN + 5)) && b.slice(SINK + SINK_LEN + 5, SINK + SINK_LEN + 16).toString('latin1') === 'mCarPlay->G');
     ok('call retargeted to requestStream', callBytes(b) === CALL_SELF, callBytes(b));
     var d2 = diffs(SRCBUF, b);
-    ok('all diffs within slot, sink or call regions', d2.every(function (x) { return (x >= SLOT && x < SLOT + 4) || (x >= SINK && x < SINK + SINK_LEN) || (x >= CALL && x < CALL + CALL_LEN); }), 'n=' + d2.length);
+    ok('all diffs within slot, sink or call regions', d2.every(function (x) { return (x >= SLOT && x < SLOT + 4) || (x >= SINK && x < SINK + SINK_LEN) || (x >= CALL && x < CALL + CALL_LEN) || inStartupRegion(x); }), 'n=' + d2.length);
 
     ok('mid leaves the res immediates stock', JSON.stringify(resImmediates(fs.readFileSync(tgt))) === JSON.stringify(RES_STOCK));
     r = run(['status', '--target', tgt]);
@@ -167,7 +168,7 @@ try {
     var tampered = Buffer.from(SRCBUF); tampered[0x1000] ^= 0xff;
     var tt = path.join(dir, 'carplay_tampered'); fs.writeFileSync(tt, tampered);
     r = run(['apply', '--target', tt, '--panel', 'high', '--yes']);
-    ok('tampered build refused', r.code !== 0 && /pristine build/.test(r.out), r.out);
+    ok('tampered build refused', r.code !== 0 && /pristine build|Map startup fingerprint/.test(r.out), r.out);
 
     /* --capture with no value is an error, not a silent variant-only patch */
     r = run(['apply', '--target', tgt, '--panel', 'high', '--capture', '--yes']);
@@ -239,7 +240,7 @@ try {
     var e12now = fs.readFileSync(e12);
     var d3 = diffs(e12buf, e12now);
     ok('edit-1/2-only: Enable changed only the call rel32 and the res immediates', d3.length >= 1 &&
-        d3.every(function (x) { return (x >= CALL && x < CALL + CALL_LEN) || inResRegion(x); }), JSON.stringify(d3.map(function (x){return '0x'+x.toString(16);})));
+        d3.every(function (x) { return (x >= CALL && x < CALL + CALL_LEN) || inResRegion(x) || inStartupRegion(x); }), JSON.stringify(d3.map(function (x){return '0x'+x.toString(16);})));
     ok('edit-1/2-only: now SELF-START, variant+sink unchanged', callBytes(e12now) === CALL_SELF && e12now.slice(SLOT, SLOT + 4).toString('hex') === 'bcf2f7ff');
     r = run(['verify', '--target', e12]);
     ok('edit-1/2-only: verify now passes', r.code === 0 && /self-start on/.test(r.out), r.out);
@@ -409,7 +410,7 @@ try {
         /self-start -> requestStream/.test(r.out) && /resolution -> 1088x480/.test(r.out), r.out);
     var od = diffs(other, fs.readFileSync(ot));
     ok('unproven build: the diff stays in the edit regions', od.length > 0 && od.every(function (x) {
-        return (x >= SLOT && x < SLOT + 4) || (x >= SINK && x < SINK + SINK_LEN) || (x >= CALL && x < CALL + CALL_LEN) || inResRegion(x); }));
+        return (x >= SLOT && x < SLOT + 4) || (x >= SINK && x < SINK + SINK_LEN) || (x >= CALL && x < CALL + CALL_LEN) || inResRegion(x) || inStartupRegion(x); }));
     r = run(['verify', '--target', ot]);
     ok('unproven build: verify passes', r.code === 0 && /IC_HIGH, sink udp:\/\/127\.0\.0\.1:20557/.test(r.out), r.out);
     r = run(['revert', '--target', ot, '--yes']);
