@@ -8,10 +8,11 @@ const THEMES=[
  ['Electric','#c8f760','#71d9bf','#1a2419'],['Monochrome','#ffffff','#a3adbb','#171b22']
 ];
 const LAYOUTS=['Ultra / blue rings','M Competition','Grand touring','Minimal','Panorama','Driver focus','Technical','Night drive','Symmetry','Track paddock'];
+const IDRIVE_TEMPLATES=[['id8-sport','iDrive 8 Sport','Angular rails / M colors'],['id8-classic','iDrive 8 Classic','Silver rails / warm accents'],['id8-minimal','iDrive 8 Minimal','Open rails / calm layout']];
 const TYPES=['speed','rpm','gear','clock','date','badge','flag','coolant','oil','accent','signature','connection'];
 const LABELS={speed:'Speed',rpm:'Engine RPM',gear:'Gear',clock:'Clock',date:'Date',badge:'X4 M badge',flag:'Racing flag',coolant:'Coolant',oil:'Oil temperature',accent:'M stripes',signature:'Signature',connection:'Data status'};
 const ACCENTS=['theme','#ffffff','#57c5fa','#e64a64','#ffb85c','#83f0ec','#c6a4ff','#89e0b3','#e5d4ae','#c8f760'];
-const STYLES=[['ring','Sport rings'],['digital','Digital cards'],['bar','Horizontal bars'],['ultra','Ultra rings'],['needle','Classic needles'],['segments','Segmented rings'],['sweep','Racing sweep'],['vertical','Vertical rails'],['minimal','Minimal arc'],['dots','Dot matrix dial']];
+const STYLES=[['ring','Sport rings'],['digital','Digital cards'],['bar','Horizontal bars'],['ultra','Ultra rings'],['needle','Classic needles'],['segments','Segmented rings'],['sweep','Racing sweep'],['vertical','Vertical rails'],['minimal','Minimal arc'],['dots','Dot matrix dial'],['id8','iDrive 8 angular'],['id8-slim','iDrive 8 minimal']];
 const GAUGES=['inherit'].concat(STYLES.map(s=>s[0]));
 const gaugeLabel=id=>id==='inherit'?'Use design style':(STYLES.find(s=>s[0]===id)||[id,id])[1];
 const TITLES=['X4 M COMPETITION','ANTONIO / X4 M','BUILT FOR THE DRIVE','MY COMPETITION','MOTORSPORT'];
@@ -45,6 +46,8 @@ function validate(v){
  for(const k of ['x','y','w','h'])if(!Number.isFinite(w[k]))throw Error('Invalid position');
  if(w.x<0||w.y<0||w.w<minimum(w.type)[0]-1e-8||w.h<minimum(w.type)[1]-1e-8||w.x+w.w>1.00001||w.y+w.h>1.00001)throw Error('Widget out of bounds');});
  const out={};['schema','preset','theme','gauge','background','units','clock24','borders','snap','title','intro','introEnabled'].forEach(k=>out[k]=v[k]);
+ out.template=v.template===undefined?'standard':v.template;
+ if(!['standard'].concat(IDRIVE_TEMPLATES.map(a=>a[0])).includes(out.template))throw Error('Invalid template');
  out.introDuration=v.introDuration===undefined?3000:v.introDuration;
  if(![3000,4500,5500,7000].includes(out.introDuration))throw Error('Invalid welcome duration');
  out.introShine=v.introShine===undefined?true:v.introShine;if(typeof out.introShine!=='boolean')throw Error('Invalid shine');
@@ -79,4 +82,18 @@ for(const w of config.widgets){
 }
 config.name='Antonio M Competition';return validate(config);
 }
-module.exports={STYLES,gaugeLabel,acceptedDesign,ACCENTS,GAUGES,dimension,align,cleanText,THEMES,LAYOUTS,TYPES,LABELS,TITLES,preset,validate,clone,clamp,move,resize};
+function idrivePreset(index){
+ if(!Number.isInteger(index)||index<0||index>=IDRIVE_TEMPLATES.length)throw Error('Invalid iDrive template');
+ const d=preset(index===1?72:11);d.template=IDRIVE_TEMPLATES[index][0];d.name=IDRIVE_TEMPLATES[index][1];
+ d.gauge=index===2?'id8-slim':'id8';d.background=index===2?'black':'gradient';d.borders=false;d.temperatureUnit='F';
+ d.widgets.forEach(w=>w.on=false);
+ const put=(type,x,y,w,h)=>Object.assign(d.widgets.find(a=>a.type===type),{x,y,w,h,on:true});
+ put('speed',.045,.12,.35,.70);put('rpm',.605,.12,.35,.70);
+ put('badge',.42,.28,.16,.15);put('clock',.08,.86,.20,.09);
+ put('coolant',.40,.66,.12,.12);put('oil',.54,.66,.12,.12);put('accent',.40,.86,.22,.023);
+ if(index===1){put('badge',.40,.22,.20,.18);put('date',.43,.49,.18,.09);put('coolant',.40,.68,.12,.12);put('oil',.54,.68,.12,.12);d.widgets.find(w=>w.type==='accent').on=false;}
+ if(index===2){put('speed',.08,.20,.34,.61);put('rpm',.58,.20,.34,.61);put('badge',.42,.35,.16,.15);put('oil',.58,.85,.13,.10);d.widgets.find(w=>w.type==='coolant').on=false;d.widgets.find(w=>w.type==='accent').on=false;}
+ return validate(d);
+}
+function baseDesign(d){const i=IDRIVE_TEMPLATES.findIndex(a=>a[0]===d.template);return i<0?preset(d.preset):idrivePreset(i);}
+module.exports={IDRIVE_TEMPLATES,idrivePreset,baseDesign,STYLES,gaugeLabel,acceptedDesign,ACCENTS,GAUGES,dimension,align,cleanText,THEMES,LAYOUTS,TYPES,LABELS,TITLES,preset,validate,clone,clamp,move,resize};

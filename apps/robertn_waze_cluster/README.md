@@ -1,16 +1,14 @@
-# CarPlay HUD 0.4.135
+# CarPlay HUD 0.4.136
 
-Update CarPlay HUD (App), Cluster Studio (Tool) to 0.1.12, and Waze on cluster (Tool) to 0.7.115 through MGU Store. Modern settings retain the vehicle-verified opening path.
+Update **Cluster Studio (Tool) to 0.1.13**, then **CarPlay HUD (App) to 0.4.136** in MGU Store. Keep **Waze on cluster (Tool) 0.7.115** for the separate startup-map changes.
 
-Back and Apply stay in the top corners. Open **Cluster designer**, pick a template, then use **Arrange** to select and drag widgets or **Style** to choose among ten dial styles and ten palettes. Speed and RPM can use different styles. Undo/Redo, locking, independent width/height, centering and layering remain available. **My designs** holds five slots and opens the paired phone designer for names, exact colors and import/export.
+Open **Cluster Studio → Templates → iDrive 8 templates**. Choose Sport, Classic or Minimal, then use Arrange and Style to move, resize, show/hide and recolor each widget. Speed and RPM can independently use any of the 12 dial styles. Back, Apply and Live changes remain available on every editor page.
 
-**Live changes** starts on. Once an output is enabled, edits update and save that layout while Park and the helper connection are fresh. Turn it off to work on a draft. Failed or unconfirmed saves are shown explicitly; newer edits are never replaced by an older reply. **In the car** chooses center output, saved full-cluster output in Park, or restores the BMW display. Editing does not silently turn an inactive output on. Phone edits use the same saved design.
+The new presets retain your speed units, temperature units and welcome choices. My designs saves five personal layouts. In the car → Restore BMW display returns to factory output.
 
-**Startup → Apple Maps on HUD** selects the independent stream and disables dashboard mirroring. Tool 0.7.115 supplies route-free startup on the previously verified CarPlay build; this app does not install CarPlay Ultra.
+These are original iDrive 8-inspired designs, not BMW Operating System 8 or replacement factory menus. Speed and RPM use the existing fresh vehicle-data pipeline. Full-cluster output remains Park-only, preserves the tested native gear opening, and may pause while the HUD owns the shared scene.
 
-Full-cluster output preserves the accepted opening around BMW's native gear indicator. It returns to BMW gauges when moving or vehicle data becomes stale. HUD and full-panel output share a renderer scene and cannot be promised simultaneously. BMW gauges remain responsible for active cruise, distance and lane warnings.
-
-The editor and helper are tested offline; this new build still needs a physical-car check. See [verification and usage](../../docs/cluster-studio/EDITOR-0.4.135.md).
+See [verification and usage](../../docs/cluster-studio/IDRIVE8-0.4.136.md). This release is tested offline; physical-car validation of the new designs remains outstanding.
 
 ## Historical settings implementation
 

@@ -55,6 +55,7 @@ class StudioScreen {
   if(editable.includes(id)&&this.widget().locked){this.notice='Unlock this widget to change it';return true;}
   this.checkpoint();const d=this.design;
   if(id.startsWith('pick-gauge:')){const style=id.slice(11);if(M.GAUGES.slice(1).includes(style)){if(this.styleTarget==='design')d.gauge=style;else d.widgets.find(w=>w.type===this.styleTarget).gauge=style;}this.page=this.styleTarget==='design'?'style':'properties';}
+  else if(id.startsWith('pick-idrive:')){const prefs={};['intro','introEnabled','introDuration','introShine','introLight','welcomeName','signature','temperatureUnit','units','clock24','snap'].forEach(k=>{if(d[k]!==undefined)prefs[k]=d[k];});this.design=Object.assign(M.idrivePreset(Number(id.split(':')[1])),prefs);this.page='gallery';}
   else if(id.startsWith('pick-layout:')){const intro={};['intro','introEnabled','introDuration','introShine','introLight','welcomeName','signature','name','temperatureUnit'].forEach(k=>{if(d[k]!==undefined)intro[k]=d[k];});this.design=Object.assign(M.preset(d.theme*10+Number(id.split(':')[1])),intro);this.page='gallery';}
   else if(id.startsWith('pick-theme:')){d.theme=Number(id.split(':')[1]);d.preset=d.theme*10+d.preset%10;this.page='style';}
   else if(id==='lock')this.widget().locked=!this.widget().locked;
@@ -64,7 +65,7 @@ class StudioScreen {
   else if(id==='back'){const w=this.widget();d.widgets.splice(d.widgets.indexOf(w),1);d.widgets.unshift(w);}
   else if(/^width-|^height-/.test(id))M.dimension(d,this.selected,id.startsWith('width')?'w':'h',id.endsWith('more')?.02:-.02);
   else if(id==='align-x'||id==='align-y')M.align(d,this.selected,id.slice(-1));
-  else if(id==='reset-widget'){const w=M.preset(d.preset).widgets.find(w=>w.type===this.selected);d.widgets[d.widgets.findIndex(w=>w.type===this.selected)]=w;}
+  else if(id==='reset-widget'){const w=M.baseDesign(d).widgets.find(w=>w.type===this.selected);d.widgets[d.widgets.findIndex(w=>w.type===this.selected)]=w;}
   else if(['previous','next','shuffle','layout'].includes(id)){const n=id==='shuffle'?Math.floor(Math.random()*100):id==='layout'?d.theme*10+(d.preset%10+1)%10:(d.preset+(id==='next'?1:99))%100;const intro={};['intro','introEnabled','introDuration','introShine','introLight','welcomeName','signature','name','temperatureUnit'].forEach(k=>{if(d[k]!==undefined)intro[k]=d[k];});this.design=Object.assign(M.preset(n),intro);}
   else if(id==='theme'){d.theme=(d.theme+1)%10;d.preset=d.theme*10+d.preset%10;}
   else if(id==='toggle')this.widget().on=!this.widget().on;
