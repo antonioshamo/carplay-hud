@@ -166,6 +166,7 @@ class WazeClusterApp extends OnlineApp {
             const { HudScreen } = require('./hud_screen.js');
             this._design = new HudScreen({control:this._control,log:logger,
                 classic:()=>this._useModern(false),
+                exit:()=>this.rhmiApplication.closeState(HOST).catch(e=>logger.warn('Close settings: '+e.message)),
                 proxies:items=>{
                     for(let i=0;i<PROXIES;i++){
                         const name='designProxy'+i,item=items[i];

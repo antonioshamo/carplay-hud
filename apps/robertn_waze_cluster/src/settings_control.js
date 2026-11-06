@@ -99,6 +99,25 @@ class SettingsControl extends WazeClusterControl {
         if (!this.canChangeDisplay() || !['hud', 'map'].includes(target)) return false;
         return this._request('target', target, {cmd: 'start', target}, {cmd: 'target', target});
     }
+    // Reconfirm the displayed settings without re-acquiring or switching scenes.
+    applyCurrent() {
+        if (!this.canChangeDisplay()) return false;
+        const target=this.displayTarget(),size=this.hudWidth(),pos=this.hudOffset();
+        const styles=['hud_black_background','hud_round_corners'].filter(k=>this.canChangeStyle(k)).map(k=>[k,this.hudStyle(k)]);
+        if(!['hud','map'].includes(target))return false;
+        const queue=[['target',target,null,{cmd:'target',target}]];
+        if(target==='hud'){
+            if(size!==null)queue.push(['size',size,{cmd:'hud',hud_width_pct:String(size)},{cmd:'hud-size',hud_width_pct:size}]);
+            if(pos)queue.push(['position',pos,{cmd:'hud',hud_x:String(pos[0]),hud_y:String(pos[1])},{cmd:'hud-pos',hud_x:pos[0],hud_y:pos[1]}]);
+            styles.forEach(p=>queue.push([p[0],p[1],{cmd:'hud-style',setting:p[0],value:p[1]?'1':'0'},{cmd:'hud-style',setting:p[0],value:p[1]}]));
+        }
+        const next=()=>{const a=queue.shift();if(a)this._request(a[0],a[1],a[2],a[3],next);};next();
+        return true;
+    }
+    useIndependentHud() {
+        if(!this.canChangeStartup()||!this.canChangeDisplay())return false;
+        return this._request('target','hud',{cmd:'start',target:'hud'},{cmd:'target',target:'hud'},()=>this.setStartup('off'));
+    }
     cycleDisplay() { return this.setDisplay(this.displayTarget() === 'hud' ? 'map' : 'hud'); }
     setHudSize(pct) {
         if (!this.canChangeHudSize() || !Number.isInteger(pct) || (pct !== 0 && (pct < 30 || pct > 85))) return false;
@@ -144,7 +163,8 @@ class SettingsControl extends WazeClusterControl {
         return this._notice || 'Changes are saved for the next start';
     }
     _request(key, value, live, saved, onSaved) {
-        const c = {value, live: false, saved: false, onSaved};
+        const current={target:this.displayTarget(),size:this.hudWidth(),position:this.hudOffset(),hud_black_background:this.hudStyle('hud_black_background'),hud_round_corners:this.hudStyle('hud_round_corners')};
+        const c = {value, live:this.connectedRender()&&JSON.stringify(current[key])===JSON.stringify(value), saved: false, onSaved};
         this._changes[key] = c;
         this._notice = '';
         c.timer = setTimeout(() => {
@@ -154,7 +174,7 @@ class SettingsControl extends WazeClusterControl {
                 c.saved ? 'Saved; the map tool did not confirm applying it.' : 'No confirmation. Check the installed map tool.';
             this.emit('change');
         }, this._ackMs);
-        this.render.send(live);
+        if(live)this.render.send(live);
         this.patch.send(saved);
         this.emit('change');
         return true;

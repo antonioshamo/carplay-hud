@@ -1,3 +1,35 @@
+# 0.4.135
+
+- Back and Apply stay in fixed top corners across modern settings and all designer pages; Back returns through editing history and leaves the root screen through the existing BMW RHMI close-state API.
+- Live changes are on by default for an enabled, freshly confirmed parked layout. Edits coalesce, preserve the output choice, wait for save acknowledgements and keep newer drafts through delayed replies or disconnects. Turn Live changes off to edit before applying.
+- Ten dial styles, independent speed/RPM styling, direct widget selection, drag positioning, separate dimensions, centering, layer order, locks, undo/redo, color themes and five saved slots.
+- Paired phone designer gains a sticky Apply action and live saves. Saving no longer resets the selected widget. Imports remain reviewable drafts.
+- Separate-map HUD startup shortcut keeps dashboard mirroring off and selects HUD. Requires Waze on cluster 0.7.115; route-free startup is supported on the previously verified CarPlay build.
+- Requires Cluster Studio 0.1.12, including 0.1.11 continuity and refresh fixes. Full-cluster output remains Park-only and retains the accepted native P opening; active HUD ownership can defer it.
+- Tested offline against simulated helper/renderer protocols, the captured SDK contract, Node 8, and browser phone controls. This release has not been physically retested in the car.
+
+# 0.4.134
+
+- Cluster Studio 0.1.9: save a full-cluster layout for Park, restore center output or BMW display explicitly, and retain the owner-approved M Competition layout as a selectable draft.
+- Preserve the native gear indicator with the parked-tested fixed opening and opaque side-only background fades. GPU welcomes reserve the same opening. Fresh Park/speed and idle HUD are required; BMW gauges return when moving or telemetry becomes stale.
+- Add detailed ring markings and read-only BMW assistance preferences. Active cruise, gap and lane warnings still use BMW's gauges.
+- Preserve the modern-settings startup repair. Independent route-free HUD maps, driving full-cluster output and raw full-panel video are not enabled by this release.
+
+# 0.4.133
+
+- Expanded saved designs and phone customization with Cluster Studio 0.1.5.
+- Re-arm welcome after the recorded BMW engine-off state and fresh zero RPM.
+- Retain 0.4.131 modern-settings transition fix.
+- Independent route-free maps and full factory-gauge replacement remain unverified.
+
+## 0.4.132 — offline customization candidate
+
+- My cockpit shortcuts to the cluster designer, welcome, saved designs, lighting discovery and parked media.
+- Direct layout/theme/widget choices, independent size axes, centering, layer order, locks, redo, per-widget gauge/color and Fahrenheit/Celsius.
+- Paired phone designer: personal names and welcome text, exact colors, drag/placement, validated import/export and five saved layouts.
+- Requires Cluster Studio 0.1.4: reads the unit catalog directly, including notifier-only Park and ignition fields; handles ignition data arriving before Park.
+- Retains 0.4.131's named-state loading fix. Independent map-only startup, native gauge replacement, lighting writes and DRM/web playback remain unresolved. Vehicle disconnected; physical validation pending.
+
 ## 0.4.131
 
 - Address the 0.4.130 vehicle trace: graphics connected, but opening the remapped entry UUID returned `INVALID_UUID`. Navigate to the modern screen by its RHMI state, matching the upstream Store transition pattern. Keep tile mapping for later launches.

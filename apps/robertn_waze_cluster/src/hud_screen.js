@@ -10,7 +10,7 @@ const HOST='ST_WOC_Design',PROXIES=24;
 class HudScreen extends EventEmitter {
  constructor(host,options) {
   super();this.host=host;this.gpu=options&&options.client||new RenderClient('robertn_waze_cluster',host.log,{kit,mode:'layer'});
-  this.page='overview';this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
+  this.page='overview';this.navigation=[];this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
   this.active=false;this.info=null;this.scale=1;this.closed=false;this.touch=null;this.ccu=null;this.last={};this.dirty=false;this.suspended=false;
   this.studio=new StudioScreen(()=>{this.dirty=true;});
   this.sentAt=0;this.reshowTimer=null;
@@ -80,11 +80,14 @@ class HudScreen extends EventEmitter {
   const fresh=(this.page==='studio'?require('./studio_view.js').items(this.studio):view.layout(view.model(this.host.control),this.page,this.logPage)).find(b=>b.id===id);
   if(!fresh||!fresh.enabled)return false;
   const now=Date.now();if(now-(this.last[id]||0)<300)return false;this.last[id]=now;
-  if(this.page==='studio'){if(id==='exit'){this.page='overview';this.studio.drag=null;this.focus=0;}else this.studio.press(id);this.render();return true;}
-  if(id==='open-studio'){this.page='studio';this.studio.open();this.focus=0;this.render();return true;}
-  if(id.indexOf('nav:')===0){this.page=id.slice(4);this.logPage=0;this.focus=Math.max(0,view.tabs.findIndex(t=>t[0]===this.page));this.touch=null;this.ccu=null;this.render();return true;}
+  if(this.page==='studio'){const before=this.studio.page;const handled=this.studio.press(id);if(id==='exit'||(id==='navigate-back'&&!handled)){this.page='overview';this.studio.drag=null;this.focus=0;}else if(before!==this.studio.page)this.focus=0;this.render();return true;}
+  if(id==='navigate-back'){if(this.navigation.length)this.page=this.navigation.pop();else if(this.page!=='overview')this.page='overview';else if(this.host.exit)this.host.exit();this.focus=0;this.render();return true;}
+  if(id==='open-studio'||id.indexOf('studio:')===0){this.page='studio';this.studio.page=id==='open-studio'?'gallery':id.slice(7);this.studio.nav=[];this.studio.open();this.focus=0;this.render();return true;}
+  if(id.indexOf('nav:')===0){if(this.page!==id.slice(4))this.navigation.push(this.page);if(this.navigation.length>20)this.navigation.shift();this.page=id.slice(4);this.logPage=0;this.focus=Math.max(0,view.tabs.findIndex(t=>t[0]===this.page));this.touch=null;this.ccu=null;this.render();return true;}
   const c=this.host.control;
   switch(id){
+   case 'apply-current':c.applyCurrent();break;
+   case 'route-free-hud':c.useIndependentHud();break;
    case 'hud':c.setDisplay('hud');break;
    case 'cluster':c.setDisplay('map');break;
    case 'startup-on':c.startHudAutomatically();break;
@@ -101,7 +104,7 @@ class HudScreen extends EventEmitter {
    case 'square':c.setHudStyle('hud_round_corners',false);break;
    case 'enable':c.enableMap();break;
    case 'disable':c.disableMap();break;
-   case 'restore-defaults':this.studio.open();c.restoreDefaults(this.studio.client);break;
+   case 'restore-defaults':this.studio.pauseLive();this.studio.open();c.restoreDefaults(this.studio.client);break;
    case 'capture':c.capture();break;
    case 'restart':c.requestRestart();break;
    case 'classic':this.host.classic();return true;
