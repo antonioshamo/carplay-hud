@@ -14,7 +14,28 @@ function draw(r,d,b,data,options){
  const gauge=(w,val,max,label,unit)=>{
   const mode=!w.gauge||w.gauge==='inherit'?d.gauge:w.gauge,accent=w.color&&w.color!=='theme'?w.color:t[1];
   const x=w.x*1920,y=w.y*720,ww=w.w*1920,hh=w.h*720,n=val==null?'—':String(Math.round(val));
-  if(['needle','segments','sweep','vertical','minimal','dots'].includes(mode)){
+  if(mode==='id8'||mode==='id8-slim'){
+   // Open hexagonal rails: each gauge remains an independently movable widget.
+   // Geometry is static before the live rail/readout, so the frame cache can reuse it.
+   const slim=mode==='id8-slim',mirror=w.type==='rpm',fraction=val==null?0:M.clamp(val/max,0,1);
+   const point=(u,v)=>[x+(mirror?1-u:u)*ww,y+v*hh];
+   const poly=(pts,width,color)=>r.polyline(pts.map(p=>[b.x+p[0]*sx,b.y+p[1]*sy]),width*scale,color);
+   const quad=(pts,color)=>r.quad(pts.map(p=>[b.x+p[0]*sx,b.y+p[1]*sy]),color);
+   const centered=(str,u,v,size,color)=>{const p=point(u,v);r.text(String(str),b.x+p[0]*sx,b.y+p[1]*sy,size*scale,color,{font:'bold',align:'center'});};
+   const rail=[point(.48,.93),point(.28,.93),point(.08,.50),point(.28,.07),point(.48,.07)];
+   const edge=[point(.51,.93),point(.33,.90),point(.15,.50),point(.33,.10),point(.51,.07)];
+   if(!slim){for(let i=0;i<4;i++)quad([rail[i],rail[i+1],edge[i+1],edge[i]],'#182c43');}
+   poly(rail,slim?2:3,'#a9bfd4');poly(edge,slim?1:2,'#304d6a');
+   const distances=[0];for(let i=1;i<rail.length;i++)distances.push(distances[i-1]+Math.hypot(rail[i][0]-rail[i-1][0],rail[i][1]-rail[i-1][1]));
+   const at=f=>{const distance=f*distances[4];let j=0;while(j<3&&distance>distances[j+1])j++;const t=(distance-distances[j])/(distances[j+1]-distances[j]);return [rail[j][0]+(rail[j+1][0]-rail[j][0])*t,rail[j][1]+(rail[j+1][1]-rail[j][1])*t];};
+   const steps=slim?4:8,inward=mirror?-1:1;
+   for(let i=0;i<=steps;i++){const p=at(i/steps);line(p[0],p[1],p[0]+inward*ww*.026,p[1],2,'#c5d6e8');if(!slim&&i%2===0){const tick=w.type==='rpm'?i:Math.round(max*i/steps);r.text(String(tick),b.x+(p[0]+inward*ww*.066)*sx,b.y+(p[1]+(i===0?30:i===steps?-15:6))*sy,Math.min(23,hh*.055)*scale,'#a8bfd7',{font:'bold',align:'center'});}}
+   if(w.type==='rpm')poly([at(.875),at(1)],4,'#ed4961');
+   if(val!=null&&fraction>0){const path=[rail[0]];for(let i=1;i<=4;i++)if(distances[i]/distances[4]<fraction)path.push(rail[i]);path.push(at(fraction));poly(path,slim?4:7,accent);const p=at(fraction);line(p[0]-inward*3,p[1],p[0]+inward*ww*.04,p[1],3,'#ffffff');}
+   centered(label,.61,.37,Math.min(23,hh*.06),'#96aec8');
+   centered(n,.61,.59,Math.min(slim?106:112,ww/(Math.max(n.length,3)*.71),hh*.28),'#f5f8ff');
+   centered(unit,.61,.70,Math.min(29,hh*.08),accent);
+  }else if(['needle','segments','sweep','vertical','minimal','dots'].includes(mode)){
    const cx=x+ww/2,cy=y+hh/2,rad=Math.min(ww/2-14,hh/2-10),fraction=val==null?0:M.clamp(val/max,0,1);
    const centered=(str,xx,yy,size,col)=>r.text(String(str),b.x+xx*sx,b.y+yy*sy,size*scale,col||accent,{font:'bold',align:'center'});
    const arc=(inner,outer,start,end,col)=>r.arc(b.x+cx*sx,b.y+cy*sy,inner*scale,outer*scale,start,end,col);

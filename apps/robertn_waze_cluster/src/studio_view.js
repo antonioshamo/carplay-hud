@@ -13,13 +13,15 @@ function items(s){
  add('live-toggle','Live changes: '+(s.liveChanges?'On':'Off'),1050,24,244,55,true,s.liveChanges);
  const ready=!!s.client.status&&!s.client.pending&&!s.liveSending;
  add('apply','Apply',1310,24,268,55,ready&&(!(s.client.status.output==='parked-panel')||s.client.status.parked));
- PAGES.forEach((p,i)=>add('page:'+p[0],p[1],18,110+i*57,222,48,true,s.page===p[0]||(p[0]==='edit'&&['widgets','properties'].includes(s.page))||(p[0]==='gallery'&&s.page==='layouts')||(p[0]==='style'&&['themes','gauges'].includes(s.page))||(p[0]==='library'&&s.page==='phone')||(p[0]==='tools'&&['assistance','features','media'].includes(s.page))));
+ PAGES.forEach((p,i)=>add('page:'+p[0],p[1],18,110+i*57,222,48,true,s.page===p[0]||(p[0]==='edit'&&['widgets','properties'].includes(s.page))||(p[0]==='gallery'&&['layouts','idrive'].includes(s.page))||(p[0]==='style'&&['themes','gauges'].includes(s.page))||(p[0]==='library'&&s.page==='phone')||(p[0]==='tools'&&['assistance','features','media'].includes(s.page))));
  const d=s.design,connected=!!s.client.status,busy=!!s.client.pending;
  if(s.page==='gallery'){
   add('previous','Previous',274,427,170,62);add('next','Next',458,427,170,62);add('shuffle','Surprise me',642,427,220,62);add('edit','Customize',876,427,374,62);
-  add('page:themes','Color: '+M.THEMES[d.theme][0],1282,153,290,74);add('page:layouts','Choose a layout',1282,246,290,74);add('tested-layout','Tested M Competition',1282,339,290,62);add('go:output','Choose display output',1282,427,290,62);
+  add('page:idrive','iDrive 8 templates',1282,153,290,62);add('page:themes','Color: '+M.THEMES[d.theme][0],1282,229,290,62);add('page:layouts','Choose a layout',1282,305,290,62);add('tested-layout','Tested M Competition',1282,381,290,62);add('go:output','Choose display output',1282,457,290,62);
+ }else if(s.page==='idrive'){
+  M.IDRIVE_TEMPLATES.forEach((a,i)=>add('pick-idrive:'+i,'Use '+a[1],286+i*432,437,410,65,true,d.template===a[0]));
  }else if(s.page==='gauges'){
-  M.STYLES.forEach((style,i)=>add('pick-gauge:'+style[0],style[1],286+(i%2)*640,146+Math.floor(i/2)*73,614,61,true,style[0]===(s.styleTarget==='design'?d.gauge:d.widgets.find(w=>w.type===s.styleTarget).gauge)));
+  M.STYLES.forEach((style,i)=>add('pick-gauge:'+style[0],style[1],286+(i%3)*432,156+Math.floor(i/3)*89,410,72,true,style[0]===(s.styleTarget==='design'?d.gauge:d.widgets.find(w=>w.type===s.styleTarget).gauge)));
  }else if(s.page==='layouts'||s.page==='themes'){
   const themes=s.page==='themes',rows=themes?M.THEMES.map(t=>t[0]):M.LAYOUTS;
   rows.forEach((name,i)=>add((themes?'pick-theme:':'pick-layout:')+i,name,286+(i%2)*640,146+Math.floor(i/2)*73,614,61,true,i===(themes?d.theme:d.preset%10)));
@@ -79,7 +81,7 @@ function frame(s,focus,scale){
  r.clear('#060a11');r.gradientRect(252,0,1348,580,[[0,'#172438'],[.7,'#080d17'],[1,'#060a11']]);r.fillRect(0,0,252,580,'#0c131f');
  text('CLUSTER STUDIO',276,49,26,'#f0f5ff');text('X4 M COMPETITION',276,84,17,'#89a1bd');
  text(s.editStatus(),610,48,18,s.dirty?'#ffcc87':'#93c5e9',420);
- const subtitle={gallery:'Choose a template. Arrange, style and apply it to your car.',layouts:'Choose your layout. Your colors and welcome are kept.',gauges:'Choose a dial style. Speed and RPM can each use a different design.',themes:'Choose your color palette. Your widget positions are kept.',widgets:'Choose any widget, including hidden ones. Arrange it with touch or the dial.',properties:'Independent width, height, alignment, layer order and widget styling.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',phone:'Name your design and welcome, choose exact colors, import or export. Parked setup.',output:'Choose how to use your design.',assistance:'Your BMW assistance preferences. Read-only; these are not live warning indicators.',tools:'More ways to personalize your cockpit.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
+ const subtitle={idrive:'Three iDrive 8-inspired designs. Every widget can be moved, resized and recolored.',gallery:'Choose a template. Arrange, style and apply it to your car.',layouts:'Choose your layout. Your colors and welcome are kept.',gauges:'Choose a dial style. Speed and RPM can each use a different design.',themes:'Choose your color palette. Your widget positions are kept.',widgets:'Choose any widget, including hidden ones. Arrange it with touch or the dial.',properties:'Independent width, height, alignment, layer order and widget styling.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',phone:'Name your design and welcome, choose exact colors, import or export. Parked setup.',output:'Choose how to use your design.',assistance:'Your BMW assistance preferences. Read-only; these are not live warning indicators.',tools:'More ways to personalize your cockpit.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
  const preview=['gallery','edit','properties','style','intro'].includes(s.page);
  if(preview){
   const b=s.page==='gallery'?{x:274,y:153,w:976,h:256}:BOX;
@@ -87,10 +89,13 @@ function frame(s,focus,scale){
   const inner=s.page==='gallery'?{x:b.x+147,y:b.y,w:682,h:256}:b;
   if(s.page==='intro')D.sequence(r,d,inner,s.previewData(),s.animationAt?Date.now()-s.animationAt:d.introDuration*.55);
   else D.draw(r,d,inner,s.previewData(),{selected:['edit','properties'].includes(s.page)?s.selected:null,grid:['edit','properties'].includes(s.page)&&s.design.snap});
-  if(s.page==='gallery'){text(M.LAYOUTS[d.preset%10],b.x+18,b.y+30,20,'#d2e1f5',240);text(String(d.preset+1).padStart(3,'0')+' / 100',b.x+18,b.y+59,16,'#8199b5',160);}
+  if(s.page==='gallery'){text(d.template&&d.template!=='standard'?d.name:M.LAYOUTS[d.preset%10],b.x+18,b.y+30,20,'#d2e1f5',240);text(d.template&&d.template!=='standard'?'iDrive 8 inspired':String(d.preset+1).padStart(3,'0')+' / 100',b.x+18,b.y+59,16,'#8199b5',160);}
   if(['edit','properties'].includes(s.page))text(M.LABELS[s.selected]+' / '+Math.round(s.widget().w*100)+'% × '+Math.round(s.widget().h*100)+'%'+(s.widget().locked?' / LOCKED':'')+' / SAMPLE READINGS',284,548,18,'#a4c4e4',850);
   else if(s.page==='intro')text('Welcome follows your output choice. Full-cluster output requires Park and fresh vehicle data.',284,544,18,'#a4c4e4',1230);
   else text('FULL-CLUSTER DESIGN PREVIEW / sample readings / not CarPlay Ultra software',284,548,17,'#8299b4',1220);
+ }else if(s.page==='idrive'){
+  M.IDRIVE_TEMPLATES.forEach((a,i)=>{const x=286+i*432;r.roundRect(x,153,410,267,12,'#101d2d');text(a[1],x+18,190,25,'#f0f5ff',374);text(a[2],x+18,219,17,'#9db5d1',374);D.draw(r,M.idrivePreset(i),{x:x+12,y:246,w:386,h:145},s.previewData());});
+  text('DESIGN PREVIEWS / SAMPLE READINGS / your units and welcome preferences are kept',286,542,17,'#91acc8',1260);
  }else if(s.page==='phone'){
   const m=s.client.status&&s.client.status.media,url=m&&m.target==='design'&&m.urls&&m.urls[0];
   if(url){

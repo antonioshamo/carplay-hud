@@ -8,7 +8,7 @@ class FrameCache {
  constructor(w,h,panel){this.w=w;this.h=h;this.panel=panel;this.commands=[];this.prefixLength=0;this.prefix=new Canvas(w,h);this.frames=[new Canvas(w,h),new Canvas(w,h)];this.index=0;this.valid=false;}
  record(design,data){
   const commands=[],r={};
-  for(const op of ['gradientRect','fillRect','roundRect','text','arc','line','strokeRoundRect'])r[op]=function(){const args=Array.from(arguments);commands.push({op,args,key:op+JSON.stringify(args)});};
+  for(const op of ['gradientRect','fillRect','roundRect','text','arc','line','strokeRoundRect','quad','polyline'])r[op]=function(){const args=Array.from(arguments);commands.push({op,args,key:op+JSON.stringify(args)});};
   const b={x:0,y:0,w:this.w,h:this.h};
   if(this.panel){
    D.draw(r,Object.assign({},design,{background:design.background==='transparent'?'black':design.background,widgets:[]}),b,data);

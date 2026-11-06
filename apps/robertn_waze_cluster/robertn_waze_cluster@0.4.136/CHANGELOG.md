@@ -1,3 +1,11 @@
+# 0.4.136
+
+- Three editable iDrive 8-inspired templates: Sport, Classic and Minimal.
+- Angular and minimal angular dial styles for speed or RPM, bringing the style picker to 12 choices.
+- Template previews, saved template identity, and reset-widget support. Selecting a template keeps speed/temperature units and welcome preferences.
+- Uses the existing live vehicle data pipeline; missing readings remain unavailable. Native gear-indicator clearance and the accepted side feather are unchanged.
+- Requires Cluster Studio 0.1.13. Offline-tested; this build has not been checked in the car. Full-cluster output remains Park-only.
+
 # 0.4.135
 
 - Back and Apply stay in fixed top corners across modern settings and all designer pages; Back returns through editing history and leaves the root screen through the existing BMW RHMI close-state API.

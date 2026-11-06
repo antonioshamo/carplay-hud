@@ -24,4 +24,15 @@ for(const background of ['transparent','black']){d.background=background;check(c
 console.log('ok 100 templates: cached/full byte parity, live/stale values, overlaps, reorder, clock/date, background and native P clearance');
 
 for(const style of M.STYLES){d.gauge=style[0];const c=new FrameCache(1920,720,true);data.rpm=750;check(c,d,data,true);data.rpm=1400;check(c,d,data,true);d.widgets.find(w=>w.type==='speed').gauge=style[0];check(c,d,data,true,true);}
-console.log('ok all 10 dial styles retain exact cached/full renderer parity');
+console.log('ok all 12 dial styles retain exact cached/full renderer parity');
+
+for(let i=0;i<M.IDRIVE_TEMPLATES.length;i++){
+ const design=M.idrivePreset(i),values={now:new Date(0),speed:100,rpm:3211,gear:'P',oil:90,coolant:98};
+ for(const panel of [false,true]){
+  const c=new FrameCache(panel?1920:1088,panel?720:480,panel);check(c,design,values,panel);
+  values.speed=103;values.rpm=3456;check(c,design,values,panel,true);
+  values.speed=null;values.rpm=null;values.oil=null;check(c,design,values,panel);
+  design.widgets.reverse();M.move(design,'rpm',-.02,.01);M.resize(design,'speed',.9);check(c,design,values,panel);
+ }
+}
+console.log('ok iDrive templates: live/stale data, widget edits, center/full-panel cache parity');
