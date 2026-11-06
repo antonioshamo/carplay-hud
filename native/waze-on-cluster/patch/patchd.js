@@ -101,6 +101,7 @@ var path = require('path');
 var cp = require('child_process');
 
 var lock = require('./remount_lock.js');
+var startupTrial = require('./startup_trial.js');
 
 var HERE = __dirname;
 var startup = require(path.join(HERE, fs.existsSync(path.join(HERE, 'startup')) ? 'startup' : '../startup', 'settings.js'));
@@ -293,6 +294,7 @@ function foreignStart() {
     for (var i = 0; i < files.length; i++) {
         var text = readText(files[i]);
         if (text === null) continue;
+        if (startupTrial.owned(files[i])) continue;
         var lines = text.split('\n');
         for (var j = 0; j < lines.length; j++) {
             var m = /^\s*ExecStart\s*=\s*[-@:+!]*\s*(\S+)/.exec(lines[j]);
@@ -360,6 +362,7 @@ function readState(cb) {
          * keeps the stock geometry by design. mode distinguishes the capture
          * sink: stock avb:// the media bus the render joins, udp:// the
          * stream sink the bridge accepts, file:// the FIFO. */
+        var mapStartupMissing = /mapstartup:\s*(ORIGINAL|PARTIAL)/.test(text);
         var state, mode = null, reason = null;
         var res = resMatch ? resMatch[1] : null;
         /* The advertised safe area as "WxH+X+Y". A patched binary with another
@@ -368,6 +371,7 @@ function readState(cb) {
         var safe = safeMatch ? safeMatch[1] + '+' + safeMatch[2] + '+' + safeMatch[3] : null;
         var resOk = !variant || variant[1] !== 'HIGH' || !!resMatch;
         if (!known) state = 'unknown';
+        else if (variant && selfstart && resOk && mapStartupMissing) { state='unknown'; reason='Map startup update available; enable the map to apply it'; }
         else if (variant && selfstart && resOk && (sinkRedirected || sinkOriginal)) {
             state = 'patched';
             mode = !sinkRedirected ? 'avb' : /^file:\/\//.test(redirect[1]) ? 'fifo'
@@ -398,7 +402,7 @@ function readState(cb) {
         if (pending) { state = 'unknown'; mode = null; reason = pending.reason; carplay = 'deferred'; }
         cachedState = { state: state, panel: variant ? variant[1].toLowerCase() : null, mode: mode, res: res, safe: safe, reason: reason, carplay: carplay,
                         pending: pending ? pending.action || 'apply' : null, pendingBy: pending ? pending.by : null,
-                        conflict: conflict, binary: binary, originalAll:/variant:\s+ORIGINAL/.test(text)&&sinkOriginal&&/selfstart:\s+ORIGINAL/.test(text)&&resOriginal, known: known, backup: hasBackup };
+                        conflict: conflict, binary: binary, originalAll:/variant:\s+ORIGINAL/.test(text)&&sinkOriginal&&/selfstart:\s+ORIGINAL/.test(text)&&resOriginal&&!/mapstartup:\s*(PATCHED|PARTIAL|UNKNOWN)/.test(text), known: known, backup: hasBackup };
         cb(cachedState);
     });
 }
@@ -956,6 +960,8 @@ function runPatch(args, action, noRestart, done) {
             if (errOut) (errOut + '').split('\n').forEach(function (l) { if (l.trim()) log(l.trim()); });
             var why = /^error: (.*)$/m.exec((errOut || '') + '');
             var changed = !pErr && !/nothing to do|already at the original/i.test(text);
+            (pErr ? function(cb){cb(null);} : function(cb){startupTrial.retire(UNIT_DIRS,cb);})(function(trialErr){
+            if(trialErr){writePending(action);finalizeRo(trialErr,function(e,r){done(e,r,'deferred');},noRestart);return;}
             if (changed && restartable) {
                 restartCarplay(function (rErr) {
                     if (!rErr) unlinkQuiet(RUNNING);
@@ -989,6 +995,7 @@ function runPatch(args, action, noRestart, done) {
                 if (linked) unlinkQuiet(RUNNING);
                 finalizeRo(pErr || null, function (e, r) { done(e, r, null, why ? why[1] : null); }, noRestart);
             }
+            });
         });
     });
 }

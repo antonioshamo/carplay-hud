@@ -402,3 +402,30 @@ repository carries no BMW binary.
   or `reboot` from the hooks.
 - `patchd_resync_test.js`, `recovery_test.js`: the resync's timing and
   limits; the boot counter, the remount lock and a real restore on a copy.
+
+## Route-free map startup (0.7.115)
+
+For the fingerprint-verified CarPlay 22.28.3 image, request the dedicated
+`maps:/car/instrumentcluster/map` scene and call the existing guarded
+`requestStream()` when the alternate display signals `onStartStreaming`.
+The original callback only logged that it was unimplemented. This does not
+start a navigation route or mirror the main CarPlay screen.
+
+The longer scene name occupies verified unused executable-segment alignment
+padding. The matching segment sizes and constructor reference are updated
+together. A normalized whole-image fingerprint, build ID, expected bytes and
+bounded edit ranges guard all changes. Other builds retain the existing
+alternate-display behavior. Revert restores every new region from the
+verified original backup; malformed or unverified inputs are refused.
+
+The owner confirmed the map appeared after a head-unit restart with CarPlay
+connected and no route, then remained a separate map when the main screen
+changed to Music/the app grid. Packaging is checked byte-for-byte against
+that working candidate. Future iPhone/vehicle software combinations are not
+implied to have been tested.
+
+Activation retires only the exact one-attempt test launcher after successfully
+patching the normal binary. It preserves its file as a rollback and reloads
+systemd configuration without stopping or restarting CarPlay. A later normal
+head-unit start uses the permanent patch. Saved HUD target, size and position
+remain in the existing configuration.

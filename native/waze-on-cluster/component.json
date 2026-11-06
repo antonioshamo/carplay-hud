@@ -1,10 +1,10 @@
 {
   "id": "waze-on-cluster",
   "kind": "tool",
-  "version": "0.7.114",
+  "version": "0.7.115",
   "license": "GPL-3.0-or-later",
   "title": "Waze on cluster",
-  "description": "Shows the CarPlay map on the instrument cluster: a root helper applies the reversible carplay patch, and the capture, running from boot, decodes the map's H.264 and draws it through the cluster renderer whenever the stream flows",
+  "description": "CarPlay maps on the windshield HUD or instrument cluster, with saved size and position. Adds route-free Apple Maps startup on the verified CarPlay 22.28.3 build.",
   "requires": {
     "mgu-deploy": "0.7.0",
     "cluster-render": "0.3.101"
@@ -116,6 +116,16 @@
     {
       "path": "startup/vendor/cluster_render_client.js",
       "from": "startup/vendor/cluster_render_client.js",
+      "mode": "0644"
+    },
+    {
+      "path": "carplay_map_startup.js",
+      "from": "patch/carplay_map_startup.js",
+      "mode": "0644"
+    },
+    {
+      "path": "startup_trial.js",
+      "from": "patch/startup_trial.js",
       "mode": "0644"
     }
   ],

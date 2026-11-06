@@ -60,6 +60,7 @@ var fs = require('fs');
 var crypto = require('crypto');
 var path = require('path');
 var locator = require('./carplay_locate.js');
+var mapStartup = require('./carplay_map_startup.js');
 
 /* Builds proven as shipped, by GNU build-id. A first edit of one needs the
  * whole file to be the shipped one, and anything else counts as modified. */
@@ -142,6 +143,7 @@ function geomText(g) { return g.w + 'x' + g.h + ' at ' + g.mmw + 'x' + g.mmh + '
 
 function classify(buf) {
     var loc = locator.locate(buf);
+    loc.mapStartup = mapStartup.inspect(buf, loc);
     if (!loc.elf) return { ok: false, reason: loc.reason, loc: loc, size: buf.length };
     return { ok: true, loc: loc, size: buf.length, variant: variantState(buf, loc.variant), sink: sinkState(buf, loc.sink),
              selfstart: selfstartState(buf, loc.selfstart), res: resState(buf, loc.res) };
@@ -151,7 +153,7 @@ function classify(buf) {
  * and reads as stock or as this patch. */
 function unrecognised(c) {
     if (!c.ok) return [c.reason];
-    return EDITS.filter(function (e) { return c[e].state === 'unknown'; }).map(function (e) { return c[e].reason; });
+    return EDITS.filter(function (e) { return c[e].state === 'unknown'; }).map(function (e) { return c[e].reason; }).concat(c.loc.mapStartup.state === 'unknown' ? [c.loc.mapStartup.reason] : []);
 }
 function brief(reasons) { return reasons[0] + (reasons.length > 1 ? ' (+' + (reasons.length - 1) + ' more)' : ''); }
 
@@ -161,6 +163,7 @@ function notPristine(c, buf) {
     var bad = unrecognised(c);
     if (bad.length) return brief(bad);
     var edited = EDITS.filter(function (e) { return c[e].state !== 'original'; });
+    if (c.loc.mapStartup.supported && c.loc.mapStartup.state !== 'original') edited.push('map startup');
     if (edited.length) return edited.join(', ') + ' edited';
     var proven = PROVEN[c.loc.buildId], hash = sha256(buf);
     return proven && hash !== proven.sha256 ? 'sha256 ' + proven.sha256 + ', got ' + hash : null;
@@ -176,7 +179,7 @@ function label(c) {
 function regions(loc) {
     var r = loc.res;
     return [[loc.variant.slot, 4], [loc.sink.offset, loc.sink.len], [loc.selfstart.offset, 5],
-        [r.mm, 8], [r.px, 8], [r.safe1, 8], [r.safe2, 8]];
+        [r.mm, 8], [r.px, 8], [r.safe1, 8], [r.safe2, 8]].concat(loc.mapStartup ? loc.mapStartup.regions : []);
 }
 
 /* Two classified images are the same build: the same size, build-id and edit
@@ -225,6 +228,7 @@ function cmdStatus(target) {
     line('known', bad.length ? 'NO — ' + brief(bad) : bakWhy ? 'NO — ' + bakWhy
         : notPristine(c, buf) ? 'yes, modified build' : 'yes, pristine ' + label(c));
     EDITS.forEach(function (e) { line(e, describe(e, c[e])); });
+    line('mapstartup', c.loc.mapStartup.supported ? c.loc.mapStartup.state.toUpperCase() : 'UNSUPPORTED (existing startup retained)');
     line('backup', hasBak ? bak : 'none');
 }
 
@@ -316,6 +320,7 @@ function cmdApply(target, panel, capture, sink, res, safe, yes) {
 
     var buf = readTarget(target), c = classify(buf), bad = unrecognised(c);
     if (bad.length) die('refusing: ' + bad.join('; '));
+    if(c.loc.mapStartup.supported&&!c.loc.mapStartup.fingerprint)die('refusing: Map startup fingerprint does not match the verified build');
 
     /* Back up the pristine original before the first edit; require that a
      * pre-existing backup is the pristine original of this build. */
@@ -357,6 +362,7 @@ function cmdApply(target, panel, capture, sink, res, safe, yes) {
      * forwards the start command and the phone never streams, whatever the sink
      * is. Enabling the map therefore always ensures this edit is present. */
     put('self-start -> requestStream', loc.selfstart.offset, Buffer.from(loc.selfstart.patched, 'hex'));
+    mapStartup.apply(out, loc, put);
 
     /* The advertised IC_HIGH geometry: this tool's display size on the high
      * panel, the backup's stock immediates otherwise, so the binary carries
@@ -377,6 +383,7 @@ function cmdApply(target, panel, capture, sink, res, safe, yes) {
         : cc.sink.state !== (sinkUrl !== undefined ? 'redirected' : 'original') ? 'sink'
         : cc.selfstart.state !== 'patched' ? 'self-start'
         : cc.res.state !== (wantRes ? 'patched' : 'original') ? 'resolution'
+        : cc.loc.mapStartup.supported && cc.loc.mapStartup.state !== 'patched' ? 'map startup'
         : !onlyRegionsDiffer(buf, out, regions(loc)) ? 'bytes outside the edit regions' : null;
     if (wrong) die('refusing: the edited binary does not verify (' + wrong + '); no change made');
 
@@ -431,7 +438,7 @@ function cmdRevert(target, yes, force, dropBackup) {
     if (!yes) die('pass --yes to proceed');
     writeInPlace(target, out);
     var after = readTarget(target), ca = classify(after);
-    if (!after.equals(out) || EDITS.some(function (e) { return !ca.ok || ca[e].state !== 'original'; })) die('restore verification failed');
+    if (!after.equals(out) || EDITS.some(function (e) { return !ca.ok || ca[e].state !== 'original'; }) || ca.loc.mapStartup.state !== 'original') die('restore verification failed');
     process.stdout.write(after.equals(orig) ? 'restored OK. sha256 now ' + b.hash + '\n'
         : 'restored the edited regions; changes outside them kept. sha256 now ' + sha256(after) + '\n');
     if (dropBackup) drop();
@@ -448,8 +455,9 @@ function cmdVerify(target) {
      * not show. Verify calls neither enabled. The mid panel keeps the stock
      * geometry by design. */
     var resOk = c.variant.panel !== 'high' || c.res.state === 'patched';
-    var enabled = c.variant.state === 'patched' && c.selfstart.state === 'patched' && resOk;
-    var partial = (c.variant.state === 'patched' || c.selfstart.state === 'patched' || c.res.state === 'patched') && !enabled;
+    var startupOk = !c.loc.mapStartup.supported || c.loc.mapStartup.state === 'patched';
+    var enabled = c.variant.state === 'patched' && c.selfstart.state === 'patched' && resOk && startupOk;
+    var partial = (c.variant.state === 'patched' || c.selfstart.state === 'patched' || c.res.state === 'patched' || c.loc.mapStartup.state !== 'original') && !enabled;
     if (partial) { process.stderr.write('FAIL: partially patched — variant ' + c.variant.state + ', self-start ' + c.selfstart.state + ', res ' + c.res.state + ' (enable applies all edits)\n'); process.exit(1); }
     process.stdout.write('OK: variant ' + (c.variant.state === 'original' ? 'original' : 'IC_' + c.variant.panel.toUpperCase()) +
         ', sink ' + (c.sink.state === 'original' ? 'original (AVB 15)' : c.sink.url) +
