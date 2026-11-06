@@ -1,4 +1,4 @@
-name: Import and publish verified CarPlay startup
+name: Import and publish gauge stability update
 on:
   workflow_dispatch:
 permissions:
@@ -18,34 +18,46 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import verified startup source
+      - name: Import tested gauge source
         run: |
           if [ -f release-import.bundle ]; then
-            echo 'ce3f1119dd0404efd95cf8b32077a3e8bb4802a3ed427c0536fc1daf69d75498  release-import.bundle' | sha256sum -c -
+            echo '9053d985515079b6cd7741a73a19b7e0631786f0a444c52d61a089682b4c7300  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
-            git fetch ./release-import.bundle refs/heads/shamo/carplay-map-startup:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '518f968d897ff6284ab347e219b51357216106e7'
+            git fetch ./release-import.bundle refs/heads/shamo/gauge-stability-release:refs/remotes/import/release
+            test "$(git rev-parse refs/remotes/import/release)" = '38de3cdf40e1a9fb92f85108e52e1525f59d761a'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
             git rm release-import.bundle
-            git commit -m 'Remove verified startup source transport bundle'
+            git commit -m 'Remove tested gauge source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 518f968d897ff6284ab347e219b51357216106e7 HEAD
-      - name: Verify startup modules and recovery
+          git merge-base --is-ancestor 38de3cdf40e1a9fb92f85108e52e1525f59d761a HEAD
+      - name: Test gauge continuity, data and visual parity
         run: |
-          node native/waze-on-cluster/patch/test/map_startup_test.js
-          node native/waze-on-cluster/patch/test/startup_trial_test.js
-          node native/waze-on-cluster/patch/test/recovery_test.js
-          node native/waze-on-cluster/startup/test/controller.test.js
-          node native/waze-on-cluster/startup/test/service.test.js
+          set -eu
+          for test in test test_telemetry test_stability test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design; do
+            node "native/cluster-studio/test/$test.js"
+          done
+          make -C native/cluster-render build/host/slots_test
+          native/cluster-render/build/host/slots_test
           node release/test/release_test.js
-      - name: Verify reproducible tool artifact
-        run: node release/release.js check waze-on-cluster
-      - name: Publish verified map-only startup 0.7.115
+      - name: Test new runtime paths on Node 8
+        run: |
+          set -eu
+          runtime_dir=$(mktemp -d)
+          trap 'rm -rf "$runtime_dir"' EXIT
+          curl --fail --silent --show-error --location --max-time 90 https://nodejs.org/download/release/v8.16.2/node-v8.16.2-linux-x64.tar.gz -o "$runtime_dir/node.tar.gz"
+          printf '%s  %s\n' 722d07291a8886384388c6795a747ec2055073f83dc73c0a97efba0022cc23ff "$runtime_dir/node.tar.gz" | sha256sum -c -
+          tar -xzf "$runtime_dir/node.tar.gz" -C "$runtime_dir"
+          for test in test_stability test_polling test_frame_cache test_refresh test_telemetry test_image_delta; do
+            "$runtime_dir/node-v8.16.2-linux-x64/bin/node" "native/cluster-studio/test/$test.js"
+          done
+      - name: Verify reproducible gauge artifact
+        run: node release/release.js check cluster-studio
+      - name: Publish offline-tested Cluster Studio 0.1.11
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish waze-on-cluster
+        run: node release/release.js publish cluster-studio
