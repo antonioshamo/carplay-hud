@@ -1,4 +1,4 @@
-name: Import and publish gauge call recovery
+name: Import and publish gauge widgets and refresh
 on:
   workflow_dispatch:
 permissions:
@@ -18,13 +18,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import tested call recovery source
+      - name: Import tested widget, refresh and call recovery source
         run: |
           if [ -f release-import.bundle ]; then
-            echo '5bbfea52247766ee3d7748f94956a63e3ccf53d76fba5030be7137c0091f96e5  release-import.bundle' | sha256sum -c -
+            echo '97c95b59713cec33fd874eebab36e03207547536cf7e8f193ffc93ec39ac41ea  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
             git fetch ./release-import.bundle refs/heads/shamo/call-recovery:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = 'efdd7d115e53aaaee897e5d459751b905576deed'
+            test "$(git rev-parse refs/remotes/import/release)" = 'ab82ac4c25757eedd9070085aa236bfa98367098'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
@@ -32,7 +32,7 @@ jobs:
             git commit -m 'Remove tested recovery source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor efdd7d115e53aaaee897e5d459751b905576deed HEAD
+          git merge-base --is-ancestor ab82ac4c25757eedd9070085aa236bfa98367098 HEAD
       - name: Test all app controls, editing and startup
         run: |
           set -eu
@@ -59,14 +59,14 @@ jobs:
           for test in test_stability test_polling test_frame_cache test_refresh test_telemetry test_image_delta; do
             "$runtime_dir/node-v8.16.2-linux-x64/bin/node" "native/cluster-studio/test/$test.js"
           done
-          for test in test_startup test_settings_startup test_design_lifecycle test_customization test_editor_live test_idrive; do
+          for test in test_startup test_settings_startup test_design_lifecycle test_customization test_editor_live test_idrive test_canvas_line; do
             "$runtime_dir/node-v8.16.2-linux-x64/bin/node" "apps/robertn_waze_cluster/tools/$test.js"
           done
       - name: Verify reproducible app and helper artifacts
-        run: node release/release.js check cluster-render cluster-studio
-      - name: Publish offline-tested renderer 0.3.103 and helper 0.1.14
+        run: node release/release.js check cluster-render cluster-studio robertn_waze_cluster
+      - name: Publish app 0.4.137, helper 0.1.14 and renderer 0.3.103
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish cluster-render cluster-studio
+        run: node release/release.js publish cluster-render cluster-studio robertn_waze_cluster
