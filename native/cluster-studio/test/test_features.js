@@ -22,7 +22,7 @@ async function run(){
   now+=100;media.frame(bytes,20);assert(media.state().generation>firstGeneration,'new shared-file generation after pause');parked=false;media.tick();assert(!media.server);assert(!fs.existsSync(media.file));assert.equal(media.token,null);
   parked=true;await media.start('map');media.frame(bytes,0);assert.equal(cr.layers.size,1);assert.equal(cr.layers.get(media.ref).stall_ms,1000);media.place({x:0,y:0,w:.4,h:.4});assert(cr.layers.get(media.ref).w<=1088*.4);assert.throws(()=>media.place({x:1,y:0,w:1,h:1}));
   now+=300001;media.tick();assert.equal(cr.layers.size,0);assert(!media.server);
-  engine.hud='shown';await assert.rejects(media.start('panel'),/HUD/);engine.hud='idle';await media.start('panel');media.frame(bytes,0);engine.hud='shown';media.tick();assert.equal(cr.layers.size,0);assert(!media.server);
+  engine.hud='shown';await assert.rejects(media.start('panel'),/cleanup/);engine.hud='idle';await assert.rejects(media.start('panel'),/cleanup/);assert.equal(cr.layers.size,0);assert(!media.server);
   engine.hud='idle';await media.start('hud');media.frame(bytes,0);cr.ready=false;media.tick();assert(!media.server);assert.equal(cr.layers.size,0);
   console.log('ok real HTTP pairing/origin gates, bounded frames, I420 layout, movement/stale playback/expiry, HUD conflict, placement and cleanup');
  }finally{media.stop();fs.rmSync(dir,{recursive:true,force:true});}

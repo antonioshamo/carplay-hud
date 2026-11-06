@@ -4,9 +4,11 @@ RequiresMountsFor=/var/opt
 After=local-fs.target cluster-render.service
 [Service]
 Type=simple
-Group=tm_oap_app
+# Native SOME/IP requires the verified root identity for these reads.
+Group=root
+SupplementaryGroups=tm_oap_app
 RuntimeDirectory=cluster-studio
-RuntimeDirectoryMode=0750
+RuntimeDirectoryMode=2750
 ExecStart=/usr/bin/node /var/opt/cluster-studio/current/service.js
 ExecStopPost=/usr/bin/node /var/opt/cluster-studio/current/media_firewall.js
 Restart=on-failure

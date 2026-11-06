@@ -3,6 +3,7 @@
 // Upload artwork once. The cluster renderer interpolates motion on its own
 // frame clock; there is no per-frame bitmap traffic or JavaScript timer.
 const I=require('./shared/studio_intro.js'),M=require('./shared/studio_model.js'),{Canvas}=require('./shared/kit_canvas.js');
+const Panel=require('./panel_composition.js');
 const FS=`precision highp float;
 varying vec2 v_uv;
 uniform sampler2D u_art;
@@ -14,12 +15,16 @@ uniform float u_aspect;
 uniform float u_artRatio;
 uniform float u_shine;
 uniform vec3 u_light;
+uniform vec4 u_native;
+uniform float u_panel;
 vec4 art(vec2 uv) {
  if(uv.x<0.0||uv.y<0.0||uv.x>1.0||uv.y>1.0)return vec4(0.0);
  return texture2D(u_art,uv);
 }
 void main(){
  if(u_reveal>=1.0)discard;
+ vec2 px=v_uv*vec2(1920.0,720.0);
+ if(u_panel>0.5&&px.x>=u_native.x&&px.x<u_native.z&&px.y>=u_native.y&&px.y<u_native.w)discard;
  vec4 c=vec4(0.0);
  if(u_mode<1.5){
   float k=u_mode>0.5?0.65+0.35*u_motion.x:1.0;
@@ -58,11 +63,12 @@ function create(cr,target,w,h,d,elapsed){
  const color=d.introLight==='blue'?'#75cfff':d.introLight==='red'?'#ff697e':d.introLight==='theme'?M.THEMES[d.theme][1]:'#ffffff';
  const tw=1024,th=Math.round(tw*h/w),title=new Canvas(tw,th);title.clear([0,0,0,0]);
  if(mode===2)title.text('CarPlay Ultra',tw*.41,th*.57,th*.125,'#ffffff',{font:'label'});
- if(mode===3){title.text('Welcome',tw*.5,th*.38,th*.10,color,{font:'label',align:'center'});title.text('Antonio Shamo',tw*.5,th*.62,th*.15,'#ffffff',{font:'bold',align:'center'});title.fillRect(tw*.35,th*.72,tw*.30,th*.006,color);}
+ if(mode===3){title.text('Welcome',tw*.5,th*.38,th*.10,color,{font:'label',align:'center'});title.text(d.welcomeName||'Antonio Shamo',tw*.5,th*.62,Math.min(th*.15,tw*.8/((d.welcomeName||'Antonio Shamo').length*.65)),'#ffffff',{font:'bold',align:'center'});title.fillRect(tw*.35,th*.72,tw*.30,th*.006,color);}
  const picture=mode<2?artwork.badge:mode===2?artwork.apple:{w:tw,h:th,data:title.d};
  function upload(img){const ref=cr.asset({target,format:'rgba8',w:img.w,h:img.h,sampling:'bilinear'});assets.push(ref);cr.pixels(ref,null,Buffer.from(img.data||img.d));return ref;}
  const art=upload(picture),label=mode===2?upload({w:tw,h:th,data:title.d}):art;
  const ref=cr.effect({target,klass:'overlay',z:6,x:0,y:0,w,h,visible:false,contend:target==='map',fs:FS});
+ cr.uniform(ref,'u_panel',[target==='panel'?1:0]);cr.uniform(ref,'u_native',Panel.NATIVE);
  cr.bind(ref,'u_art',art);cr.bind(ref,'u_title',label);
  cr.uniform(ref,'u_mode',[mode]);cr.uniform(ref,'u_aspect',[w/h]);cr.uniform(ref,'u_artRatio',[picture.h/picture.w]);
  cr.uniform(ref,'u_shine',[d.introShine?1:0]);cr.uniform(ref,'u_light',[1,3,5].map(i=>parseInt(color.slice(i,i+2),16)/255));

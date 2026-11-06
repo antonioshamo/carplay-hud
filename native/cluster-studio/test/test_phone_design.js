@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+'use strict';
+const assert=require('assert'),fs=require('fs'),path=require('path'),os=require('os'),http=require('http');
+const M=require('../shared/studio_model'),{StudioService}=require('../service'),{ParkedMedia}=require('../parked_media');
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'phone-designer-'));let now=1000,parked=true;
+const engine={hud:'idle',panelUntil:0,cr:{ready:true},configure(){},stopPreview(){}},telemetry={parked:()=>parked,snapshot:()=>({})};const service=new StudioService({file:path.join(dir,'studio.json'),engine,telemetry});
+const media=new ParkedMedia({engine,telemetry,cr:engine.cr,now:()=>now,address:'127.0.0.1',port:0,file:path.join(dir,'frame'),designRead:()=>({design:service.store.design,slots:service.store.slots}),designSave:m=>service.command(m)});
+function request(route,body,options){options=options||{};return new Promise((resolve,reject)=>{const bytes=Buffer.from(JSON.stringify(body||{})),u=new URL(media.base+route);const req=http.request(u,{method:'POST',headers:{Origin:options.origin||media.base,Authorization:options.auth||'Bearer '+media.token,'Content-Type':'application/json','Content-Length':bytes.length}},res=>{let data='';res.on('data',b=>data+=b);res.on('end',()=>resolve({status:res.statusCode,value:JSON.parse(data)}));});req.on('error',reject);req.end(bytes);});}
+(async()=>{try{
+ await media.start('design');assert.equal(engine.suspendedMedia,false,'editing never blanks the chosen gauges');assert.equal((await request('/design',{}, {auth:'no'})).status,403);assert.equal((await request('/design',{}, {origin:'https://other.invalid'})).status,403);
+ let reply=await request('/design');assert.equal(reply.status,200);const design=M.clone(reply.value.design);design.name='Antonio Night';design.welcomeName='Welcome home';design.widgets[0].color='#bada55';design.widgets[0].locked=true;design.temperatureUnit='F';
+ reply=await request('/design/save',{design});assert.equal(reply.status,200);assert.equal(reply.value.design.name,design.name);assert.equal(reply.value.design.widgets[0].color,'#bada55');assert(!service.store.enabled,'saving never enables a full-panel test or layout');
+ reply=await request('/design/save',{design,slot:4});assert.equal(reply.status,200);assert.equal(reply.value.slots[4].name,'Antonio Night');const reloaded=new StudioService({file:path.join(dir,'studio.json'),engine,telemetry});assert.deepEqual(reloaded.store.design,M.validate(design));assert.deepEqual(reloaded.store.slots[4],M.validate(design));
+ const before=fs.readFileSync(path.join(dir,'studio.json'),'utf8');design.widgets[0].x=10;reply=await request('/design/save',{design});assert.equal(reply.status,409);assert.equal(fs.readFileSync(path.join(dir,'studio.json'),'utf8'),before,'invalid import never corrupts saved design');
+ parked=false;assert.equal((await request('/design/save',{design:M.preset(1)})).status,409);media.tick();assert(!media.server);parked=true;await media.start('design');now+=300001;assert.equal((await request('/design/save',{design:M.preset(1)})).status,409);media.tick();assert(!media.server);
+ console.log('ok paired HTTP designer, origin/token rejection, live output preserved, named design and slot persistence, invalid-import rollback, movement/expiry shutdown');
+ }finally{media.stop();fs.rmSync(dir,{recursive:true,force:true});}})().catch(e=>{console.error(e.stack);process.exitCode=1;});

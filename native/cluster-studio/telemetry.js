@@ -1,54 +1,67 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const fs=require('fs'),path=require('path');
-const SPECS=[
- ['de.bmw.infotainment.vehicle.Vehicle2','statusCarSpeed2','speed'],
- ['de.bmw.infrastructure.VehicleInformation','statusGearboxDrive','gear'],
- ['de.bmw.infrastructure.VehicleCondition','VehicleCondition','condition'],
- ['de.bmw.infotainment.vehicle.CDS','statusEngineSpeed2','rpm'],
- ['de.bmw.infotainment.vehicle.CDS','statusEngineTemperature','temps']
-];
+const fs=require('fs');
+const {SPECS,configs}=require('./telemetry_schema.js');
 function decode(kind,v){
  v=v||{};const num=(key,max,scale,offset)=>typeof v[key]==='number'&&v[key]>=0&&v[key]<max?v[key]*scale+(offset||0):null;
  if(kind==='speed')return {speed:num('speedVehicleCentreOfGravity',65535,.015625)};
  if(kind==='rpm')return {rpm:num('actualValueRPMEngineCrankshaft',65535,.25)};
  if(kind==='temps')return {oil:num('temperatureEngineOilDrive',255,1,-48),coolant:num('temperatureEngineDrive',255,1,-48)};
+ if(kind==='selection'){const raw=v.statusGearSelectionDrive,gear=({3:'P',2:'R',1:'N',5:'1',6:'2',7:'3',8:'4',9:'5',10:'6',11:'7',12:'8',13:'9',P:'P',R:'R',N:'N',_1:'1',_2:'2',_3:'3',_4:'4',_5:'5',_6:'6',_7:'7',_8:'8',_9:'9'})[raw]||null;return {gear};}
  if(kind==='gear'){const raw=v.statusActualStageDrive,gear={1:'P',2:'R',3:'N',4:'D',P:'P',R:'R',N:'N',D:'D'}[raw]||null;return {gear};}
- if(kind==='condition'){const raw=v.statusConditionVehicle;return {condition:raw===10||raw==='FAHREN'?'ready':[1,2,3,5,12,'PARKEN_BN_NIO','PARKEN_BN_IO','STANDFUNKTIONEN_KUNDE_NICHT_IM_FZG','WOHNEN','FAHRBEREITSCHAFT_BEENDEN'].includes(raw)?'off':null};}
+ if(kind==='condition'){
+  const raw=v.statusConditionVehicle,off=[1,2,3,5,12,'PARKEN_BN_NIO','PARKEN_BN_IO','STANDFUNKTIONEN_KUNDE_NICHT_IM_FZG','WOHNEN','FAHRBEREITSCHAFT_BEENDEN'].includes(raw);
+  // BMW reports off states with an unavailable qualifier. This separate hint
+  // can only re-arm a welcome with fresh zero RPM; it never authorizes output.
+  const qualified=v.qualifierStatusConditionVehicle===undefined||[2,'SIGNALWERT_GUELTIG'].includes(v.qualifierStatusConditionVehicle);
+  return {condition:qualified?(raw===10||raw==='FAHREN'?'ready':off?'off':null):null,welcomeOffHint:off};
+ }
  return {};
 }
+function bounded(p,ms){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Telemetry timeout')),ms);Promise.resolve(p).then(v=>{clearTimeout(timer);resolve(v);},e=>{clearTimeout(timer);reject(e);});});}
 class Telemetry {
- constructor(o){this.o=o||{};this.values={};this.at={};this.closed=false;this.proxies=[];this.timer=null;this.now=this.o.now||Date.now;}
- receive(kind,value){const d=decode(kind,value);Object.keys(d).forEach(k=>{this.values[k]=d[k];this.at[k]=this.now();});}
+ constructor(o){this.o=o||{};this.values={};this.at={};this.revisions={};this.closed=false;this.proxies=[];this.timer=null;this.now=this.o.now||Date.now;}
+ receive(kind,value){const d=(this.o.decode||decode)(kind,value);this.revisions[kind]=(this.revisions[kind]||0)+1;Object.keys(d).forEach(k=>{this.values[k]=d[k];this.at[k]=this.now();});}
  snapshot(){const out={now:new Date(this.now())};Object.keys(this.values).forEach(k=>out[k]=this.now()>=this.at[k]&&this.now()-this.at[k]<2000?this.values[k]:null);out.connected=out.speed!=null&&out.gear!=null;return out;}
  parked(){const d=this.snapshot();return d.speed!==null&&d.speed!==undefined&&d.speed<.1&&d.gear==='P';}
  async start(){
-  const root=this.o.root||'/var/opt/public/oap';
-  let home;try{home=fs.readdirSync(root).filter(n=>/^oap_[0-9]+$/.test(n)).map(n=>path.join(root,n)).find(d=>{try{return JSON.parse(fs.readFileSync(path.join(d,'source/package.json'),'utf8')).name==='robertn_waze_cluster';}catch(e){return false;}});}catch(e){}
-  if(!home)return this.retry();
-  let native;try{native=this.o.native||require('/usr/lib/someip.node');}catch(e){return this.retry();}
-  // Getter-only observation. No writes, diagnostics, inferred gears or demo fallback.
-  for(const s of SPECS){
-   if(this.closed)return;
-   try{
-    const cfg=JSON.parse(fs.readFileSync(path.join(home,'someipInterfaces',s[0].replace(/\./g,'_')+'.json'),'utf8'));
-    if(!cfg.fields||!cfg.fields[s[1]]||!cfg.fields[s[1]].getter)continue;
-    const proxy=await new Promise((resolve,reject)=>setImmediate(()=>{try{native.buildProxy(cfg,'1').then(p=>p.init().then(()=>resolve(p)),reject).catch(reject);}catch(e){reject(e);}}));
-    if(this.closed){await proxy.shutdown();return;}this.proxies.push({proxy,spec:s});
-   }catch(e){}
-  }
-  if(!this.proxies.length)return this.retry();
-  this.poll();
+  if(this.closed||this.starting)return;clearTimeout(this.retryTimer);this.starting=true;
+  try{
+   if(!this.rows){const file=this.o.catalog||'/etc/oap/someip/someip-interfaces.json';if(fs.statSync(file).size>64*1024*1024)throw Error('Catalog too large');this.rows=configs(JSON.parse(fs.readFileSync(file,'utf8')),this.o.specs);}
+   const rows=this.rows,native=this.o.native||require('/usr/lib/someip.node');
+   for(const row of rows){
+    if(this.closed)break;
+    if(this.proxies.some(p=>p.kind===row.kind))continue;
+    let proxy,abandoned=false;
+    try{
+     const creating=Promise.resolve(native.buildProxy(row.config,Object.keys(row.config.instances)[0]));creating.then(p=>{if(abandoned)try{p.shutdown();}catch(e){}},()=>{});proxy=await bounded(creating,2000);
+     if(this.closed){proxy.shutdown();break;}
+     await bounded(proxy.init(),2000);if(this.closed){proxy.shutdown();break;}
+     const entry=Object.assign({proxy},row),def=row.config.fields[row.field];
+     if(def.event)await bounded(proxy.subscribe({name:row.field,onReceive:v=>{if(!this.closed&&!abandoned)this.receive(row.kind,v);}}),2000);if(this.closed){proxy.shutdown();break;}
+     this.proxies.push(entry);
+    }catch(e){abandoned=true;if(proxy)try{proxy.shutdown();}catch(ignore){}}
+   }
+   // A notifier-only Park/ignition field is intentionally never polled as a getter.
+   if(!this.polling){this.polling=true;this.poll();}
+  }catch(e){}
+  this.starting=false;if(!this.closed&&(!this.rows||this.proxies.length<this.rows.length))this.retryTimer=setTimeout(()=>this.start(),10000);
  }
- retry(){if(!this.closed)this.timer=setTimeout(()=>this.start(),10000);}
  async poll(){
   if(this.closed)return;
-  for(const p of this.proxies){
-   if(this.closed)return;
-   try{const v=await new Promise((resolve,reject)=>setImmediate(()=>{try{p.proxy.getValue(p.spec[1],250).then(resolve,reject);}catch(e){reject(e);}}));this.receive(p.spec[2],v);}catch(e){this.receive(p.spec[2],{});}
-  }
-  if(!this.closed)this.timer=setTimeout(()=>this.poll(),300);
+  clearTimeout(this.timer);
+  // Each getter has its own cadence and one bounded request in flight.
+  // A slow temperature getter cannot stall subsequent speed/RPM cycles.
+  const now=this.now(),jobs=this.proxies.filter(p=>p.config.fields[p.field].getter&&!p.pending&&(!p.nextPoll||now>=p.nextPoll||now<p.lastPoll)).map(async p=>{
+   p.pending=true;p.lastPoll=now;p.nextPoll=now+(this.o.pollMs||(['speed','rpm'].includes(p.kind)?100:500));
+   const revision=this.revisions[p.kind]||0;
+   try{const v=await bounded(p.proxy.getValue(p.field,250),500);if(!this.closed&&(this.revisions[p.kind]||0)===revision)this.receive(p.kind,v);}catch(e){/* Readings still expire; never extend cached Park or speed. */}
+   p.pending=false;
+  });
+  if(!this.closed)this.timer=setTimeout(()=>this.poll(),50);
+  await Promise.all(jobs);
  }
- close(){this.closed=true;clearTimeout(this.timer);this.proxies.forEach(p=>{try{p.proxy.shutdown();}catch(e){}});this.values={};}
+ close(){this.closed=true;clearTimeout(this.timer);clearTimeout(this.retryTimer);this.proxies.forEach(p=>{try{p.proxy.shutdown();}catch(e){}});this.proxies=[];this.values={};}
+
 }
 module.exports={Telemetry,decode,SPECS};
