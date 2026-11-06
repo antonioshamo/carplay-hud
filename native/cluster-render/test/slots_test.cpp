@@ -343,6 +343,38 @@ static void shared_scene_id()
            c.find("publish hud; request hud") != std::string::npos);
 }
 
+/* Losing a mapping to a BMW call does not abandon the saved panel. The
+ * queued HUD must not replace its published scene while it still wants
+ * to resume. Explicitly ending panel demand releases this reservation. */
+static void shared_scene_call_recovery()
+{
+    Rig r;
+    r.m.want(1, true, false);
+    r.m.tick(r.now);
+    r.m.on_shown(kPanelScene, r.now);
+    r.m.want(2, true, false);
+    r.run(100);
+    joined();
+    r.slot(kPanelSlot, 2, 0x01000401);
+    r.m.on_lost(kPanelScene, "BMW call dialog", r.now);
+    r.run(20000);
+    const std::string during = joined();
+    ok("call: waiting HUD does not steal a suspended panel's scene",
+       r.m.published(1) && !r.m.published(2) && !r.m.requested(2) &&
+       during.find("request hud") == std::string::npos &&
+       during.find("request panel") == std::string::npos);
+    r.slot(kPanelSlot, 1, 0);
+    r.run(100);
+    ok("call: panel resumes after BMW releases its slot",
+       r.m.requested(1) && !r.m.requested(2) && calls_are("request panel"));
+    r.m.on_shown(kPanelScene, r.now);
+    r.m.want(1, false, false);
+    r.run(3100);
+    ok("call: explicitly ending gauge demand still permits the HUD",
+       r.m.requested(2) && !r.m.requested(1));
+    joined();
+}
+
 static void request_gap()
 {
     Rig r;
@@ -1127,6 +1159,7 @@ int main()
     busy_refusal_unknown_holder();
     availability();
     shared_scene_id();
+    shared_scene_call_recovery();
     request_gap();
     lost_while_lingering();
     scene_failure();

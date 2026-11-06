@@ -5,7 +5,7 @@ const {FrameCache}=require('./frame_cache.js');
 class Engine {
  constructor(cr,telemetry,o){
   this.cr=cr;this.telemetry=telemetry;this.panelBlock=null;this.output='center';this.now=o&&o.now||Date.now;this.design=M.preset(0);this.enabled=false;this.ref=null;this.target=null;this.panelUntil=0;this.introUntil=0;this.lastDraw=0;this.state='Off';this.condition=null;this.hud='unknown';
-  cr.on('target',(target,state,holder,reason)=>{if(target==='hud'){this.hud=state;this.hudReason=reason;if(!this.hudAllowsPanel()&&this.target==='panel'){this.stopPreview();this.drop();}}if(target===this.target)this.state='Renderer: '+state;});
+  cr.on('target',(target,state,holder,reason)=>{if(target==='hud'){this.hud=state;this.hudHolder=holder;this.hudReason=reason;if(!this.hudAllowsPanel()&&this.target==='panel'){this.stopPreview();this.drop();}}if(target===this.target)this.state='Renderer: '+state;});
   cr.on('disconnected',()=>{this.drop();this.hud='unknown';this.state='Renderer disconnected';});
   cr.on('ready',()=>{this.drop();this.hud='unknown';this.lastDraw=0;});
   cr.on('refused',(op,ref)=>{
@@ -17,10 +17,15 @@ class Engine {
  }
  hudAllowsPanel(){
   if(['idle','released'].includes(this.hud))return true;
-  // panel and HUD share a scene ID on this renderer. A queued HUD request
-  // is NOT ownership: releasing our panel here creates a handoff loop.
-  // Only retain a layer we already own; never claim an unknown/busy scene.
-  return this.target==='panel'&&!!this.ref&&this.hud==='waiting'&&this.hudReason==='scene id in use by another target';
+  // A queued HUD or a HUD suspended for a stock popup has no mapping of
+  // its own. Keep the existing gauge demand so the slot manager can resume
+  // it after BMW releases the call/speech dialog. Dropping it here hands
+  // the shared scene to the queued map and strands the saved gauges.
+  // This only retains an existing layer; the renderer still arbitrates
+  // BMW dialogs/locks. Never acquire a new layer from an unknown HUD state.
+  const queued=this.hudReason==='scene id in use by another target';
+  const popup=this.hudHolder==='stock'&&this.hudReason==='a stock pop-up shows in its place';
+  return this.target==='panel'&&!!this.ref&&this.hud==='waiting'&&(queued||popup);
  }
  drop(){G.drop(this.cr,this.welcome);this.welcome=null;if(this.ref)this.cr.drop(this.ref);this.ref=null;this.target=null;this.lastDraw=0;this.lastLease=0;this.panelLease=null;this.previousPixels=null;this.frames=null;}
  configure(design,on,output){

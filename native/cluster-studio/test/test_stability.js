@@ -40,6 +40,20 @@ try {
   e.tick();assert.equal(e.ref,ref,'ten-minute replay keeps one gauge layer');
  }
  assert.equal(r.drops,0);
+ // A phone/media popup suspends HUD mapping. It does not give that HUD
+ // target ownership of the shared scene. Losing our gauge reference here
+ // lets the queued map win when the call ends and prevents gauge recovery.
+ for(let call=0;call<3;call++){
+  r.emit('target','hud','waiting','stock','a stock pop-up shows in its place');
+  assert.equal(e.ref,ref,'HUD popup must not discard the saved gauge layer');
+  r.emit('target','panel','waiting','stock','taken: fetch removed');
+  for(let i=0;i<50;i++){now+=100;park();e.tick();assert.equal(e.ref,ref,'call interruption retains gauge demand');}
+  r.emit('target','hud','idle','none','');
+  r.emit('target','hud','waiting','none','scene id in use by another target');
+  r.emit('target','panel','shown','us','');e.tick();
+  assert.equal(e.ref,ref,'call completion resumes the same gauge layer');
+ }
+ assert.equal(r.drops,0,'repeated calls never delete and re-create saved gauges');
  const edited=M.clone(d);edited.theme=(edited.theme+1)%M.THEMES.length;
  s.command({cmd:'save',id:3,design:edited});e.tick();assert.equal(e.ref,ref,'design edits update in place');
  s.command({cmd:'slot',id:4,slot:0,design:d});e.tick();assert.equal(e.ref,ref,'slot save leaves active output alone');
@@ -50,7 +64,13 @@ try {
  e.tick();assert.equal(e.ref,null,'cannot claim a busy scene after losing ownership');
  r.emit('target','hud','idle');e.tick();assert(e.ref);
  r.emit('target','hud','shown','us','');assert.equal(e.ref,null,'real HUD ownership still prevents a scene collision');
- e.tick();assert.equal(e.ref,null);r.emit('target','hud','idle');e.tick();assert(e.ref);
+ e.tick();assert.equal(e.ref,null);
+ r.emit('target','hud','waiting','stock','a stock pop-up shows in its place');e.tick();
+ assert.equal(e.ref,null,'a popup cannot authorize a new panel mapping');
+ r.emit('target','hud','idle');e.tick();assert(e.ref);
+ r.emit('target','hud','waiting','foreign','a stock pop-up shows in its place');
+ assert.equal(e.ref,null,'unexpected ownership must still release the layer');
+ r.emit('target','hud','idle');e.tick();assert(e.ref);
  t.receive('selection',{statusGearSelectionDrive:'R'});e.tick();assert.equal(e.ref,null,'reverse immediately restores BMW');
  park();e.tick();assert(e.ref);now+=2001;e.tick();assert.equal(e.ref,null,'stale Park still restores BMW');
  park();e.tick();assert(e.ref);t.receive('speed',{speedVehicleCentreOfGravity:64});e.tick();assert.equal(e.ref,null,'movement immediately restores BMW');
@@ -60,5 +80,5 @@ try {
  e.preview(d,30);e.tick();const preview=e.ref,until=e.panelUntil;
  s.command({cmd:'slot',id:5,slot:1,design:edited});assert.equal(e.ref,preview);assert.equal(e.panelUntil,until);
  s.command({cmd:'off',id:6});assert.equal(e.ref,null);assert.equal(e.enabled,false);
- console.log('ok ten-minute foreground replay, queued HUD ownership, edits/slots, scoped errors, reconnect, restore, stale Park and motion');
+ console.log('ok ten-minute foreground replay, three call/popup recoveries, queued HUD ownership, edits/slots, scoped errors, reconnect, restore, stale Park and motion');
 }finally{e.close();t.close();for(const f of fs.readdirSync(dir))fs.unlinkSync(path.join(dir,f));fs.rmdirSync(dir);}

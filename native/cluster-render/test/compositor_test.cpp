@@ -139,18 +139,27 @@ struct Rig {
 static LayerParams params(Klass k, Rect r, bool contend = false);
 static Rect R(int x, int y, uint32_t w, uint32_t h);
 
-/* While the panel waits after a loss, the HUD (the panel's scene id) wants
- * its target, is shown, and its client goes: the panel's scene is
- * unpublished for the HUD's, which is released after its linger. */
-static void hud_borrows_scene(Rig &r)
+/* Explicitly hide the panel layers after a loss so they no longer reserve
+ * the scene. HUD can then borrow it. Restore panel demand once HUD owns it
+ * to exercise full resource rebuilding after a legitimate handoff. */
+static void hud_borrows_scene(Rig &r, const std::vector<Layer *> &panel_layers)
 {
     std::string err;
+    for (Layer *l : panel_layers) {
+        l->params.visible = false;
+        r.comp->changed(l);
+    }
+    r.step(10);
     const uint32_t h = r.comp->add_image(9, r.hud, params(Klass::Content, R(0, 0, 8, 8)), 8, 8, 30,
                                          Sampling::Nearest, r.now, &err);
     std::vector<uint8_t> px(8 * 8 * 4, 1);
     static_cast<ImageLayer *>(r.comp->layer(9, h))->update({}, px.data(), px.size(), &err);
     r.step(10);
     r.slots.on_shown(0x01000400, r.now);
+    for (Layer *l : panel_layers) {
+        l->params.visible = true;
+        r.comp->changed(l);
+    }
     r.comp->remove_owner(9);
 }
 
@@ -664,8 +673,8 @@ static void republish_keeps_content()
     r.step(10);
     r.slots.on_lost(0x01000400, "fetch removed", r.now);
     r.step(10);
-    hud_borrows_scene(r);
-    ok("the display took it, and the HUD its scene id: the panel's scene down", !r.g("panel") && r.g("hud"));
+    hud_borrows_scene(r, {il});
+    ok("panel demand explicitly ended: HUD borrowed its scene", !r.g("panel") && r.g("hud"));
     r.run(2100);
     FakeGraph *g = r.g("panel");
     bool same = false;
@@ -904,8 +913,8 @@ static void republish_rebuilds()
     r.run(50);
     r.slots.on_lost(0x01000400, "fetch removed", r.now);
     r.step(10);
-    hud_borrows_scene(r);
-    ok("the display took the panel, and the HUD its scene id: the panel's scene down", !r.g("panel") && r.g("hud"));
+    hud_borrows_scene(r, {e, m});
+    ok("panel demand explicitly ended: HUD borrowed its scene", !r.g("panel") && r.g("hud"));
     r.run(5100);
     FakeGraph *g = r.g("panel");
     if (!g) {
