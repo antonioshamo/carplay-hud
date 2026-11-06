@@ -1,4 +1,4 @@
-name: Import and publish gauge stability update
+name: Import and publish live customization editor
 on:
   workflow_dispatch:
 permissions:
@@ -18,25 +18,31 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import tested gauge source
+      - name: Import tested editor source
         run: |
           if [ -f release-import.bundle ]; then
-            echo '9053d985515079b6cd7741a73a19b7e0631786f0a444c52d61a089682b4c7300  release-import.bundle' | sha256sum -c -
+            echo '958876ffefea0875d6d8ca48d30d3d7732ec271ac0031e78cf6be34511d94d8f  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
-            git fetch ./release-import.bundle refs/heads/shamo/gauge-stability-release:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '38de3cdf40e1a9fb92f85108e52e1525f59d761a'
+            git fetch ./release-import.bundle refs/heads/shamo/easier-customization:refs/remotes/import/release
+            test "$(git rev-parse refs/remotes/import/release)" = '4559b7647bed1a0f54607fb7e4566ba893c862d5'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
             git rm release-import.bundle
-            git commit -m 'Remove tested gauge source transport bundle'
+            git commit -m 'Remove tested editor source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 38de3cdf40e1a9fb92f85108e52e1525f59d761a HEAD
+          git merge-base --is-ancestor 4559b7647bed1a0f54607fb7e4566ba893c862d5 HEAD
+      - name: Test all app controls, editing and startup
+        run: |
+          set -eu
+          for test in apps/robertn_waze_cluster/tools/test_*.js; do
+            node "$test"
+          done
       - name: Test gauge continuity, data and visual parity
         run: |
           set -eu
-          for test in test test_telemetry test_stability test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design; do
+          for test in test test_telemetry test_stability test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_features; do
             node "native/cluster-studio/test/$test.js"
           done
           make -C native/cluster-render build/host/slots_test
@@ -53,11 +59,14 @@ jobs:
           for test in test_stability test_polling test_frame_cache test_refresh test_telemetry test_image_delta; do
             "$runtime_dir/node-v8.16.2-linux-x64/bin/node" "native/cluster-studio/test/$test.js"
           done
-      - name: Verify reproducible gauge artifact
-        run: node release/release.js check cluster-studio
-      - name: Publish offline-tested Cluster Studio 0.1.11
+          for test in test_startup test_settings_startup test_design_lifecycle test_customization test_editor_live; do
+            "$runtime_dir/node-v8.16.2-linux-x64/bin/node" "apps/robertn_waze_cluster/tools/$test.js"
+          done
+      - name: Verify reproducible app and helper artifacts
+        run: node release/release.js check robertn_waze_cluster cluster-studio
+      - name: Publish offline-tested editor 0.4.135 and helper 0.1.12
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish cluster-studio
+        run: node release/release.js publish cluster-studio robertn_waze_cluster
