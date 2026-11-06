@@ -9,12 +9,29 @@ function validateStore(v){if(!v||v.schema!==1||typeof v.enabled!=='boolean'||!Ar
 function save(file,v){const data=validateStore(v);fs.writeFileSync(file+'.tmp',JSON.stringify(data)+'\n',{mode:384});let fd=fs.openSync(file+'.tmp','r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(file+'.tmp',file);fd=fs.openSync(path.dirname(file),'r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return data;}
 class StudioService {
  constructor(o){this.o=o;this.clients=new Set();this.store={schema:1,enabled:false,output:'center',design:M.preset(0),slots:[null,null,null,null,null]};try{this.store=validateStore(JSON.parse(fs.readFileSync(o.file,'utf8')));}catch(e){}o.engine.configure(this.store.design,this.store.enabled,this.store.output);}
- state(){const testReason=this.o.engine.panelBlock||(!this.o.telemetry.parked()?'Needs fresh speed 0 and gear P':!this.o.engine.cr.ready?'Waiting for cluster renderer':!['idle','released'].includes(this.o.engine.hud)?'HUD active or ownership unknown':'Ready for a parked test');return {assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!this.o.engine.panelBlock,panelClearance:'native-gear-v1',output:this.store.output,features:this.features?{lighting:this.features.lighting,media:this.features.media,rows:this.features.rows.slice(0,6),scannedAt:this.features.scannedAt}:null,media:this.o.media?this.o.media.state():null,panelRemaining:Math.max(0,Math.ceil(((this.o.engine.panelUntil||0)-(this.o.engine.now?this.o.engine.now():Date.now()))/1000)),canPreview:testReason==='Ready for a parked test',testReason,ev:'status',version:'0.1.14',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,parked:this.o.telemetry.parked(),state:this.o.engine.state,renderer:!!this.o.engine.cr.ready,data:this.o.telemetry.snapshot(),panel:this.o.engine.target==='panel'};}
+ state(){
+  const e=this.o.engine,parked=this.o.telemetry.parked(),renderer=!!e.cr.ready;
+  const recovery=e.health(),display=e.display();
+  const panelReady=!e.panelBlock&&parked&&renderer&&/(^|,)panel:1920x720(,|$)/.test(e.cr.targets||'');
+  const testReason=e.panelBlock||(!parked?'Needs fresh speed 0 and gear P':!renderer?'Waiting for cluster renderer':!panelReady?'Full-cluster renderer unavailable':recovery.paused?'Renderer paused; retry saved display':recovery.retryInMs?'Waiting for renderer retry':!['idle','released'].includes(e.hud)?'HUD active or ownership unknown':'Ready for a parked test');
+  return {assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!e.panelBlock,panelClearance:'native-gear-v1',output:this.store.output,
+   features:this.features?{lighting:this.features.lighting,media:this.features.media,rows:this.features.rows.slice(0,6),scannedAt:this.features.scannedAt}:null,media:this.o.media?this.o.media.state():null,
+   panelRemaining:Math.max(0,Math.ceil(((e.panelUntil||0)-e.now())/1000)),canPreview:testReason==='Ready for a parked test',canSelectPanel:panelReady,
+   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.15',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
+   parked,state:e.state,renderer,data:this.o.telemetry.snapshot(),panel:e.target==='panel',recovery,displayVisible:display.visible,displayTarget:display.target,displayState:display.state,displayReason:display.reason,
+   hud:{state:e.hud,holder:e.hudHolder||null,reason:e.hudReason||''}};
+ }
  command(m){
   if(!m||!Number.isInteger(m.id)||m.id<0)throw Error('Invalid request');
   let next=M.clone(this.store);
   switch(m.cmd){
    case 'status':return this.state();
+   case 'retry':
+    if(!this.store.enabled)throw Error('Choose an enabled output before retrying');
+    if(!this.o.telemetry.parked())throw Error('Retry requires fresh speed 0 and gear P (Park)');
+    if(!this.o.engine.cr.ready)throw Error('Waiting for cluster renderer');
+    if(this.o.engine.suspendedMedia)throw Error('End the video session before retrying');
+    this.o.engine.retry();return this.state();
    case 'save':next.design=M.validate(m.design);break;
    case 'apply':
     next.design=M.validate(m.design);next.enabled=true;

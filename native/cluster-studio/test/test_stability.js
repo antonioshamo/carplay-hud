@@ -62,7 +62,7 @@ try {
  r.emit('refused','status',undefined,'unrelated status error');assert.equal(e.ref,ref);
  r.emit('refused','pixels',ref,'current layer rejected');assert.equal(e.ref,null,'current-layer failure still releases output');
  e.tick();assert.equal(e.ref,null,'cannot claim a busy scene after losing ownership');
- r.emit('target','hud','idle');e.tick();assert(e.ref);
+ r.emit('target','hud','idle');now+=2000;park();e.tick();assert(e.ref,'one retry after the bounded delay');
  r.emit('target','hud','shown','us','');assert.equal(e.ref,null,'real HUD ownership still prevents a scene collision');
  e.tick();assert.equal(e.ref,null);
  r.emit('target','hud','waiting','stock','a stock pop-up shows in its place');e.tick();

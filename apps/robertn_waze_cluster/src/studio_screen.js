@@ -20,7 +20,10 @@ class StudioScreen {
  editStatus(){
   if(this.liveSending)return 'Applying live changes…';
   if(this.dirty){if(!this.client.status)return 'Draft kept · helper offline';if(!this.liveChanges)return 'Draft · press Apply';if(!this.client.status.enabled)return 'Draft · choose output, then Apply';if(!this.liveReady())return 'Draft · live changes waiting for Park';return 'Changes pending';}
-  return this.client.status&&this.client.status.enabled?'Saved · '+(this.client.status.panel?'Full cluster':this.client.status.state||'Display enabled'):'Design preview';
+  const a=this.client.status;
+  if(!a||!a.enabled)return 'Design preview';
+  if(a.displayVisible===true)return 'Saved · '+(a.displayTarget==='panel'?'Full cluster':'Center layout');
+  return 'Saved · '+(a.displayVisible===undefined&&a.panel?'Full cluster':a.state||'Waiting for display');
  }
  widget(){return this.design.widgets.find(w=>w.type===this.selected);}
  checkpoint(){this.redo=[];this.history.push(M.clone(this.design));if(this.history.length>30)this.history.shift();this.dirty=true;this.notice='';}
@@ -53,10 +56,10 @@ class StudioScreen {
   if(id==='test-length'){this.testSeconds=[10,30,60][([10,30,60].indexOf(this.testSeconds)+1)%3];return true;}
   if(id==='media-target'){this.mediaTarget=['center','map','panel','hud'][(['center','map','panel','hud'].indexOf(this.mediaTarget)+1)%4];return true;}
   if(id.startsWith('video:')){const current=this.client.status&&this.client.status.media;if(!current)return true;const r=Object.assign({},current.rect),action=id.slice(6);if(action==='reset')Object.assign(r,{x:.15,y:.15,w:.7,h:.7});else if(action==='size'){const size=r.w>.85?.4:Math.min(1,r.w+.15);r.x=(1-size)/2;r.y=(1-size)/2;r.w=size;r.h=size;}else if(action==='left')r.x=Math.max(0,r.x-.05);else if(action==='right')r.x=Math.min(1-r.w,r.x+.05);else if(action==='up')r.y=Math.max(0,r.y-.05);else if(action==='down')r.y=Math.min(1-r.h,r.y+.05);this.client.send('media-place',{rect:r}).then(()=>this.refresh(),e=>{this.notice=e.message;this.refresh();});return true;}
-  if(['scan','editor-start','media-start','media-stop','apply','apply-panel','apply-center','off','save','preview','stop-preview'].includes(id)||id.startsWith('save-slot:')){
+  if(['scan','editor-start','media-start','media-stop','apply','apply-panel','apply-center','off','save','preview','stop-preview','retry'].includes(id)||id.startsWith('save-slot:')){
    const extra={design:this.design,seconds:this.testSeconds,target:this.mediaTarget};let cmd=id;if(id==='apply-panel'||id==='apply-center'){cmd='apply';extra.output=id==='apply-panel'?'parked-panel':'center';}if(id.startsWith('save-slot:')){cmd='slot';extra.slot=Number(id.split(':')[1]);}
    clearTimeout(this.liveTimer);this.liveTimer=null;if(id==='off'){this.liveChanges=false;}this.liveBlocked=null;this.notice='Waiting for confirmation';const snapshot=JSON.stringify(this.design);
-   this.client.send(cmd,extra).then(()=>{if(cmd==='off')this.design.introEnabled=false;if(['save','apply'].includes(cmd)&&JSON.stringify(this.design)===snapshot)this.dirty=false;this.notice=cmd==='scan'?'Feature scan complete — details on the phone page':cmd==='editor-start'?'Phone designer opened':cmd==='media-start'?'Phone video session opened':cmd==='media-stop'?'Video session ended':cmd==='preview'?'Parked test requested — expires in '+this.testSeconds+' seconds':cmd==='off'?'BMW display restored':cmd==='stop-preview'?'Full-cluster test ended':'Saved in the car';this.scheduleLive();this.refresh();},e=>{this.liveBlocked=snapshot;this.notice='Not saved: '+e.message;this.refresh();});return true;
+   this.client.send(cmd,cmd==='retry'?{}:extra).then(()=>{if(cmd==='off')this.design.introEnabled=false;if(['save','apply'].includes(cmd)&&JSON.stringify(this.design)===snapshot)this.dirty=false;this.notice=cmd==='scan'?'Feature scan complete — details on the phone page':cmd==='editor-start'?'Phone designer opened':cmd==='media-start'?'Phone video session opened':cmd==='media-stop'?'Video session ended':cmd==='retry'?'Retry requested · saved layout and output kept':cmd==='preview'?'Parked test requested — expires in '+this.testSeconds+' seconds':cmd==='off'?'BMW display restored':cmd==='stop-preview'?'Full-cluster test ended':'Saved in the car';this.scheduleLive();this.refresh();},e=>{this.liveBlocked=snapshot;this.notice=(cmd==='retry'?'Retry unavailable: ':'Not saved: ')+e.message;this.refresh();});return true;
   }
   if(id.startsWith('load:')){const a=this.client.status&&this.client.status.slots[Number(id.split(':')[1])];if(a){this.checkpoint();this.design=M.clone(a);}return true;}
   const editable=['toggle','front','back','left','right','up','down','smaller','larger','width-less','width-more','height-less','height-more','align-x','align-y','reset-widget'];

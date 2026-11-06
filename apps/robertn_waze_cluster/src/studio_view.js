@@ -54,11 +54,12 @@ function items(s){
   add('title','Signature: '+(d.signature||M.TITLES[d.title]),286,427,680,62);
  }else if(s.page==='output'){
   const fixed=connected&&s.client.status.panelClearance==='native-gear-v1'&&Date.now()-(s.client.statusAt||0)<2000;
-  add('apply-panel','Use full cluster in Park',1034,139,520,58,fixed&&!busy&&s.client.status.canPreview);
-  add('apply-center','Use center layout',1034,207,520,58,connected&&!busy);
+  add('apply-panel','Save full cluster in Park',1034,139,520,58,fixed&&!busy&&(s.client.status.canSelectPanel===undefined?s.client.status.canPreview:s.client.status.canSelectPanel),connected&&s.client.status.output==='parked-panel');
+  add('apply-center','Use center layout',1034,207,520,58,connected&&!busy,connected&&s.client.status.output==='center');
   add('off','Restore BMW display',1034,275,520,58,connected&&!busy);
-  add('test-length','Test length: '+s.testSeconds+' seconds',1034,343,520,48);
-  add('preview','Try full cluster',1034,401,520,48,fixed&&!busy&&s.client.status.canPreview);
+  add('retry','Retry saved display',1034,343,520,48,fixed&&!busy&&s.client.status.canRetry);
+  add('test-length','Test: '+s.testSeconds+' seconds',1034,401,254,48);
+  add('preview','Try full cluster',1300,401,254,48,fixed&&!busy&&s.client.status.canPreview);
   add('stop-preview','End timed test',1034,459,520,48,connected&&!busy&&s.client.status.panelRemaining>0);
  }else if(s.page==='tools'){
   [['assistance','Driving assistance'],['features','Lighting & feature scan'],['media','Parked video'],['phone','Phone designer']].forEach((a,i)=>add('page:'+a[0],a[1],286+(i%2)*646,174+Math.floor(i/2)*140,622,112));
@@ -111,10 +112,16 @@ function frame(s,focus,scale){
   D.draw(r,d,{x:286,y:196,w:600,h:225},s.previewData());text('DESIGN PREVIEW / SAMPLE READINGS',286,515,17,'#8299b4',690);
   for(let i=0;i<5;i++){const a=s.client.status&&s.client.status.slots[i];text(a?(a.name||M.LAYOUTS[a.preset%10]):'Empty design slot',1384,173+i*70,16,'#a8bbd0',185);}
  }else if(s.page==='output'){
-  text('Your design. Three ways to view it.',286,170,27,t[1],710);
-  const rows=[['DESIGN PREVIEW','Edit the whole cluster here with sample values.'],['CENTER LAYOUT','Persistent widgets under the factory gauges.'],['FULL CLUSTER IN PARK','Saved design returns in Park; BMW gauges in motion.'],['NATIVE GEAR INDICATOR','P stays visible. Active HUD pauses full-cluster output.']];
-  rows.forEach((a,i)=>{text(a[0],286,225+i*72,17,'#7b9cbc',710);text(a[1],286,254+i*72,22,'#d6e1ef',710);});
-  text(s.client.status?s.client.status.testReason:'Install Cluster Studio to check vehicle data.',286,506,19,'#a4c4e4',1250);
+  const status=s.client.status;
+  text('Your saved display',286,170,27,t[1],710);
+  text(status?(status.enabled?'On · ':'Off · ')+(status.output==='parked-panel'?'Full cluster in Park':'Center layout'):'Waiting for Cluster Studio',286,215,25,'#d6e1ef',710);
+  text(status&&status.displayVisible?'Renderer reports your design is shown':status&&status.state||'Waiting for display status',286,253,21,'#a4c4e4',710);
+  text('Your layout stays saved while output waits.',286,298,21,'#d6e1ef',710);
+  text('HUD map and full cluster cannot be shown together yet.',286,337,20,'#a4c4e4',710);
+  text('Retry keeps your layout and selected output.',286,378,21,'#d6e1ef',710);
+  text('P stays visible. BMW gauges return outside Park.',286,417,20,'#a4c4e4',710);
+  const failure=status&&status.recovery&&status.recovery.failure;
+  text(failure?'Renderer: '+failure.reason:status&&status.displayReason||status&&status.testReason||'Install Cluster Studio to check vehicle data.',286,506,19,'#a4c4e4',1250);
   text('BMW gauges remain responsible for cruise, lane alerts and warnings.',286,532,18,'#e6ba82',1250);
  }else if(s.page==='assistance'){
   const fresh=Date.now()-(s.client.statusAt||0)<2000;
