@@ -1,4 +1,4 @@
-name: Import and publish gauge widgets and refresh
+name: Import and publish saved display recovery
 on:
   workflow_dispatch:
 permissions:
@@ -18,13 +18,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import tested widget, refresh and call recovery source
+      - name: Import tested display recovery source
         run: |
           if [ -f release-import.bundle ]; then
-            echo '97c95b59713cec33fd874eebab36e03207547536cf7e8f193ffc93ec39ac41ea  release-import.bundle' | sha256sum -c -
+            echo '100a30480f85d3fedf9c6b3f51cf72a6d941e7e3b05ec3f4e0f02a7faf79f88d  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
             git fetch ./release-import.bundle refs/heads/shamo/call-recovery:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = 'ab82ac4c25757eedd9070085aa236bfa98367098'
+            test "$(git rev-parse refs/remotes/import/release)" = 'f48e76f700c66e73b4bc47302c82b33de35b0970'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
@@ -32,7 +32,7 @@ jobs:
             git commit -m 'Remove tested recovery source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor ab82ac4c25757eedd9070085aa236bfa98367098 HEAD
+          git merge-base --is-ancestor f48e76f700c66e73b4bc47302c82b33de35b0970 HEAD
       - name: Test all app controls, editing and startup
         run: |
           set -eu
@@ -42,11 +42,11 @@ jobs:
       - name: Test gauge continuity, data and visual parity
         run: |
           set -eu
-          for test in test test_telemetry test_stability test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_features; do
+          for test in test test_telemetry test_stability test_recovery test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_features; do
             node "native/cluster-studio/test/$test.js"
           done
           make -C native/cluster-render test
-          make -C native/cluster-render test-x86 target
+          node native/cluster-studio/test/test_renderer_integration.js
           node release/test/release_test.js
       - name: Test new runtime paths on Node 8
         run: |
@@ -56,17 +56,17 @@ jobs:
           curl --fail --silent --show-error --location --max-time 90 https://nodejs.org/download/release/v8.16.2/node-v8.16.2-linux-x64.tar.gz -o "$runtime_dir/node.tar.gz"
           printf '%s  %s\n' 722d07291a8886384388c6795a747ec2055073f83dc73c0a97efba0022cc23ff "$runtime_dir/node.tar.gz" | sha256sum -c -
           tar -xzf "$runtime_dir/node.tar.gz" -C "$runtime_dir"
-          for test in test_stability test_polling test_frame_cache test_refresh test_telemetry test_image_delta; do
+          for test in test_stability test_recovery test_polling test_frame_cache test_refresh test_telemetry test_image_delta; do
             "$runtime_dir/node-v8.16.2-linux-x64/bin/node" "native/cluster-studio/test/$test.js"
           done
           for test in test_startup test_settings_startup test_design_lifecycle test_customization test_editor_live test_idrive test_canvas_line; do
             "$runtime_dir/node-v8.16.2-linux-x64/bin/node" "apps/robertn_waze_cluster/tools/$test.js"
           done
       - name: Verify reproducible app and helper artifacts
-        run: node release/release.js check cluster-render cluster-studio robertn_waze_cluster
-      - name: Publish app 0.4.137, helper 0.1.14 and renderer 0.3.103
+        run: node release/release.js check cluster-studio robertn_waze_cluster
+      - name: Publish app 0.4.138 and helper 0.1.15
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish cluster-render cluster-studio robertn_waze_cluster
+        run: node release/release.js publish cluster-studio robertn_waze_cluster
