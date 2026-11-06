@@ -12,3 +12,5 @@ Version 0.1.11 retains an existing panel when the HUD is only queued behind its 
 The paired phone designer is an explicit five-minute parked session. It supports personal names, widget colors and geometry, validated JSON import/export, and the five saved designs. It does not suspend active gauge output. New design fields default safely when loading older saved designs.
 
 Version 0.1.14 retains an existing gauge layer across HUD stock-pop-up waits. Renderer 0.3.103 keeps its published scene reserved while that layer still wants to resume after a BMW interruption. See [recovery validation and the remaining HUD conflict](../../docs/cluster-studio/CALL-RECOVERY-0.1.14.md).
+
+Version 0.1.14 also uses 50 ms speed/RPM fallback reads, 250 ms slower getters and a 34 ms drawing interval with a 30 fps ceiling. Native row comparisons and split left/right deltas reduce rendering work and traffic for every gauge style. See [offline measurements and validation](../../docs/cluster-studio/REFRESH-AND-WIDGETS-0.4.137.md); physical OEM timing equality is not established.

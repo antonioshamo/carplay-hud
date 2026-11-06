@@ -13,7 +13,7 @@ function items(s){
  add('live-toggle','Live changes: '+(s.liveChanges?'On':'Off'),1050,24,244,55,true,s.liveChanges);
  const ready=!!s.client.status&&!s.client.pending&&!s.liveSending;
  add('apply','Apply',1310,24,268,55,ready&&(!(s.client.status.output==='parked-panel')||s.client.status.parked));
- PAGES.forEach((p,i)=>add('page:'+p[0],p[1],18,110+i*57,222,48,true,s.page===p[0]||(p[0]==='edit'&&['widgets','properties'].includes(s.page))||(p[0]==='gallery'&&['layouts','idrive'].includes(s.page))||(p[0]==='style'&&['themes','gauges'].includes(s.page))||(p[0]==='library'&&s.page==='phone')||(p[0]==='tools'&&['assistance','features','media'].includes(s.page))));
+ PAGES.forEach((p,i)=>add('page:'+p[0],p[1],18,110+i*57,222,48,true,s.page===p[0]||(p[0]==='edit'&&['widgets','add','properties'].includes(s.page))||(p[0]==='gallery'&&['layouts','idrive'].includes(s.page))||(p[0]==='style'&&['themes','gauges'].includes(s.page))||(p[0]==='library'&&s.page==='phone')||(p[0]==='tools'&&['assistance','features','media'].includes(s.page))));
  const d=s.design,connected=!!s.client.status,busy=!!s.client.pending;
  if(s.page==='gallery'){
   add('previous','Previous',274,427,170,62);add('next','Next',458,427,170,62);add('shuffle','Surprise me',642,427,220,62);add('edit','Customize',876,427,374,62);
@@ -25,11 +25,13 @@ function items(s){
  }else if(s.page==='layouts'||s.page==='themes'){
   const themes=s.page==='themes',rows=themes?M.THEMES.map(t=>t[0]):M.LAYOUTS;
   rows.forEach((name,i)=>add((themes?'pick-theme:':'pick-layout:')+i,name,286+(i%2)*640,146+Math.floor(i/2)*73,614,61,true,i===(themes?d.theme:d.preset%10)));
+ }else if(s.page==='add'){
+  M.TYPES.forEach((type,i)=>{const w=d.widgets.find(w=>w.type===type);add('add-widget:'+type,M.LABELS[type]+(w.on?' / Added':' / Add'),286+(i%3)*425,154+Math.floor(i/3)*89,402,72,!w.on);});
  }else if(s.page==='widgets'){
   M.TYPES.forEach((type,i)=>{const w=d.widgets.find(w=>w.type===type);add('widget:'+type,M.LABELS[type]+' / '+(w.on?'Visible':'Hidden'),286+(i%3)*425,154+Math.floor(i/3)*89,402,72,true,s.selected===type);});
  }else if(s.page==='edit'){
   const free=!s.widget().locked;
-  add('select','Choose widget: '+M.LABELS[s.selected],1282,126,296,57);
+  add('select','Edit widget',1282,126,142,57);add('page:add','Add widget',1434,126,144,57);
   add('toggle',s.widget().on?'Hide':'Show',1282,194,142,53,free);add('lock',free?'Lock':'Unlock',1434,194,144,53);
   add('left','Left',1282,262,90,53,free);add('up','Up',1385,262,90,53,free);add('right','Right',1488,262,90,53,free);
   add('precision',s.moveStep===.01?'Fine':'Coarse',1282,327,90,53,free);add('down','Down',1385,327,90,53,free);add('page:properties','More',1488,327,90,53);
@@ -81,7 +83,7 @@ function frame(s,focus,scale){
  r.clear('#060a11');r.gradientRect(252,0,1348,580,[[0,'#172438'],[.7,'#080d17'],[1,'#060a11']]);r.fillRect(0,0,252,580,'#0c131f');
  text('CLUSTER STUDIO',276,49,26,'#f0f5ff');text('X4 M COMPETITION',276,84,17,'#89a1bd');
  text(s.editStatus(),610,48,18,s.dirty?'#ffcc87':'#93c5e9',420);
- const subtitle={idrive:'Three iDrive 8-inspired designs. Every widget can be moved, resized and recolored.',gallery:'Choose a template. Arrange, style and apply it to your car.',layouts:'Choose your layout. Your colors and welcome are kept.',gauges:'Choose a dial style. Speed and RPM can each use a different design.',themes:'Choose your color palette. Your widget positions are kept.',widgets:'Choose any widget, including hidden ones. Arrange it with touch or the dial.',properties:'Independent width, height, alignment, layer order and widget styling.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',phone:'Name your design and welcome, choose exact colors, import or export. Parked setup.',output:'Choose how to use your design.',assistance:'Your BMW assistance preferences. Read-only; these are not live warning indicators.',tools:'More ways to personalize your cockpit.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
+ const subtitle={idrive:'Three iDrive 8-inspired designs. Every widget can be moved, resized and recolored.',gallery:'Choose a template. Arrange, style and apply it to your car.',layouts:'Choose your layout. Your colors and welcome are kept.',gauges:'Choose a dial style. Speed and RPM can each use a different design.',themes:'Choose your color palette. Your widget positions are kept.',add:'Add a widget to your design, then drag it into position. Added widgets are already in your layout.',widgets:'Choose any widget, including hidden ones. Arrange it with touch or the dial.',properties:'Independent width, height, alignment, layer order and widget styling.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',phone:'Name your design and welcome, choose exact colors, import or export. Parked setup.',output:'Choose how to use your design.',assistance:'Your BMW assistance preferences. Read-only; these are not live warning indicators.',tools:'More ways to personalize your cockpit.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
  const preview=['gallery','edit','properties','style','intro'].includes(s.page);
  if(preview){
   const b=s.page==='gallery'?{x:274,y:153,w:976,h:256}:BOX;

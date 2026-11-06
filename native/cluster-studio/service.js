@@ -63,7 +63,7 @@ async function main(){
  const assistance=new Assistance(),telemetry=new Telemetry(),cr=new ClusterRender('shamo_cluster_studio'),engine=new Engine(cr,telemetry);
  const media=new ParkedMedia({engine,telemetry,cr});media.stop();
  const service=new StudioService({file,engine,telemetry,media,assistance});media.o.designRead=()=>({design:service.store.design,slots:service.store.slots});media.o.designSave=m=>service.command(m);await service.listen(socket);cr.connect();telemetry.start();assistance.start();
- const timer=setInterval(()=>{engine.tick();media.tick();},50);
+ const timer=setInterval(()=>{engine.tick();media.tick();},34);
  const close=()=>{clearInterval(timer);service.close();media.stop();assistance.close();telemetry.close();engine.close();process.exit(0);};process.on('SIGTERM',close);process.on('SIGINT',close);
 }
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exit(1);});

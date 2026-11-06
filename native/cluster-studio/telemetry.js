@@ -53,7 +53,7 @@ class Telemetry {
   // Each getter has its own cadence and one bounded request in flight.
   // A slow temperature getter cannot stall subsequent speed/RPM cycles.
   const now=this.now(),jobs=this.proxies.filter(p=>p.config.fields[p.field].getter&&!p.pending&&(!p.nextPoll||now>=p.nextPoll||now<p.lastPoll)).map(async p=>{
-   p.pending=true;p.lastPoll=now;p.nextPoll=now+(this.o.pollMs||(['speed','rpm'].includes(p.kind)?100:500));
+   p.pending=true;p.lastPoll=now;p.nextPoll=now+(this.o.pollMs||(['speed','rpm'].includes(p.kind)?50:250));
    const revision=this.revisions[p.kind]||0;
    try{const v=await bounded(p.proxy.getValue(p.field,250),500);if(!this.closed&&(this.revisions[p.kind]||0)===revision)this.receive(p.kind,v);}catch(e){/* Readings still expire; never extend cached Park or speed. */}
    p.pending=false;

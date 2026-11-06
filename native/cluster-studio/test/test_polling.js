@@ -24,9 +24,9 @@ function row(kind,get){return {kind,field:kind,config:{fields:{[kind]:{getter:{i
  try{
   q.proxies=[row('temps',()=>{slowCalls++;return new Promise(r=>{finish=r;});}),row('speed',()=>{speedCalls++;return Promise.resolve({speedVehicleCentreOfGravity:0});})];
   const first=q.poll();await next();
-  for(let i=0;i<4;i++){clock+=100;await q.poll();}
+  for(let i=0;i<4;i++){clock+=50;await q.poll();}
   assert.equal(speedCalls,5);assert.equal(slowCalls,1);
   finish({temperatureEngineOilDrive:100});await first;
-  console.log('ok 100 ms fast-field cadence continues around a pending slow getter');
+  console.log('ok 50 ms fast-field cadence continues around a pending slow getter');
  }finally{q.close();}
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

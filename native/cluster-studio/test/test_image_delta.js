@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
 const assert=require('assert'),{delta}=require('../image_delta'),D=require('../shared/studio_draw'),M=require('../shared/studio_model'),Canvas=require('../shared/kit_canvas').Canvas;
-function restore(before,u,w){const out=Buffer.from(before);if(!u)return out;if(!u.rects)return Buffer.from(u.pixels);let at=0;assert(u.rects.length<=8);for(const r of u.rects)for(let y=r.y;y<r.y+r.h;y++){u.pixels.copy(out,(y*w+r.x)*4,at,at+r.w*4);at+=r.w*4;}assert.equal(at,u.pixels.length);return out;}
+function restore(before,u,w){const out=Buffer.from(before);if(!u)return out;if(!u.rects)return Buffer.from(u.pixels);let at=0;assert(u.rects.length<=16);for(const r of u.rects)for(let y=r.y;y<r.y+r.h;y++){u.pixels.copy(out,(y*w+r.x)*4,at,at+r.w*4);at+=r.w*4;}assert.equal(at,u.pixels.length);return out;}
 const w=1920,h=720,blank=Buffer.alloc(w*h*4),first=delta(null,blank,w,h);assert.equal(first.pixels.length,5529600);assert.equal(first.rects,null);assert.equal(delta(blank,blank,w,h),null);
 const changed=Buffer.from(blank);for(let i=0;i<50;i++){const n=((i*99991)%(w*h))*4;changed[n]=255;changed[n+3]=255;}for(const n of [0,changed.length-1])changed[n]=121;
 assert(restore(blank,delta(blank,changed,w,h),w).equals(changed));assert(restore(changed,delta(changed,blank,w,h),w).equals(blank));
@@ -14,3 +14,12 @@ for(const preset of [0,11,46,99]){
  const u=delta(a.d,b.d,w,h);assert(u);assert(u.pixels.length<552960,'idle RPM update under 10 percent of full frame');assert(restore(a.d,u,w).equals(Buffer.from(b.d)),'native image reconstructs exactly');console.log('preset '+preset+': '+u.pixels.length+' bytes vs 5529600 full');
 }
 console.log('PASS native-resolution deltas: exact reconstruction, zero unchanged traffic, bounded rectangles and sparse live updates');
+
+// Separated left/right readings must not upload their unchanged middle.
+for(const size of [[1920,720],[1088,480],[7,9],[1,1]]){
+ const ww=size[0],hh=size[1],old=Buffer.alloc(ww*hh*4),next=Buffer.from(old);
+ for(let y=0;y<hh;y++){next[(y*ww)*4]=255;next[(y*ww+ww-1)*4]=127;}
+ const update=delta(old,next,ww,hh);assert(restore(old,update,ww).equals(next));
+ if(ww>1)assert.equal(update.pixels.length,hh*8,'unchanged center is not transmitted');
+}
+console.log('ok separated readings and odd/one-pixel geometries reconstruct exactly within 16 rectangles');

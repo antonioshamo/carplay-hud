@@ -7,7 +7,7 @@ The user reported that their accepted full-cluster gauges reverted to BMW gauges
 1. Cluster Studio retains its existing gauge layer when the renderer says the HUD is waiting for a stock pop-up. That report means the HUD map is unmapped; it is not HUD ownership. Actual HUD ownership, unknown state and unexpected ownership still release the panel. A popup cannot authorize a new panel mapping.
 2. The renderer reserves an already published scene for its target while that target still wants to resume after an interruption. A waiting HUD cannot steal a suspended panel's scene before the panel retries. Ending panel demand releases the reservation normally.
 
-BMW dialogs and display locks remain under the renderer's existing arbitration. There is no forced stock-content unmapping. The saved design, drawing, native P clearance, side shading, Park gate, telemetry checks and welcome are unchanged. Back navigation is unchanged after the user confirmed it works.
+BMW dialogs and display locks remain under the renderer's existing arbitration. There is no forced stock-content unmapping. The saved design, native P clearance, side shading, Park gate, telemetry checks and welcome are unchanged. Back navigation is unchanged after the user confirmed it works.
 
 ## Startup limitation
 
@@ -18,3 +18,5 @@ The upstream renderer also restricts HUD to slot 0x323 / scene 0x01000400. A dif
 ## Validation
 
 The new helper regression failed on 0.1.13 by deleting the gauge reference at the HUD popup event. The new native regression failed on 0.3.102 by letting HUD replace the suspended panel's published scene. Both pass after these changes. Tests cover repeated popup interruptions, preserved demand, resumption, explicit release to HUD, unknown ownership, stale telemetry, movement, reconnect and restoration. A real incoming call and simultaneous full-panel/HUD output still need separate vehicle verification.
+
+The same release also includes the separately verified [refresh and Add widget changes](REFRESH-AND-WIDGETS-0.4.137.md).

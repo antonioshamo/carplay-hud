@@ -78,7 +78,7 @@ class Engine {
   if(!this.ref){
    // Ask to keep the ordinary foreground slot. This does not enable the
    // renderer's panel_take_over_stock option or bypass display locks.
-   this.ref=this.cr.image({target,klass:'overlay',z:5,x:0,y:0,w:dw,h:dh,iw:w,ih:h,visible:false,exclusive:false,contend:true,fps:20,sampling:'bilinear'});
+   this.ref=this.cr.image({target,klass:'overlay',z:5,x:0,y:0,w:dw,h:dh,iw:w,ih:h,visible:false,exclusive:false,contend:true,fps:30,sampling:'bilinear'});
    this.state='Layer prepared';
   }
   if(this.introUntil&&!this.welcome)this.welcome=G.create(this.cr,target,dw,dh,design,now-this.introAt);
@@ -89,7 +89,7 @@ class Engine {
    if(this.welcome)this.welcome.expiry=renew(this.welcome.ref,this.welcome.expiry,Math.max(1,Math.min(lease,this.introUntil-now)));
    this.lastLease=now;
   }
-  if(now-this.lastDraw<50&&this.lastDraw)return;
+  if(now-this.lastDraw<34&&this.lastDraw)return;
   // No sample values ever reach the physical cluster.
   if(!this.frames)this.frames=new FrameCache(w,h,target==='panel');
   const cv=this.frames.render(design,data);

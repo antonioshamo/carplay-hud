@@ -1,14 +1,14 @@
-# CarPlay HUD 0.4.136
+# CarPlay HUD 0.4.137
 
-Update **Cluster Studio (Tool) to 0.1.13**, then **CarPlay HUD (App) to 0.4.136** in MGU Store. Keep **Waze on cluster (Tool) 0.7.115** for the separate startup-map changes.
+Update **cluster-render (Tool) to 0.3.103**, **Cluster Studio (Tool) to 0.1.14**, then **CarPlay HUD (App) to 0.4.137** in MGU Store. Keep **Waze on cluster (Tool) 0.7.115**.
 
-Open **Cluster Studio → Templates → iDrive 8 templates**. Choose Sport, Classic or Minimal, then use Arrange and Style to move, resize, show/hide and recolor each widget. Speed and RPM can independently use any of the 12 dial styles. Back, Apply and Live changes remain available on every editor page.
+Templates → iDrive 8 templates offers Sport, Classic and Minimal. My designs saves five personal layouts; In the car → Restore BMW display returns to factory output.
 
-The new presets retain your speed units, temperature units and welcome choices. My designs saves five personal layouts. In the car → Restore BMW display returns to factory output.
+Arrange now has **Add widget**: choose an available type, then drag, resize or recolor it. It supports live saving and Undo/Redo. Existing designs and Back navigation are retained.
 
-These are original iDrive 8-inspired designs, not BMW Operating System 8 or replacement factory menus. Speed and RPM use the existing fresh vehicle-data pipeline. Full-cluster output remains Park-only, preserves the tested native gear opening, and may pause while the HUD owns the shared scene.
+All 12 dial styles and the three iDrive 8 templates share faster data polling and drawing, with smaller exact image updates. The helper/renderer also include call-interruption recovery. See [measurements, verification and remaining car checks](../../docs/cluster-studio/REFRESH-AND-WIDGETS-0.4.137.md).
 
-See [verification and usage](../../docs/cluster-studio/IDRIVE8-0.4.136.md). This release is tested offline; physical-car validation of the new designs remains outstanding.
+This release is tested offline. OEM refresh equality and real call recovery are not yet verified in the car. Simultaneous full-panel gauges and HUD remain blocked by their shared scene; no unverified alternate scene mapping is enabled.
 
 ## Historical settings implementation
 
