@@ -1,4 +1,4 @@
-name: Import and publish bounded HUD startup recovery
+name: Import and publish video link feedback
 on:
   workflow_dispatch:
 permissions:
@@ -18,36 +18,36 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import tested separate cluster and HUD resources source
+      - name: Import tested video link source
         run: |
           set -eu
-          if [ -f recovery-import.bundle ]; then
-            echo '3ba2dc9970006e323b03f0ae57afedf4bf57aef6947c1f6e7c82353ec796ac75  recovery-import.bundle' | sha256sum -c -
-            git bundle verify recovery-import.bundle
-            git fetch ./recovery-import.bundle refs/heads/shamo/startup-renderer-recovery:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = 'aa9ea74df6f1aaa78226e637005fafdafd9e9e6f'
+          if [ -f media-import.bundle ]; then
+            echo 'e278f3285b192958cc975743678bc734fcfa2e3a800f6fa533916e96c1e1b300  media-import.bundle' | sha256sum -c -
+            git bundle verify media-import.bundle
+            git fetch ./media-import.bundle refs/heads/shamo/media-link-feedback:refs/remotes/import/release
+            test "$(git rev-parse refs/remotes/import/release)" = '77469298b70e47113464241b47ada982770bcce8'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
-            git rm recovery-import.bundle
-            git commit -m 'Remove tested separate-display source transport bundle'
+            git rm media-import.bundle
+            git commit -m 'Remove tested media source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor aa9ea74df6f1aaa78226e637005fafdafd9e9e6f HEAD
+          git merge-base --is-ancestor 77469298b70e47113464241b47ada982770bcce8 HEAD
       - name: Test app controls and saved gauge behavior
         run: |
           set -eu
           for test in apps/robertn_waze_cluster/tools/test_*.js; do
             node "$test"
           done
-          for test in test test_telemetry test_stability test_recovery test_startup_recovery test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_features; do
+          for test in test test_telemetry test_stability test_recovery test_startup_recovery test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_phone_media test_features; do
             node "native/cluster-studio/test/$test.js"
           done
       - name: Test release packaging
         run: node release/test/release_test.js
       - name: Verify reproducible helper artifact
         run: node release/release.js check cluster-studio
-      - name: Publish Cluster Studio 0.1.18
+      - name: Publish Cluster Studio 0.1.19
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
