@@ -1,4 +1,4 @@
-name: Import and publish blank-map recovery
+name: Import and publish centered gauge text
 on:
   workflow_dispatch:
 permissions:
@@ -18,22 +18,22 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import tested blank-map recovery source
+      - name: Import tested centered gauge text source
         run: |
           set -eu
           if [ -f release-import.bundle ]; then
-            echo '89926c19c23dd8f92b7f4170d0cafa4e0b51180a3630d2c7571e7e7d726e521a  release-import.bundle' | sha256sum -c -
+            echo '5d14c46b9755f11f35ea43cd36f6ccea8bd4e25fa387abb8029d671b92bac355  release-import.bundle' | sha256sum -c -
             git bundle verify release-import.bundle
-            git fetch ./release-import.bundle refs/heads/shamo/hud-content-ready:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = 'cb947121e71d0d4e42bad3d93abdaa16e34d9b5f'
+            git fetch ./release-import.bundle refs/heads/shamo/centered-gauge-text:refs/remotes/import/release
+            test "$(git rev-parse refs/remotes/import/release)" = 'f70968b0844a38a81ee8f6d7132e23bb4b89d05a'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
             git rm release-import.bundle
-            git commit -m 'Remove tested blank-map source transport bundle'
+            git commit -m 'Remove tested gauge-centering source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor cb947121e71d0d4e42bad3d93abdaa16e34d9b5f HEAD
+          git merge-base --is-ancestor f70968b0844a38a81ee8f6d7132e23bb4b89d05a HEAD
       - name: Test app controls and saved gauge behavior
         run: |
           set -eu
@@ -50,13 +50,11 @@ jobs:
           make -C native/waze-on-cluster test
           node native/cluster-studio/test/test_renderer_integration.js
           node release/test/release_test.js
-      - name: Test x86 paths and build for head-unit ABI
-        run: make -C native/waze-on-cluster test-x86 target
-      - name: Verify reproducible map-tool artifacts
-        run: node release/release.js check waze-on-cluster
-      - name: Publish map tool 0.7.116
+      - name: Verify reproducible app and helper artifacts
+        run: node release/release.js check cluster-studio robertn_waze_cluster
+      - name: Publish centered app 0.4.139 and helper 0.1.16
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish waze-on-cluster
+        run: node release/release.js publish cluster-studio robertn_waze_cluster
