@@ -189,6 +189,29 @@ const char *ImageLayer::size_error(uint32_t w, uint32_t h)
     return nullptr;
 }
 
+// Merge only the least costly bounds. Pixel storage already contains the
+// newest value, including unchanged gaps in a union. Keep the same 16-rect
+// limit without escalating repeated gauge patches to a full-screen upload.
+static void merge_image_dirty(std::vector<crk::PixelRect> &rects, const crk::PixelRect &next)
+{
+    rects.push_back(next);
+    while (rects.size() > 1) {
+        int64_t best = INT64_MAX;
+        size_t ai = 0, bi = 1;
+        crk::PixelRect joined{};
+        for (size_t i = 0; i < rects.size(); ++i) for (size_t j = i + 1; j < rects.size(); ++j) {
+            const auto &a = rects[i]; const auto &b = rects[j];
+            const uint32_t x = std::min(a.x, b.x), y = std::min(a.y, b.y);
+            const crk::PixelRect r{x, y, std::max(a.x+a.w, b.x+b.w)-x, std::max(a.y+a.h, b.y+b.h)-y};
+            const int64_t cost = int64_t(r.w)*r.h - int64_t(a.w)*a.h - int64_t(b.w)*b.h;
+            if (cost < best) {best=cost;ai=i;bi=j;joined=r;}
+        }
+        if (rects.size() <= 16 && best > 0) break;
+        rects[ai] = joined;
+        rects.erase(rects.begin() + bi);
+    }
+}
+
 bool ImageLayer::update(const std::vector<crk::PixelRect> &rects, const uint8_t *data, size_t n, std::string *err)
 {
     if (rects.empty()) {
@@ -218,14 +241,8 @@ bool ImageLayer::update(const std::vector<crk::PixelRect> &rects, const uint8_t 
         for (uint32_t y = 0; y < r.h; y++)
             std::memcpy(&px_[((size_t)(r.y + y) * w_ + r.x) * 4], data + (size_t)y * r.w * 4, (size_t)r.w * 4);
         data += (size_t)r.w * r.h * 4;
-        if (!whole_) {
-            if (dirty_.size() >= kMaxRects) {
-                whole_ = true;
-                dirty_.clear();
-            } else {
-                dirty_.push_back(r);
-            }
-        }
+        if (!whole_)
+            merge_image_dirty(dirty_, r);
     }
     have_ = true;
     return true;

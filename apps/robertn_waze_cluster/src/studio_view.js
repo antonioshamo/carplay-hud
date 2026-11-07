@@ -25,10 +25,12 @@ function items(s){
  }else if(s.page==='layouts'||s.page==='themes'){
   const themes=s.page==='themes',rows=themes?M.THEMES.map(t=>t[0]):M.LAYOUTS;
   rows.forEach((name,i)=>add((themes?'pick-theme:':'pick-layout:')+i,name,286+(i%2)*640,146+Math.floor(i/2)*73,614,61,true,i===(themes?d.theme:d.preset%10)));
- }else if(s.page==='add'){
-  M.TYPES.forEach((type,i)=>{const w=d.widgets.find(w=>w.type===type);add('add-widget:'+type,M.LABELS[type]+(w.on?' / Added':' / Add'),286+(i%3)*425,154+Math.floor(i/3)*89,402,72,!w.on);});
- }else if(s.page==='widgets'){
-  M.TYPES.forEach((type,i)=>{const w=d.widgets.find(w=>w.type===type);add('widget:'+type,M.LABELS[type]+' / '+(w.on?'Visible':'Hidden'),286+(i%3)*425,154+Math.floor(i/3)*89,402,72,true,s.selected===type);});
+ }else if(s.page==='add'||s.page==='widgets'){
+  M.GROUPS.forEach((g,i)=>add('widget-group:'+i,g[0],286+i*322,143,308,49,true,(s.widgetGroup||0)===i));
+  const group=M.GROUPS[s.widgetGroup||0],adding=s.page==='add';
+  const pages=Math.ceil(group[1].length/9),page=(s.widgetPage||0)%pages;
+  if(pages>1)add('widget-next','Page '+(page+1)+' of '+pages+' / Next',1194,461,368,52);
+  group[1].slice(page*9,page*9+9).forEach((type,i)=>{const w=d.widgets.find(w=>w.type===type);if(!w)return;add((adding?'add-widget:':'widget:')+type,M.LABELS[type]+(adding?(w.on?' / Added':' / Add'):(w.on?' / Visible':' / Hidden')),286+(i%3)*425,206+Math.floor(i/3)*78,402,65,!adding||!w.on,s.selected===type&&!adding);});
  }else if(s.page==='edit'){
   const free=!s.widget().locked;
   add('select','Edit widget',1282,126,142,57);add('page:add','Add widget',1434,126,144,57);
@@ -84,7 +86,8 @@ function frame(s,focus,scale){
  r.clear('#060a11');r.gradientRect(252,0,1348,580,[[0,'#172438'],[.7,'#080d17'],[1,'#060a11']]);r.fillRect(0,0,252,580,'#0c131f');
  text('CLUSTER STUDIO',276,49,26,'#f0f5ff');text('X4 M COMPETITION',276,84,17,'#89a1bd');
  text(s.editStatus(),610,48,18,s.dirty?'#ffcc87':'#93c5e9',420);
- const subtitle={idrive:'Three iDrive 8-inspired designs. Every widget can be moved, resized and recolored.',gallery:'Choose a template. Arrange, style and apply it to your car.',layouts:'Choose your layout. Your colors and welcome are kept.',gauges:'Choose a dial style. Speed and RPM can each use a different design.',themes:'Choose your color palette. Your widget positions are kept.',add:'Add a widget to your design, then drag it into position. Added widgets are already in your layout.',widgets:'Choose any widget, including hidden ones. Arrange it with touch or the dial.',properties:'Independent width, height, alignment, layer order and widget styling.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',phone:'Name your design and welcome, choose exact colors, import or export. Parked setup.',output:'Choose how to use your design.',assistance:'Your BMW assistance preferences. Read-only; these are not live warning indicators.',tools:'More ways to personalize your cockpit.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
+ const subtitle={idrive:'Three iDrive 8-inspired designs. Every widget can be moved, resized and recolored.',gallery:'Choose a template. Arrange, style and apply it to your car.',layouts:'Choose your layout. Your colors and welcome are kept.',gauges:'Choose a dial style. Speed and RPM can each use a different design.',themes:'Choose your color palette. Your widget positions are kept.',add:'37 widgets. Choose a category, add a widget, then drag it into place.',widgets:'Choose a category and a widget to move, resize, recolor or hide.',properties:'Independent width, height, alignment, layer order and widget styling.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',phone:'Name your design and welcome, choose exact colors, import or export. Parked setup.',output:'Choose how to use your design.',assistance:'Your BMW assistance preferences. Read-only; these are not live warning indicators.',tools:'More ways to personalize your cockpit.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
+ if(['add','widgets'].includes(s.page))text('Live readings depend on vehicle support. Missing or expired values show unavailable.',286,546,18,'#91acc8',1260);
  const preview=['gallery','edit','properties','style','intro'].includes(s.page);
  if(preview){
   const b=s.page==='gallery'?{x:274,y:153,w:976,h:256}:BOX;

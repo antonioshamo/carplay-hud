@@ -9,8 +9,52 @@ const THEMES=[
 ];
 const LAYOUTS=['Ultra / blue rings','M Competition','Grand touring','Minimal','Panorama','Driver focus','Technical','Night drive','Symmetry','Track paddock'];
 const IDRIVE_TEMPLATES=[['id8-sport','iDrive 8 Sport','Angular rails / M colors'],['id8-classic','iDrive 8 Classic','Silver rails / warm accents'],['id8-minimal','iDrive 8 Minimal','Open rails / calm layout']];
-const TYPES=['speed','rpm','gear','clock','date','badge','flag','coolant','oil','accent','signature','connection'];
+const LEGACY_TYPES=['speed','rpm','gear','clock','date','badge','flag','coolant','oil','accent','signature','connection'];
 const LABELS={speed:'Speed',rpm:'Engine RPM',gear:'Gear',clock:'Clock',date:'Date',badge:'X4 M badge',flag:'Racing flag',coolant:'Coolant',oil:'Oil temperature',accent:'M stripes',signature:'Signature',connection:'Data status'};
+const METRICS={
+ fuel:['Gas / fuel remaining','FUEL','fuel'],range:['Fuel range','RANGE','distance'],fuelWarning:['Fuel reserve','FUEL RESERVE','text'],odometer:['Odometer','ODOMETER','distance'],tripTime:['Driving time','DRIVING TIME','duration'],
+ outside:['Outside temperature','OUTSIDE','temperature'],battery:['12V battery charge','BATTERY CHARGE','percent'],torque:['Engine torque','ENGINE TORQUE','torque'],power:['Calculated engine power','POWER / CALCULATED','power'],engineState:['Engine status','ENGINE','text'],driveMode:['Driving mode','DRIVING MODE','text'],powerPercent:['Sport power level','SPORT POWER','percent'],torquePercent:['Sport torque level','SPORT TORQUE','percent']
+};
+for(const pair of [['FL','Front left'],['FR','Front right'],['RL','Rear left'],['RR','Rear right']]){
+ METRICS['pressure'+pair[0]]=[pair[1]+' tire pressure',pair[0]+' TIRE','pressure'];
+ METRICS['target'+pair[0]]=[pair[1]+' target pressure',pair[0]+' TARGET','pressure'];
+ METRICS['tireTemp'+pair[0]]=[pair[1]+' tire temperature',pair[0]+' TIRE','temperature'];
+}
+const TYPES=LEGACY_TYPES.concat(Object.keys(METRICS));
+Object.keys(METRICS).forEach(k=>LABELS[k]=METRICS[k][0]);
+const GROUPS=[['Fuel & trip',['fuel','range','fuelWarning','odometer','tripTime','clock','date']],['Engine',['speed','rpm','gear','oil','coolant','torque','power','engineState','powerPercent','torquePercent','driveMode']],['Tires',Object.keys(METRICS).filter(k=>/^(pressure|target|tireTemp)/.test(k))],['Vehicle & style',['outside','battery','badge','flag','accent','signature','connection']]];
+function newWidget(type){return {type,x:.40,y:.52,w:.20,h:.13,on:false,locked:false,color:'theme',gauge:'inherit'};}
+function placeFuel(d){
+ const f=d.widgets.find(w=>w.type==='fuel');if(!f)return d;
+ f.on=true;f.w=.18;f.h=.115;
+ const occupied=d.widgets.filter(w=>w!==f&&w.on).concat([{x:.35,y:0,w:.30,h:.17},{x:.70,y:.90,w:.10,h:.10}]),candidates=[[.41,.52],[.41,.72],[.04,.02],[.76,.02],[.04,.87],[.76,.85],[.41,.02]];
+ const overlap=(a,b)=>Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x))*Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
+ let best=null,score=Infinity;
+ for(const xy of candidates){const box={x:xy[0],y:xy[1],w:f.w,h:f.h},cost=occupied.reduce((n,w)=>n+overlap(box,w),0);if(cost<score){score=cost;best=box;}}
+ if(score>1e-8){
+  for(const width of [.18,.16]){
+   for(let yy=1;yy<=44&&score>1e-8;yy++)for(let xx=1;xx<=Math.floor((.99-width)/.02)&&score>1e-8;xx++){
+    const box={x:xx*.02,y:yy*.02,w:width,h:.115},cost=occupied.reduce((n,w)=>n+overlap(box,w),0);if(cost<score){score=cost;best=box;}
+   }
+   if(score<1e-8)break;
+  }
+ }
+ Object.assign(f,best);return d;
+}
+function reading(type,d,data){
+ const meta=METRICS[type],v=data[type],imperial=d.units==='mph';if(!meta)return null;
+ let value=v,unit='',digits=0;
+ if(meta[2]==='temperature'){unit='°'+(d.temperatureUnit||'C');if(v!=null&&d.temperatureUnit==='F')value=v*1.8+32;}
+ if(meta[2]==='fuel'){unit=imperial?'US gal':'L';value=v==null?null:imperial?v/3.785411784:v;digits=1;}
+ if(meta[2]==='distance'){unit=imperial?'mi':'km';value=v==null?null:imperial?v/1.609344:v;}
+ if(meta[2]==='pressure'){unit=imperial?'psi':'bar';value=v==null?null:imperial?v*14.5037738:v;digits=1;}
+ if(meta[2]==='percent')unit='%';
+ if(meta[2]==='torque'){unit=imperial?'lb-ft':'Nm';value=v==null?null:imperial?v*.737562149:v;}
+ if(meta[2]==='power'){unit=imperial?'hp':'kW';value=v==null?null:imperial?v*1.34102209:v;}
+ if(meta[2]==='duration'){unit='h:mm';value=v==null?null:Math.floor(v/60)+':'+String(v%60).padStart(2,'0');}
+ const valid=typeof value==='string'||Number.isFinite(value);
+ return {label:meta[1],value:valid?(typeof value==='number'?value.toFixed(digits):value):'—',unit,available:valid,alert:type==='fuelWarning'&&v==='LOW FUEL'};
+}
 const ACCENTS=['theme','#ffffff','#57c5fa','#e64a64','#ffb85c','#83f0ec','#c6a4ff','#89e0b3','#e5d4ae','#c8f760'];
 const STYLES=[['ring','Sport rings'],['digital','Digital cards'],['bar','Horizontal bars'],['ultra','Ultra rings'],['needle','Classic needles'],['segments','Segmented rings'],['sweep','Racing sweep'],['vertical','Vertical rails'],['minimal','Minimal arc'],['dots','Dot matrix dial'],['id8','iDrive 8 angular'],['id8-slim','iDrive 8 minimal']];
 const GAUGES=['inherit'].concat(STYLES.map(s=>s[0]));
@@ -34,17 +78,18 @@ function preset(n){
  if(l===7){ws.forEach(a=>a.on=['speed','rpm','gear','clock','accent'].includes(a.type));p('speed',.10,.28,.32,.43);p('rpm',.58,.28,.32,.43);p('gear',.44,.57,.12,.20);}
  if(l===8){p('speed',.05,.19,.30,.59);p('rpm',.65,.19,.30,.59);p('gear',.44,.46,.12,.23);p('badge',.33,.27,.34,.14);p('flag',.44,.76,.12,.13);p('date',.37,.90,.26,.08);}
  if(l===9){p('rpm',.05,.18,.56,.58);p('speed',.67,.18,.27,.52);p('gear',.68,.70,.12,.20);p('badge',.05,.04,.46,.12);p('clock',.69,.03,.25,.11);p('oil',.43,.81,.20,.13,true);p('coolant',.18,.81,.20,.13,true);p('date',.70,.91,.25,.075,false);p('flag',.81,.77,.12,.13);}
- return validate({schema:1,preset:n,theme:Math.floor(n/10),gauge:l===0?'ultra':l===6||l===9?'bar':l===3||l===7?'digital':'ring',background:l===7?'black':'gradient',units:'mph',clock24:false,borders:true,snap:true,title:0,intro:'slide',introEnabled:false,introDuration:3000,introShine:true,introLight:'white',widgets:ws});
+ return placeFuel(validate({schema:1,preset:n,theme:Math.floor(n/10),gauge:l===0?'ultra':l===6||l===9?'bar':l===3||l===7?'digital':'ring',background:l===7?'black':'gradient',units:'mph',clock24:false,borders:true,snap:true,title:0,intro:'slide',introEnabled:false,introDuration:3000,introShine:true,introLight:'white',widgets:ws}));
 }
 function validate(v){
  if(!v||v.schema!==1||!Number.isInteger(v.theme)||v.theme<0||v.theme>=10||!Number.isInteger(v.preset)||v.preset<0||v.preset>=100)throw Error('Invalid design');
  for(const k of ['clock24','borders','snap','introEnabled'])if(typeof v[k]!=='boolean')throw Error('Invalid '+k);
  for(const pair of [['gauge',GAUGES.slice(1)],['background',['gradient','black','transparent']],['units',['mph','km/h']],['intro',['slide','reveal','apple','welcome','none']]])if(!pair[1].includes(v[pair[0]]))throw Error('Invalid '+pair[0]);
- if(!Number.isInteger(v.title)||v.title<0||v.title>=TITLES.length||!Array.isArray(v.widgets)||v.widgets.length!==TYPES.length)throw Error('Invalid widgets');
+ if(!Number.isInteger(v.title)||v.title<0||v.title>=TITLES.length||!Array.isArray(v.widgets)||v.widgets.length<LEGACY_TYPES.length||v.widgets.length>TYPES.length)throw Error('Invalid widgets');
  const seen=new Set();
  v.widgets.forEach(w=>{if(!w||!TYPES.includes(w.type)||seen.has(w.type)||typeof w.on!=='boolean')throw Error('Invalid widget');seen.add(w.type);
  for(const k of ['x','y','w','h'])if(!Number.isFinite(w[k]))throw Error('Invalid position');
  if(w.x<0||w.y<0||w.w<minimum(w.type)[0]-1e-8||w.h<minimum(w.type)[1]-1e-8||w.x+w.w>1.00001||w.y+w.h>1.00001)throw Error('Widget out of bounds');});
+ if(LEGACY_TYPES.some(type=>!seen.has(type)))throw Error('Missing base widget');
  const out={};['schema','preset','theme','gauge','background','units','clock24','borders','snap','title','intro','introEnabled'].forEach(k=>out[k]=v[k]);
  out.template=v.template===undefined?'standard':v.template;
  if(!['standard'].concat(IDRIVE_TEMPLATES.map(a=>a[0])).includes(out.template))throw Error('Invalid template');
@@ -61,7 +106,17 @@ function validate(v){
   const locked=w.locked===undefined?false:w.locked,color=w.color===undefined?'theme':w.color,gauge=w.gauge===undefined?'inherit':w.gauge;
   if(typeof locked!=='boolean'||!(color==='theme'||/^#[0-9a-fA-F]{6}$/.test(color))||!GAUGES.includes(gauge))throw Error('Invalid widget style');
   return {type:w.type,x:w.x,y:w.y,w:w.w,h:w.h,on:w.on,locked,color,gauge};
- });return out;
+ });
+ // Correct only untouched iDrive 8 factory positions; preserve custom moves.
+ if(['id8-sport','id8-classic'].includes(out.template)){
+  const c=out.widgets.find(w=>w.type==='coolant'),o=out.widgets.find(w=>w.type==='oil');
+  if(c&&o&&c.x===.40&&o.x===.54&&c.w===.12&&o.w===.12&&c.y===o.y&&[.66,.68].includes(c.y)){c.x=.37;o.x=.51;}
+  const a=out.widgets.find(w=>w.type==='accent');if(a&&a.x===.40&&a.w===.22&&a.y===.86)a.x=.39;
+ }
+ const missingFuel=!seen.has('fuel');
+ for(const type of TYPES)if(!seen.has(type))out.widgets.push(newWidget(type));
+ if(missingFuel)placeFuel(out);
+ return out;
 }
 function cleanText(v,max){if(typeof v!=='string'||!v.trim()||v.length>max||/[^\x20-\x7e]/.test(v))throw Error('Use 1-'+max+' printable characters');return v.trim();}
 function move(d,type,dx,dy){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const snap=v=>d.snap?Math.round(v*100)/100:v;w.x=clamp(snap(w.x+dx),0,1-w.w);w.y=clamp(snap(w.y+dy),0,1-w.h);}
@@ -80,7 +135,7 @@ for(const w of config.widgets){
  if(w.type==='accent')Object.assign(w,{x:.38,y:.89,w:.24,h:.022});
  if(['clock','date','gear','signature','connection'].includes(w.type))w.on=false;
 }
-config.name='Antonio M Competition';return validate(config);
+config.name='Antonio M Competition';return placeFuel(validate(config));
 }
 function idrivePreset(index){
  if(!Number.isInteger(index)||index<0||index>=IDRIVE_TEMPLATES.length)throw Error('Invalid iDrive template');
@@ -90,10 +145,10 @@ function idrivePreset(index){
  const put=(type,x,y,w,h)=>Object.assign(d.widgets.find(a=>a.type===type),{x,y,w,h,on:true});
  put('speed',.045,.12,.35,.70);put('rpm',.605,.12,.35,.70);
  put('badge',.42,.28,.16,.15);put('clock',.08,.86,.20,.09);
- put('coolant',.40,.66,.12,.12);put('oil',.54,.66,.12,.12);put('accent',.40,.86,.22,.023);
- if(index===1){put('badge',.40,.22,.20,.18);put('date',.43,.49,.18,.09);put('coolant',.40,.68,.12,.12);put('oil',.54,.68,.12,.12);d.widgets.find(w=>w.type==='accent').on=false;}
+ put('coolant',.37,.66,.12,.12);put('oil',.51,.66,.12,.12);put('accent',.39,.86,.22,.023);
+ if(index===1){put('badge',.40,.22,.20,.18);put('date',.43,.49,.18,.09);put('coolant',.37,.68,.12,.12);put('oil',.51,.68,.12,.12);d.widgets.find(w=>w.type==='accent').on=false;}
  if(index===2){put('speed',.08,.20,.34,.61);put('rpm',.58,.20,.34,.61);put('badge',.42,.35,.16,.15);put('oil',.58,.85,.13,.10);d.widgets.find(w=>w.type==='coolant').on=false;d.widgets.find(w=>w.type==='accent').on=false;}
- return validate(d);
+ return placeFuel(validate(d));
 }
 function baseDesign(d){const i=IDRIVE_TEMPLATES.findIndex(a=>a[0]===d.template);return i<0?preset(d.preset):idrivePreset(i);}
-module.exports={IDRIVE_TEMPLATES,idrivePreset,baseDesign,STYLES,gaugeLabel,acceptedDesign,ACCENTS,GAUGES,dimension,align,cleanText,THEMES,LAYOUTS,TYPES,LABELS,TITLES,preset,validate,clone,clamp,move,resize};
+module.exports={METRICS,GROUPS,LEGACY_TYPES,reading,placeFuel,newWidget,IDRIVE_TEMPLATES,idrivePreset,baseDesign,STYLES,gaugeLabel,acceptedDesign,ACCENTS,GAUGES,dimension,align,cleanText,THEMES,LAYOUTS,TYPES,LABELS,TITLES,preset,validate,clone,clamp,move,resize};

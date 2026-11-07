@@ -2,7 +2,7 @@
 'use strict';
 const M=require('./studio_model.js'),V=require('./studio_view.js'),I=require('./studio_intro.js'),{StudioClient}=require('./studio_client.js');
 class StudioScreen {
- constructor(refresh,options){this.refresh=refresh;this.client=options&&options.client||new StudioClient();this.design=M.preset(0);this.page='gallery';this.styleTarget='design';this.testSeconds=30;this.mediaTarget='center';this.videoSupported=false;this.selected='speed';this.dirty=false;this.history=[];this.redo=[];this.moveStep=.01;this.notice='';this.drag=null;this.animationAt=0;this.loaded=false;this.liveChanges=true;this.nav=[];this.liveTimer=null;this.liveSending=false;this.liveBlocked=null;this.lastLiveAt=0;this.isClosed=false;this.client.on('change',()=>{if(this.client.status){const key=JSON.stringify(this.client.status.design);if((!this.loaded||key!==this.remoteKey)&&!this.dirty)this.design=M.clone(this.client.status.design);this.remoteKey=key;this.loaded=true;}this.scheduleLive();this.refresh();});}
+ constructor(refresh,options){this.refresh=refresh;this.client=options&&options.client||new StudioClient();this.design=M.preset(0);this.page='gallery';this.widgetGroup=0;this.styleTarget='design';this.testSeconds=30;this.mediaTarget='center';this.videoSupported=false;this.selected='speed';this.dirty=false;this.history=[];this.redo=[];this.moveStep=.01;this.notice='';this.drag=null;this.animationAt=0;this.loaded=false;this.liveChanges=true;this.nav=[];this.liveTimer=null;this.liveSending=false;this.liveBlocked=null;this.lastLiveAt=0;this.isClosed=false;this.client.on('change',()=>{if(this.client.status){const key=JSON.stringify(this.client.status.design);if((!this.loaded||key!==this.remoteKey)&&!this.dirty)this.design=M.clone(this.client.status.design);this.remoteKey=key;this.loaded=true;}this.scheduleLive();this.refresh();});}
  open(){this.isClosed=false;this.client.connect();}
  pauseLive(){this.liveChanges=false;clearTimeout(this.liveTimer);this.liveTimer=null;}
  back(){if(this.page==='media'&&this.videoFull){this.videoFull=false;return true;}if(this.nav.length){this.page=this.nav.pop();this.drag=null;return true;}if(this.page!=='gallery'){this.page='gallery';return true;}return false;}
@@ -27,12 +27,14 @@ class StudioScreen {
  }
  widget(){return this.design.widgets.find(w=>w.type===this.selected);}
  checkpoint(){this.redo=[];this.history.push(M.clone(this.design));if(this.history.length>30)this.history.shift();this.dirty=true;this.notice='';}
- previewData(){return {now:new Date(2026,10,4,10,28),speed:100,rpm:3200,gear:'D',oil:92,coolant:88,connected:false};}
+ previewData(){return {now:new Date(2026,10,4,10,28),speed:100,rpm:3200,gear:'D',oil:92,coolant:88,fuel:32,range:310,fuelWarning:'NORMAL',odometer:24420,tripTime:84,outside:13,battery:82,torque:280,power:94,engineState:'RUNNING',driveMode:'SPORT',powerPercent:26,torquePercent:34,pressureFL:2.4,pressureFR:2.4,pressureRL:2.6,pressureRR:2.6,targetFL:2.4,targetFR:2.4,targetRL:2.6,targetRR:2.6,tireTempFL:28,tireTempFR:29,tireTempRL:30,tireTempRR:31,connected:false};}
  frame(focus,scale){return V.frame(this,focus,scale);}
  press(id){const before=JSON.stringify(this.design),page=this.page;const result=this._press(id);if(this.page!==page&&id!=='navigate-back'){this.nav.push(page);if(this.nav.length>20)this.nav.shift();}if(JSON.stringify(this.design)!==before){this.dirty=true;this.liveBlocked=null;this.scheduleLive();}return result;}
  _press(id){
   if(id==='navigate-back')return this.back();
   if(id==='live-toggle'){this.liveChanges=!this.liveChanges;clearTimeout(this.liveTimer);this.liveTimer=null;this.liveBlocked=null;this.notice=this.liveChanges?'Live changes on · updates the active design in Park':'Live changes off · press Apply when ready';this.scheduleLive();return true;}
+  if(id.startsWith('widget-group:')){const group=Number(id.slice(13));if(Number.isInteger(group)&&M.GROUPS[group])this.widgetGroup=group;this.widgetPage=0;return true;}
+  if(id==='widget-next'){const count=Math.ceil(M.GROUPS[this.widgetGroup||0][1].length/9);this.widgetPage=((this.widgetPage||0)+1)%count;return true;}
   if(id==='exit')return false;
   if(id==='video-full'){this.videoFull=!this.videoFull;return true;}
   if(id.indexOf('page:')===0||id.indexOf('go:')===0){this.page=id.slice(id.indexOf(':')+1);this.videoFull=false;this.drag=null;return true;}
@@ -40,7 +42,7 @@ class StudioScreen {
   if(id==='edit'){this.page='edit';return true;}
   if(id==='gauge'||id==='widget-gauge'){this.styleTarget=id==='gauge'?'design':this.selected;this.page='gauges';return true;}
   if(id==='play'){I.prepare(this.design);this.animationAt=Date.now();return true;}
-  if(id==='select'){this.page='widgets';return true;}
+  if(id==='select'){this.widgetGroup=Math.max(0,M.GROUPS.findIndex(g=>g[1].includes(this.selected)));this.widgetPage=Math.floor(M.GROUPS[this.widgetGroup][1].indexOf(this.selected)/9);this.page='widgets';return true;}
   if(id.startsWith('add-widget:')){
    const w=this.design.widgets.find(w=>w.type===id.slice(11));
    if(!w||w.on)return true;

@@ -14,3 +14,5 @@ tar -xzf "$runtime_dir/node.tar.gz" -C "$runtime_dir"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_customization.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_editor_live.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_telemetry.js
+
+"$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_widget_library.js
