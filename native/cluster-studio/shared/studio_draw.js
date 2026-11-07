@@ -4,7 +4,14 @@ const M=require('./studio_model.js');
 function draw(r,d,b,data,options){
  const o=options||{},t=M.THEMES[d.theme],sx=b.w/1920,sy=b.h/720,scale=Math.min(sx,sy);
  const rect=(x,y,w,h,c,rad)=>r.roundRect(b.x+x*sx,b.y+y*sy,w*sx,h*sy,(rad||0)*scale,c);
- const text=(s,x,y,size,c)=>r.text(String(s),b.x+x*sx,b.y+y*sy,size*scale,c||'#f3f5ff',{font:'bold'});
+ // Anchor readouts to their widget center. Measure the actual glyph advances
+ // so narrow widgets, long names and changing digit counts remain centered.
+ const text=(s,cx,y,size,c,width)=>{
+  const value=String(s),opts={font:'bold',align:'center'};
+  let pixels=size*scale;
+  if(width&&r.textWidth){const measured=r.textWidth(value,pixels,opts);if(measured>width*sx)pixels*=width*sx/measured;}
+  return r.text(value,b.x+cx*sx,b.y+y*sy,pixels,c||'#f3f5ff',opts);
+ };
  const line=(x,y,xx,yy,n,c)=>r.line(b.x+x*sx,b.y+y*sy,b.x+xx*sx,b.y+yy*sy,n*scale,c);
  if(d.gauge==='ultra'&&d.background==='gradient')r.gradientRect(b.x,b.y,b.w,b.h,[[0,'#062c3a'],[.7,'#07151b'],[1,'#000000']]);
  else if(d.background==='gradient')r.gradientRect(b.x,b.y,b.w,b.h,[[0,t[3]],[.7,'#060a11'],[1,'#020408']]);
@@ -32,9 +39,9 @@ function draw(r,d,b,data,options){
    for(let i=0;i<=steps;i++){const p=at(i/steps);line(p[0],p[1],p[0]+inward*ww*.026,p[1],2,'#c5d6e8');if(!slim&&i%2===0){const tick=w.type==='rpm'?i:Math.round(max*i/steps);r.text(String(tick),b.x+(p[0]+inward*ww*.066)*sx,b.y+(p[1]+(i===0?30:i===steps?-15:6))*sy,Math.min(23,hh*.055)*scale,'#a8bfd7',{font:'bold',align:'center'});}}
    if(w.type==='rpm')poly([at(.875),at(1)],4,'#ed4961');
    if(val!=null&&fraction>0){const path=[rail[0]];for(let i=1;i<=4;i++)if(distances[i]/distances[4]<fraction)path.push(rail[i]);path.push(at(fraction));poly(path,slim?4:7,accent);const p=at(fraction);line(p[0]-inward*3,p[1],p[0]+inward*ww*.04,p[1],3,'#ffffff');}
-   centered(label,.61,.37,Math.min(23,hh*.06),'#96aec8');
-   centered(n,.61,.59,Math.min(slim?106:112,ww/(Math.max(n.length,3)*.71),hh*.28),'#f5f8ff');
-   centered(unit,.61,.70,Math.min(29,hh*.08),accent);
+   centered(label,.5,.37,Math.min(23,hh*.06),'#96aec8');
+   centered(n,.5,.59,Math.min(slim?106:112,ww/(Math.max(n.length,3)*.71),hh*.28),'#f5f8ff');
+   centered(unit,.5,.70,Math.min(29,hh*.08),accent);
   }else if(['needle','segments','sweep','vertical','minimal','dots'].includes(mode)){
    const cx=x+ww/2,cy=y+hh/2,rad=Math.min(ww/2-14,hh/2-10),fraction=val==null?0:M.clamp(val/max,0,1);
    const centered=(str,xx,yy,size,col)=>r.text(String(str),b.x+xx*sx,b.y+yy*sy,size*scale,col||accent,{font:'bold',align:'center'});
@@ -68,9 +75,9 @@ function draw(r,d,b,data,options){
    r.arc(b.x+cx*sx,b.y+cy*sy,(rad-20)*scale,rad*scale,222,498,'#103c49');
    if(val!=null)r.arc(b.x+cx*sx,b.y+cy*sy,(rad-20)*scale,rad*scale,222,222+276*M.clamp(val/max,0,1),col);
    const value=w.type==='rpm'?(data.gear==null?'—':data.gear):n,unitText=w.type==='rpm'?(val==null?'RPM unavailable':Math.round(val)+' RPM'):unit;
-   text(value,cx-value.length*34,cy+34,120,'#ffffff');text(unitText,cx-unitText.length*9,cy+78,29,'#d1dde1');
+   text(value,cx,cy+34,120,'#ffffff',ww*.8);text(unitText,cx,cy+78,29,'#d1dde1',ww*.8);
    r.arc(b.x+cx*sx,b.y+cy*sy,(rad-4)*scale,rad*scale,145,215,col);
-   if(w.type==='rpm')text(data.coolant==null?'— °'+(d.temperatureUnit||'C'):Math.round(d.temperatureUnit==='F'?data.coolant*1.8+32:data.coolant)+' °'+(d.temperatureUnit||'C'),cx-44,cy+rad-34,28,'#ffffff');
+   if(w.type==='rpm')text(data.coolant==null?'— °'+(d.temperatureUnit||'C'):Math.round(d.temperatureUnit==='F'?data.coolant*1.8+32:data.coolant)+' °'+(d.temperatureUnit||'C'),cx,cy+rad-34,28,'#ffffff',ww*.8);
   }else if(mode==='ring'){
    const rad=Math.min(ww/2-12,hh/2-8),cx=x+ww/2,cy=y+hh/2;
    const centered=(str,xx,yy,size,color)=>r.text(String(str),b.x+xx*sx,b.y+yy*sy,size*scale,color,{font:'bold',align:'center'});
@@ -88,7 +95,7 @@ function draw(r,d,b,data,options){
    centered(label,cx,cy-46,23,'#90a8c3');centered(n,cx,cy+31,Math.min(86,ww/(Math.max(n.length,3)*.76)),accent);centered(unit,cx,cy+65,25,'#c2d1e2');
   }else{
    if(d.borders)rect(x,y,ww,hh,'#141e2c',24);
-   text(label,x+22,y+44,29,'#a9b7ca');text(n,x+22,y+hh*.62,Math.min(104,hh*.43),accent);text(unit,x+22,y+hh-22,26,'#acb9ca');
+   text(label,x+ww/2,y+44,29,'#a9b7ca',ww-44);text(n,x+ww/2,y+hh*.62,Math.min(104,hh*.43),accent,ww-44);text(unit,x+ww/2,y+hh-22,26,'#acb9ca',ww-44);
    if(mode==='bar'){rect(x+22,y+hh-66,ww-44,12,'#283347',6);if(val!=null)rect(x+22,y+hh-66,(ww-44)*M.clamp(val/max,0,1),12,accent,6);}
   }
  };
@@ -96,15 +103,15 @@ function draw(r,d,b,data,options){
   const val=data[w.type],accent=w.color&&w.color!=='theme'?w.color:t[1];
   if(w.type==='speed')gauge(w,val==null?null:d.units==='mph'?val/1.609344:val,d.units==='mph'?160:260,'SPEED',d.units);
   else if(w.type==='rpm')gauge(w,val,8000,'ENGINE','RPM');
-  else if(w.type==='gear'){if(d.borders)rect(x,y,ww,hh,'#1b273a',20);text(val==null?'—':val,x+ww*.28,y+hh*.72,hh*.62,accent);}
-  else if(w.type==='clock')text(time,x+8,y+hh*.74,Math.min(hh*.68,ww/(time.length*.63)),accent);
-  else if(w.type==='date'){const s=['SUN','MON','TUE','WED','THU','FRI','SAT'][now.getDay()]+' / '+(now.getMonth()+1)+'.'+now.getDate();text(s,x+8,y+hh*.73,Math.min(36,hh*.7),'#acb9ca');}
-  else if(w.type==='badge'){text('X4 M',x+ww*.10,y+hh*.53,Math.min(ww*.25,hh*.6),accent);text('C O M P E T I T I O N',x+ww*.10,y+hh*.88,Math.min(ww*.047,hh*.21),'#d1d9e5');}
+  else if(w.type==='gear'){if(d.borders)rect(x,y,ww,hh,'#1b273a',20);text(val==null?'—':val,x+ww/2,y+hh*.72,hh*.62,accent,ww*.9);}
+  else if(w.type==='clock')text(time,x+ww/2,y+hh*.74,hh*.68,accent,ww*.94);
+  else if(w.type==='date'){const s=['SUN','MON','TUE','WED','THU','FRI','SAT'][now.getDay()]+' / '+(now.getMonth()+1)+'.'+now.getDate();text(s,x+ww/2,y+hh*.73,Math.min(36,hh*.7),'#acb9ca',ww*.94);}
+  else if(w.type==='badge'){text('X4 M',x+ww/2,y+hh*.53,Math.min(ww*.25,hh*.6),accent,ww*.9);text('C O M P E T I T I O N',x+ww/2,y+hh*.88,Math.min(ww*.047,hh*.21),'#d1d9e5',ww*.9);}
   else if(w.type==='flag')flag(x,y,ww,hh);
   else if(w.type==='accent'){['#53bdeb','#3457aa','#e5475b'].forEach((c,i)=>rect(x+i*ww/3,y,ww/3-6,hh,c,3));}
-  else if(w.type==='signature')text(d.signature||M.TITLES[d.title],x+5,y+hh*.75,Math.min(hh*.65,ww/((d.signature||M.TITLES[d.title]).length*.62)),accent);
-  else if(w.type==='connection')text(data.connected?'VEHICLE DATA / LIVE':'VEHICLE DATA / UNAVAILABLE',x,y+hh*.75,Math.min(hh*.7,ww/18),'#acb9ca');
-  else {const label=w.type==='oil'?'OIL':'COOLANT';text(label,x+6,y+hh*.29,Math.min(23,hh*.3),'#acb9ca');text(val==null?'— °'+(d.temperatureUnit||'C'):Math.round(d.temperatureUnit==='F'?val*1.8+32:val)+' °'+(d.temperatureUnit||'C'),x+6,y+hh*.85,Math.min(48,hh*.56),accent);}
+  else if(w.type==='signature')text(d.signature||M.TITLES[d.title],x+ww/2,y+hh*.75,hh*.65,accent,ww*.94);
+  else if(w.type==='connection')text(data.connected?'VEHICLE DATA / LIVE':'VEHICLE DATA / UNAVAILABLE',x+ww/2,y+hh*.75,hh*.7,'#acb9ca',ww*.94);
+  else {const label=w.type==='oil'?'OIL':'COOLANT';text(label,x+ww/2,y+hh*.29,Math.min(23,hh*.3),'#acb9ca',ww*.94);text(val==null?'— °'+(d.temperatureUnit||'C'):Math.round(d.temperatureUnit==='F'?val*1.8+32:val)+' °'+(d.temperatureUnit||'C'),x+ww/2,y+hh*.85,Math.min(48,hh*.56),accent,ww*.94);}
   if(o.selected===w.type)r.strokeRoundRect(b.x+x*sx,b.y+y*sy,ww*sx,hh*sy,8*scale,2,'#56bdff');
  }
  if(o.grid){for(let i=1;i<10;i++){r.line(b.x+b.w*i/10,b.y,b.x+b.w*i/10,b.y+b.h,.5,'#253347');r.line(b.x,b.y+b.h*i/10,b.x+b.w,b.y+b.h*i/10,.5,'#253347');}}
