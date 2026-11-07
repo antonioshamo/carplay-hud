@@ -112,7 +112,7 @@ void MapFeed::make_layer()
     lo_.y = (int)q.y;
     lo_.w = q.w;
     lo_.h = q.h;
-    lo_.visible = live_ && !frozen_;
+    lo_.visible = live_ && !frozen_ && picture_ready_;
     refused_.clear();
     layer_state_ = "stalled";
     layer_reason_.clear();
@@ -290,7 +290,17 @@ void MapFeed::set_stream(bool live, bool frozen)
     log_info("render: CarPlay's cluster stream %s", !live ? "is not live" : frozen ? "froze" : "is live");
     live_ = live;
     frozen_ = frozen;
-    const bool visible = live && !frozen;
+    const bool visible = live && !frozen && picture_ready_;
+    if (layer_ && lo_.visible != visible) {
+        lo_.visible = visible;
+        client_.set(layer_, lo_);
+    }
+}
+
+void MapFeed::set_picture(bool ready)
+{
+    picture_ready_ = ready;
+    const bool visible = live_ && !frozen_ && picture_ready_;
     if (layer_ && lo_.visible != visible) {
         lo_.visible = visible;
         client_.set(layer_, lo_);
@@ -354,6 +364,10 @@ FeedStatus MapFeed::status(const std::string &decode, const std::string &stream)
     } else if (!live_) {
         s.state = "idle";
         s.page = decode;
+    } else if (!picture_ready_) {
+        s.state = "starting";
+        s.page = decode;
+        s.reason = "waiting for a non-blank CarPlay map frame";
     } else if (layer_state_ == "shown") {
         s.state = "showing";
         char p[400];

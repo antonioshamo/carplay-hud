@@ -309,6 +309,7 @@ int serve(const Config &cfg)
     std::string last_detail;
     AltScreen::State alt_state = AltScreen::Unknown;
     int64_t alt_read_ms = 0;
+    bool picture_ready = false;
     for (;;) {
         std::vector<pollfd> p = {{sig_fd, POLLIN, 0}, {control.listen_fd(), POLLIN, 0}, {control.owner_fd(), POLLIN, 0},
                                  {producer.ready_fd(), POLLIN, 0}};
@@ -328,8 +329,8 @@ int serve(const Config &cfg)
             control.on_listen_readable();
         const int64_t now = now_ms();
         uint64_t id = 0;
-        if (producer.take(&frame, &id))
-            feed.offer(&frame, id, now);
+        bool blank = true;
+        const bool have_frame = producer.take(&frame, &id, &blank);
         if (now - alt_read_ms >= 1000) {
             const AltScreen::State s = cfg.num("alt_screen_port") ? alt.read() : AltScreen::Unknown;
             if (s != alt_state)
@@ -339,6 +340,17 @@ int serve(const Config &cfg)
             alt_read_ms = now;
         }
         const bool live = liveness.live(alt_state, producer.last_frame_ms(), now);
+        if (have_frame)
+            picture_ready = !blank;
+        if (!live)
+            picture_ready = false;
+        // A connected phone can send only blank frames, then stop. Freeze
+        // detection expires when their rate falls, but that is not a map.
+        // Keep the decoder warm; never acquire the shared scene for blank
+        // content or redisplay a previous session's picture on reconnect.
+        if (have_frame && live && !blank)
+            feed.offer(&frame, id, now);
+        feed.set_picture(picture_ready);
         producer.set_live(live);
         const bool defaults = bmw_defaults_active(cfg.str("defaults_marker").c_str());
         feed.set_stream(live && !defaults, producer.frozen(now));
