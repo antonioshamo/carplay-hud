@@ -317,10 +317,32 @@ static void take_over_and_fall_back()
     ok("the stock content gone: shown", ea.target["panel"] == "shown");
 }
 
+static void independent_target_capability()
+{
+    for (int mode = 0; mode < 4; ++mode) {
+        Rig r;
+        r.svc.reset();
+        if (mode) {
+            TargetSpec h;
+            h.name = "hud"; h.slot = mode == 3 ? 0x203 : 0x323;
+            h.scene_id = mode == 1 ? 0x01000400 : 0x010004f0;
+            h.width = 800; h.height = 480;
+            r.sc.targets.push_back(h);
+        }
+        r.start();
+        Raw raw(r.path);
+        raw.send("{\"op\":\"hello\",\"app\":\"mapping-capability\"}");
+        r.pump(50);
+        const std::string expected = std::string("\"independent_panel_hud\":") + (mode == 2 ? "true" : "false");
+        ok("hello independence follows distinct loaded slots and scene IDs", raw.events().find(expected) != std::string::npos);
+    }
+}
+
 int main()
 {
     signal(SIGPIPE, SIG_IGN);
     setvbuf(stdout, nullptr, _IONBF, 0);
+    independent_target_capability();
     Rig r;
     cr::Client a("waze", r.path), b("overlay", r.path);
     Events ea, eb;

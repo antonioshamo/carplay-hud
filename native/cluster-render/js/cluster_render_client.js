@@ -113,6 +113,7 @@ class ClusterRender extends EventEmitter {
         this.path = socketPath || DEFAULT_PATH;
         this.sock = null;
         this.ready = false;
+        this.independentPanelHud = false;
         this.closed = true;
         this.backoff = 0;
         this.timer = null;
@@ -137,6 +138,7 @@ class ClusterRender extends EventEmitter {
         if (this.sock) this.sock.destroy();
         this.sock = null;
         this.ready = false;
+        this.independentPanelHud = false;
     }
 
     _open() {
@@ -176,6 +178,7 @@ class ClusterRender extends EventEmitter {
             const wasReady = this.ready;
             this.sock = null;
             this.ready = false;
+            this.independentPanelHud = false;
             this.connected = false;
             this.pendingFrames.clear();
             if (wasReady) this.emit('disconnected');
@@ -208,6 +211,7 @@ class ClusterRender extends EventEmitter {
         if (ev.ev === 'hello') {
             this.backend = ev.backend;
             this.targets = ev.targets;
+            this.independentPanelHud = ev.independent_panel_hud === true;
             this.ready = true;
             this.backoff = 0;
             this._pump();

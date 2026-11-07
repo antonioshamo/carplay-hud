@@ -117,7 +117,7 @@ function frame(s,focus,scale){
   text(status?(status.enabled?'On · ':'Off · ')+(status.output==='parked-panel'?'Full cluster in Park':'Center layout'):'Waiting for Cluster Studio',286,215,25,'#d6e1ef',710);
   text(status&&status.displayVisible?'Renderer reports your design is shown':status&&status.state||'Waiting for display status',286,253,21,'#a4c4e4',710);
   text('Your layout stays saved while output waits.',286,298,21,'#d6e1ef',710);
-  text('HUD map and full cluster cannot be shown together yet.',286,337,20,'#a4c4e4',710);
+  text(status&&status.independentPanelHud?'Separate display resources: cluster + HUD enabled.':'This renderer shares the full-cluster and HUD resource.',286,337,20,'#a4c4e4',710);
   text('Retry keeps your layout and selected output.',286,378,21,'#d6e1ef',710);
   text('P stays visible. BMW gauges return outside Park.',286,417,20,'#a4c4e4',710);
   const failure=status&&status.recovery&&status.recovery.failure;

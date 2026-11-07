@@ -572,13 +572,20 @@ void Server::on_json(Client &c, const std::string &body, int64_t now_ms)
     if (op == "hello") {
         c.app = str(j, "app", "?").substr(0, 64);
         std::string targets;
-        for (const TargetSpec &t : slots_->targets())
+        const TargetSpec *panel = nullptr, *hud = nullptr;
+        for (const TargetSpec &t : slots_->targets()) {
             targets += (targets.empty() ? "" : ",") + t.name + ":" + std::to_string(t.width) + "x" +
                        std::to_string(t.height);
+            if (t.name == "panel") panel = &t;
+            if (t.name == "hud") hud = &t;
+        }
+        // Report the loaded mapping, never infer independence from target names.
+        const bool independent = panel && hud && panel->scene_id != hud->scene_id && panel->slot != hud->slot;
         send(c, cr::json_object({{"ev", cr::json_quote("hello")},
                                  {"proto", std::to_string(cr::kProtocolVersion)},
                                  {"backend", cr::json_quote(backend_)},
-                                 {"targets", cr::json_quote(targets)}}));
+                                 {"targets", cr::json_quote(targets)},
+                                 {"independent_panel_hud", independent ? "true" : "false"}}));
         c.target_sent.clear();
         log_info("client %llu: %s", (unsigned long long)c.id, c.app.c_str());
         return;

@@ -61,6 +61,17 @@ try{
  assert(e.health().paused,'repeated unattributed display removals pause the flashing source');assert.equal(e.ref,null);
  s.command({cmd:'retry',id:9});e.tick();r.emit('target','map','shown','us','');r.emit('layer',e.ref,'shown','');
  e.tick();now+=11000;e.tick();assert(!e.health().failure,'stable mapping clears the recovery history');
+ // With confirmed separate resources, HUD ownership no longer deletes the
+ // panel. Missing capability, stale telemetry and movement still fail closed.
+ s.command({cmd:'apply',id:10,design:d,output:'parked-panel'});
+ r.independentPanelHud=true;r.emit('target','hud','shown','us','');e.tick();
+ assert.equal(e.target,'panel');const separate=e.ref;assert(separate);assert(s.state().independentPanelHud);assert(s.state().canPreview);
+ r.emit('target','hud','waiting','stock','a stock pop-up shows in its place');e.tick();assert.equal(e.ref,separate);
+ r.emit('target','hud','shown','us','');e.tick();assert.equal(e.ref,separate);
+ parked=false;e.tick();assert.equal(e.ref,null,'separate resources never authorize moving output');
+ parked=true;e.tick();assert(e.ref);
+ r.independentPanelHud=false;r.emit('target','hud','shown','us','');e.tick();assert.equal(e.ref,null,'shared/older renderer restores conflict gate');
+ r.emit('target','hud','idle');s.command({cmd:'apply',id:11,design:d,output:'center'});e.tick();
  const healthy=e.ref,welcome=r.image({target:'map'});e.welcome={ref:welcome,assets:[]};e.introUntil=now+3000;
  r.emit('refused','animate',welcome,'optional welcome rejected');
  assert.equal(e.ref,healthy,'optional welcome error must not discard healthy gauges');assert.equal(e.welcome,null);assert.equal(e.introUntil,0);
