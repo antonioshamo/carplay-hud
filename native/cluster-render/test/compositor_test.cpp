@@ -1343,8 +1343,45 @@ static void fades()
                                                         opacity(mg, pvv.atlas_quad) == 1.0f);
 }
 
+static void queued_gauge_patches()
+{
+    Rig r(3000 * 1024);
+    std::string err;
+    const uint32_t id = r.comp->add_image(1, r.panel, params(Klass::Overlay, R(0, 0, 1920, 720)),
+                                         1920, 720, 30, Sampling::Nearest, r.now, &err);
+    auto *image = static_cast<ImageLayer *>(r.comp->layer(1, id));
+    std::vector<uint8_t> expected(1920 * 720 * 4, 23);
+    image->update({}, expected.data(), expected.size(), &err);
+    r.step(10);r.slots.on_shown(0x01000400,r.now);r.run(2600);
+    const auto before = image->write_stats();
+    // Deliberately deliver many telemetry frames while the compositor is busy.
+    // A moving readout overlaps its old position; the newest pixels must win.
+    for (unsigned i=0;i<120;i++) {
+        crk::PixelRect patch{uint32_t(1250+i%7),uint32_t(280+(i%4)*20),80,16};
+        std::vector<uint8_t> px(patch.w*patch.h*4,uint8_t(i+1));
+        image->update({patch},px.data(),px.size(),&err);
+        for(unsigned y=0;y<patch.h;y++)
+            std::memcpy(&expected[((patch.y+y)*1920+patch.x)*4],&px[y*patch.w*4],patch.w*4);
+    }
+    r.run(100);
+    const auto after = image->write_stats();
+    FakeGraph *g = r.g("panel");
+    const int q = g && !g->visible().empty()?g->visible().back():0;
+    ok("queued RPM patches preserve latest exact pixels",q && g->shown.buffers[g->shown.quads[q].textures["u_image"]].px==expected);
+    ok("120 queued gauge patches stay local, below 32 KiB instead of 5.3 MiB",after.frames>before.frames && after.bytes-before.bytes<32768);
+    // 32 disconnected tiny changes exercise the bounded merge fallback too.
+    for(unsigned i=0;i<32;i++) {
+        crk::PixelRect patch{uint32_t(30+i*40),30,4,4};std::vector<uint8_t> px(64,uint8_t(i+1));
+        image->update({patch},px.data(),px.size(),&err);
+        for(unsigned y=0;y<patch.h;y++)std::memcpy(&expected[((patch.y+y)*1920+patch.x)*4],&px[y*patch.w*4],patch.w*4);
+    }
+    r.run(100);
+    ok("more than 16 distinct patches retain exact untouched gaps",g->shown.buffers[g->shown.quads[q].textures["u_image"]].px==expected);
+}
+
 int main()
 {
+    queued_gauge_patches();
     video_basics();
     packed_motion();
     failure_hold();

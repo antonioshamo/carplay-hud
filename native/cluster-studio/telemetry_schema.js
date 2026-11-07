@@ -7,7 +7,19 @@ const SPECS=[
  ['de.bmw.infrastructure.VehicleInformation','DataPowerTrain2','selection'],
  ['de.bmw.infrastructure.VehicleCondition','vehicleConditionNoCrc','condition'],
  ['de.bmw.infotainment.vehicle.CDS','statusEngineSpeed2','rpm'],
- ['de.bmw.infotainment.vehicle.CDS','statusEngineTemperature','temps']
+ ['de.bmw.infotainment.vehicle.CDS','statusEngineTemperature','temps'],
+ ['de.bmw.infotainment.KombiIF','statusRangeTankStatus','fuel'],
+ ['de.bmw.infotainment.KombiIF','statusBordcomputerTravelData','trip'],
+ ['de.bmw.infrastructure.EnvironmentalInformation','ExteriorTemperature','outside'],
+ ['de.bmw.infotainment.vehicle.CDS','statusBattery2','battery'],
+ ['de.bmw.infotainment.vehicle.CDS','statusEngineStatus','engineState'],
+ ['de.bmw.infotainment.drivingexcitement.FES','statusActualValueTorque2','torque'],
+ ['de.bmw.infotainment.drivingexcitement.FES','statusVehicleDynamicEngine','sport'],
+ ['de.bmw.infotainment.drivingexcitement.FES','statusFESVehicleDynamicSwitchHMI','driveMode'],
+ ['de.bmw.infotainment.vehicle.Vehicle','statusNewCurrentUnitsStatusExt','units'],
+ ['de.bmw.infotainment.vehicle.TPMS','statusTyrePressure','pressure'],
+ ['de.bmw.infotainment.vehicle.TPMS','statusTargetTyrePressure','target'],
+ ['de.bmw.infotainment.vehicle.TPMS','statusTyreTemperature','tireTemp']
 ];
 function schema(db,ref,depth){
  if(depth>8)throw Error('Recursive telemetry type');

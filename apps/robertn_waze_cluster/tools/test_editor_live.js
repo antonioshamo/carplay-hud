@@ -41,7 +41,7 @@ class Client extends EventEmitter {
  assert(V.items(s).some(b=>b.id==='page:add'&&b.label==='Add widget'));
  for(const type of M.TYPES){
   const w=s.design.widgets.find(w=>w.type===type);w.on=false;w.locked=true;
-  const before=M.clone(s.design);s.press('page:add');assert(V.items(s).find(b=>b.id==='add-widget:'+type).enabled);
+  const before=M.clone(s.design);s.press('page:add');const group=M.GROUPS.findIndex(g=>g[1].includes(type));s.press('widget-group:'+group);if(M.GROUPS[group][1].indexOf(type)>=9)s.press('widget-next');assert(V.items(s).find(b=>b.id==='add-widget:'+type).enabled);
   s.press('add-widget:'+type);assert.equal(s.page,'edit');assert.equal(s.selected,type);assert(s.widget().on);assert(!s.widget().locked);assert.equal(s.design.widgets.length,M.TYPES.length);
   const added=M.clone(s.design);s.press('undo');assert.deepEqual(s.design,before);s.press('redo');assert.deepEqual(s.design,added);
   s.press('page:add');assert(!V.items(s).find(b=>b.id==='add-widget:'+type).enabled);s.press('add-widget:'+type);assert.deepEqual(s.design,added,'already added cannot duplicate a widget');s.press('navigate-back');

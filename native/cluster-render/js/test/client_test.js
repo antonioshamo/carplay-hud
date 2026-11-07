@@ -16,7 +16,7 @@ const assert = require('assert');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { ClusterRender } = require('../cluster_render_client.js');
+const { ClusterRender, mergeDirty } = require('../cluster_render_client.js');
 
 const bin = process.argv[2];
 const sock = '/tmp/crs-js-test-' + process.pid + '.sock';
@@ -51,6 +51,12 @@ function track(c) {
 }
 
 async function main() {
+    const rects=[];for(let i=0;i<120;i++)mergeDirty(rects,{x:1250+i%7,y:280+i%4*20,w:80,h:16});
+    ok('queued RPM patches coalesce without a whole frame',rects.length<=16 && rects.reduce((n,r)=>n+r.w*r.h*4,0)<32768);
+    const sparse=[];for(let i=0;i<80;i++)mergeDirty(sparse,{x:i*10,y:50,w:3,h:4});
+    ok('many separate pending patches stay within 16 rectangles',sparse.length<=16);
+    ok('merged bounds cover every changed pixel',Array.from({length:80},(_,i)=>i).every(i=>sparse.some(r=>r.x<=i*10&&r.x+r.w>=i*10+3&&r.y<=50&&r.y+r.h>=54)));
+
     const capability = new ClusterRender('capability');
     capability._event({ev:'hello',targets:'panel:1920x720,hud:800x480',independent_panel_hud:true});
     ok('separate mapping accepted only from the renderer hello', capability.independentPanelHud === true);

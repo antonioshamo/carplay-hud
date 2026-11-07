@@ -111,6 +111,12 @@ function draw(r,d,b,data,options){
   else if(w.type==='accent'){['#53bdeb','#3457aa','#e5475b'].forEach((c,i)=>rect(x+i*ww/3,y,ww/3-6,hh,c,3));}
   else if(w.type==='signature')text(d.signature||M.TITLES[d.title],x+ww/2,y+hh*.75,hh*.65,accent,ww*.94);
   else if(w.type==='connection')text(data.connected?'VEHICLE DATA / LIVE':'VEHICLE DATA / UNAVAILABLE',x+ww/2,y+hh*.75,hh*.7,'#acb9ca',ww*.94);
+  else if(M.METRICS[w.type]){
+   const reading=M.reading(w.type,d,data),cx=x+ww/2,col=reading.alert||(w.type==='fuel'&&data.fuelWarning==='LOW FUEL')?'#ffbc55':accent;
+   text(reading.label,cx,y+hh*.25,Math.min(23,hh*.24),'#acb9ca',ww*.94);
+   text(reading.value+(reading.unit?' '+reading.unit:''),cx,y+hh*.79,Math.min(46,hh*.48),reading.available?col:'#8192a8',ww*.94);
+   if(!reading.available)text('UNAVAILABLE',cx,y+hh*.99,Math.min(15,hh*.18),'#8192a8',ww*.94);
+  }
   else {const label=w.type==='oil'?'OIL':'COOLANT';text(label,x+ww/2,y+hh*.29,Math.min(23,hh*.3),'#acb9ca',ww*.94);text(val==null?'— °'+(d.temperatureUnit||'C'):Math.round(d.temperatureUnit==='F'?val*1.8+32:val)+' °'+(d.temperatureUnit||'C'),x+ww/2,y+hh*.85,Math.min(48,hh*.56),accent,ww*.94);}
   if(o.selected===w.type)r.strokeRoundRect(b.x+x*sx,b.y+y*sy,ww*sx,hh*sy,8*scale,2,'#56bdff');
  }

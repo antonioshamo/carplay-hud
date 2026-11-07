@@ -1,3 +1,15 @@
+## 0.4.141
+
+- Expand the library from 12 to 37 widgets with categories and paging: fuel,
+  range, reserve, odometer, trip time, outside temperature, battery charge,
+  torque, calculated power, engine/mode/sport readings and per-wheel tire data.
+- Show fuel by default in every template and migrate saved designs without
+  discarding existing widgets. Recenter untouched iDrive 8 coolant/oil pairs.
+- Keep missing/expired readings unavailable and require reported tire units.
+- Require Cluster Studio 0.1.20 and renderer 0.3.105 for queued-patch refresh
+  improvements. Full-cluster output outside Park and intermittent HUD startup
+  remain unresolved; this release does not claim to fix either behavior.
+
 # 0.4.138
 
 - Separate the saved full-cluster selection from temporary-test availability; show the selected output even when the renderer is waiting.

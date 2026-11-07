@@ -1,13 +1,13 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
-  "description": "Personal cluster designs, saved Park-only full-cluster output with native gear clearance, phone editor and live vehicle readings.",
+  "description": "37 movable cluster widgets, fuel in every template, saved full-cluster layouts in Park, and live vehicle readings.",
   "requires": {
     "mgu-deploy": "0.7.0",
-    "cluster-render": "0.3.104"
+    "cluster-render": "0.3.105"
   },
   "uninstallable": true,
   "mguHmi": [

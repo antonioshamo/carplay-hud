@@ -49,6 +49,24 @@ const JSON_T = 0x4a;    /* 'J' */
 const FRAME_T = 0x46;   /* 'F' */
 const MESH_T = 0x4d;    /* 'M' */
 const MAX_DIRTY = 16;
+// Keep pending updates local while a socket or upload budget is busy. Repeated
+// RPM changes must not turn 17 small patches into a 5.3 MiB screen upload.
+function mergeDirty(rects, next) {
+    rects.push(Object.assign({}, next));
+    const area = r => r.w * r.h;
+    const union = (a,b) => {const x=Math.min(a.x,b.x), y=Math.min(a.y,b.y);return {x,y,w:Math.max(a.x+a.w,b.x+b.w)-x,h:Math.max(a.y+a.h,b.y+b.h)-y};};
+    while (rects.length > 1) {
+        let best=Infinity, ai=0, bi=1, joined;
+        for(let i=0;i<rects.length;i++)for(let j=i+1;j<rects.length;j++){
+            const r=union(rects[i],rects[j]),cost=area(r)-area(rects[i])-area(rects[j]);
+            if(cost<best){best=cost;ai=i;bi=j;joined=r;}
+        }
+        if(rects.length<=MAX_DIRTY && best>0)break;
+        rects[ai]=joined;rects.splice(bi,1);
+    }
+    return rects.reduce((bytes,r)=>bytes+area(r),0);
+}
+
 const BACKOFF_MS = [250, 500, 1000, 2000];
 const SET_KEYS = ['klass', 'z', 'x', 'y', 'w', 'h', 'visible', 'exclusive', 'prewarm', 'contend', 'opacity',
     'rotate', 'sx', 'sy', 'px', 'py'];
@@ -522,12 +540,12 @@ class ClusterRender extends EventEmitter {
                 /* An update of rects (8 bytes of header each) never outgrows
                  * the whole image, which is within the service's message
                  * limit. */
-                l.dirtyBytes += r.w * r.h * bpp;
-                if (l.dirty.length >= MAX_DIRTY || l.dirtyBytes + 8 * (l.dirty.length + 1) >= l.image.length) {
+                l.dirtyBytes = mergeDirty(l.dirty, r) * bpp;
+                if (l.dirtyBytes + 8 * l.dirty.length >= l.image.length) {
                     l.whole = true;
                     l.dirty = [];
                     l.dirtyBytes = 0;
-                } else l.dirty.push(r);
+                }
             }
         }
         l.have = true;
@@ -538,4 +556,4 @@ class ClusterRender extends EventEmitter {
     status() { this._send({ op: 'status' }); }
 }
 
-module.exports = { ClusterRender, DEFAULT_PATH };
+module.exports = { ClusterRender, DEFAULT_PATH, mergeDirty };

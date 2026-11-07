@@ -212,7 +212,6 @@ const char *quad_animation_error(uint32_t part, const Animation &a);
  * in place at most fps times a second, within the shared byte budget. */
 class ImageLayer : public Layer {
 public:
-    static const uint32_t kMaxRects = 16;   /* more pending: the whole image is written */
 
     ImageLayer(uint32_t id, int target, uint64_t seq, crk::UploadPacer &pacer, int effect, uint32_t w, uint32_t h,
                uint32_t fps, Sampling sampling, int64_t now_ms);
