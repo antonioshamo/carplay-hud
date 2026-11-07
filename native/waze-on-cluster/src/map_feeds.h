@@ -63,6 +63,7 @@ public:
 
     void offer(std::vector<uint8_t> *atlas, uint64_t id, int64_t now_ms);
     void set_stream(bool live, bool frozen);
+    void set_picture(bool ready);
 
     FeedStatus status(const std::string &decode, const std::string &stream = std::string()) const;
     void request_report();
@@ -79,6 +80,7 @@ private:
     std::vector<std::unique_ptr<MapFeed>> feeds_;
     std::vector<uint8_t> copy_;
     bool live_ = false, frozen_ = false;
+    bool picture_ready_ = false;
 };
 
 }  // namespace woc

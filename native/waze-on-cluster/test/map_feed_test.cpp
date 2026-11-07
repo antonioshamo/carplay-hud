@@ -79,6 +79,7 @@ struct Rig {
         fc.socket = path;
         fc.video.level_bits = 0;
         feed.reset(new MapFeed(fc));
+        feed->set_picture(true);
         feed->set_stream(true, false);
     }
     void start()
@@ -262,6 +263,42 @@ int main()
     r.pump(1200, &f1);
     ok("no longer frozen: shown again", r.map_layer()->params.visible && r.st().state == "showing");
 
+    // Vehicle regression: the phone supplied a blank stream at changing
+    // rates. A freeze verdict may expire; blank content must still never
+    // acquire a slot or interrupt the gauges sharing the HUD scene.
+    Rig empty(true);
+    empty.feed->set_target("hud");
+    empty.feed->set_picture(false);
+    const std::vector<uint8_t> blank(1088 * 720, 16);
+    empty.pump(2000, &blank);
+    ok("blank startup: hidden and no display request despite decoded frames",
+       empty.map_layer() && !empty.map_layer()->params.visible && empty.port.requests == 0 &&
+       empty.st().state == "starting" && empty.st().reason == "waiting for a non-blank CarPlay map frame");
+    empty.feed->set_stream(true, true);
+    empty.pump(31000, &blank);
+    empty.feed->set_stream(true, false);
+    empty.pump(31000);
+    ok("blank stream slowing or stopping cannot reclaim the slot when freeze clears",
+       !empty.map_layer()->params.visible && empty.port.requests == 0 && empty.st().state != "showing");
+    empty.feed->set_picture(true);
+    empty.pump(1200, &f1);
+    ok("a real map starts automatically without a navigation command",
+       empty.map_layer()->params.visible && empty.st().state == "showing");
+    const int empty_releases = empty.port.releases;
+    empty.feed->set_picture(false);
+    empty.pump(4000, &blank);
+    ok("map becomes blank: releases the scene without waiting for freeze timeout",
+       !empty.map_layer()->params.visible && empty.port.releases > empty_releases);
+    empty.feed->set_stream(false, false);
+    empty.pump(100);
+    empty.feed->set_stream(true, false);
+    empty.pump(100);
+    ok("connection alone cannot bring a previous picture back",
+       !empty.map_layer()->params.visible && empty.st().state != "showing");
+    empty.feed->set_picture(true);
+    empty.pump(1200, &f1);
+    ok("fresh map recovers after reconnect", empty.st().state == "showing");
+
     Rig h;
     h.feed->set_stream(false, false);
     h.svc.reset();
@@ -328,6 +365,7 @@ int main()
     bfc.video.level_bits = 0;
     bfc.target = "map+hud";
     MapFeeds feeds(bfc);
+    feeds.set_picture(true);
     feeds.set_stream(true, false);
     std::vector<uint8_t> bspare;
     const auto bpump = [&](int64_t ms, const std::vector<uint8_t> *frame) {

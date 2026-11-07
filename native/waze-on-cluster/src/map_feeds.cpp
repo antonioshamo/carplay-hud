@@ -86,6 +86,7 @@ std::unique_ptr<MapFeed> MapFeeds::make(const std::string &target)
     FeedConfig fc = base_;
     fc.target = target;
     std::unique_ptr<MapFeed> f(new MapFeed(fc));
+    f->set_picture(picture_ready_);
     f->set_stream(live_, frozen_);
     return f;
 }
@@ -178,6 +179,13 @@ void MapFeeds::set_stream(bool live, bool frozen)
     frozen_ = frozen;
     for (auto &f : feeds_)
         f->set_stream(live, frozen);
+}
+
+void MapFeeds::set_picture(bool ready)
+{
+    picture_ready_ = ready;
+    for (auto &f : feeds_)
+        f->set_picture(ready);
 }
 
 FeedStatus MapFeeds::status(const std::string &decode, const std::string &stream) const

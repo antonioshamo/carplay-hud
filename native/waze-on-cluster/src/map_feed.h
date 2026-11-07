@@ -10,8 +10,9 @@
  * The renderer draws every frame the way waze-on-cluster always has (one
  * persistent R8 atlas written in changed tiles, packed fast motion, the
  * frame clock, newest frame only) within the budget all its clients share,
- * and maps the slot from the first frame. The layer is visible while
- * CarPlay's cluster stream is live and not frozen (set_stream): hidden, the
+ * and maps the slot from the first non-blank picture. The layer is visible while
+ * CarPlay's cluster stream is live, not frozen, and has a non-blank picture
+ * (set_stream/set_picture): hidden, the
  * renderer lets the slot go and the stock map comes back. stall_ms, which
  * releases the slot once the frames stop that long, is only a backstop,
  * since how often a static map sends a frame depends on the phone (one about
@@ -131,6 +132,9 @@ public:
     /* Whether CarPlay's cluster stream is live, and whether it is frozen:
      * the layer is visible only while it is live and not frozen. */
     void set_stream(bool live, bool frozen);
+    /* Only an actual non-blank decoded picture may request a display slot.
+     * Connection state and the freeze detector are not picture evidence. */
+    void set_picture(bool ready);
 
     /* The status for the app, with decode the capture and decode part of
      * the line and stream why the picture is not whole (empty: it is). */
@@ -153,6 +157,7 @@ private:
     uint32_t layer_ = 0;
     cr::LayerOptions lo_;   /* the layer's options as last sent */
     bool live_ = false, frozen_ = false;
+    bool picture_ready_ = false;
     std::string layer_state_ = "stalled", layer_reason_;
     std::string target_state_, holder_, target_reason_;
     unsigned cap_kb_ = 0, max_kb_ = 0;

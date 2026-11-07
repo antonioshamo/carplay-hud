@@ -86,7 +86,7 @@ public:
 
     /* The newest decoded frame not yet taken, swapped into *frame (its
      * buffer comes back for the next one); false when there is none. */
-    bool take(std::vector<uint8_t> *frame, uint64_t *id);
+    bool take(std::vector<uint8_t> *frame, uint64_t *id, bool *blank);
     /* Every decoded frame the same blank picture while they keep coming,
      * after the stream showed a picture (freeze_watch.h). */
     bool frozen(int64_t now_ms) const;
@@ -178,6 +178,7 @@ private:
     mutable std::mutex frame_mutex_;
     std::vector<uint8_t> back_;
     bool back_dirty_ = false;
+    bool back_blank_ = true;        /* classification of this exact pending frame */
     int ready_[2] = {-1, -1};        /* a byte written when back_ gets a frame not yet taken */
     uint32_t back_w_ = 0, back_h_ = 0;
     uint64_t back_id_ = 0;           /* its number in the decoder's lifetime */

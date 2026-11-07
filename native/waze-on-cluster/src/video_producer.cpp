@@ -330,17 +330,19 @@ void VideoProducer::on_frame(const VideoFrame &f)
     round_us_.add(round_us);
     back_w_ = f.w;
     back_h_ = f.h;
+    back_blank_ = !sized || change_.blank();
     back_dirty_ = true;
     back_id_ = decoded_total_.fetch_add(1) + 1;
 }
 
-bool VideoProducer::take(std::vector<uint8_t> *frame, uint64_t *id)
+bool VideoProducer::take(std::vector<uint8_t> *frame, uint64_t *id, bool *blank)
 {
     std::lock_guard<std::mutex> lock(frame_mutex_);
     if (!back_dirty_ || back_w_ != cfg_.tex_width || back_h_ != cfg_.tex_height)
         return false;
     frame->swap(back_);
     *id = back_id_;
+    *blank = back_blank_;
     back_dirty_ = false;
     char drain[8];
     while (ready_[0] >= 0 && read(ready_[0], drain, sizeof drain) > 0) {
