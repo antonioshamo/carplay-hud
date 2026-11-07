@@ -1,7 +1,7 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
   "description": "Personal cluster designs, saved Park-only full-cluster output with native gear clearance, phone editor and live vehicle readings.",
@@ -139,6 +139,10 @@
     },
     {
       "path": "panel_composition.js",
+      "mode": "0644"
+    },
+    {
+      "path": "startup_recovery.js",
       "mode": "0644"
     }
   ],
