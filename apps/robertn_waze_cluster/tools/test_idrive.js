@@ -23,3 +23,21 @@ const legacy=M.preset(11);delete legacy.template;assert.equal(M.validate(legacy)
 for(let n=0;n<100;n++)assert.equal(M.validate(M.preset(n)).preset,n,'existing preset identifiers are unchanged');
 assert.throws(()=>M.idrivePreset(3),/template/);assert.throws(()=>M.idrivePreset(-1),/template/);
 console.log('ok iDrive template selection, units/preferences, undo/redo/reset, independent styles, live/stale readouts, gear clearance and legacy design migration');
+
+// Readouts stay centered when moved/resized, including changing digit widths.
+for(const style of ['ring','digital','bar','ultra','needle','segments','sweep','vertical','minimal','dots','id8','id8-slim']){
+ for(const type of ['speed','rpm','gear','clock','date','badge','signature','connection','oil','coolant']){
+  const design=M.preset(0);design.gauge=style;design.signature='Welcome Antonio Shamo';
+  design.widgets=[{type,on:true,x:.23,y:.11,w:.22,h:type==='speed'||type==='rpm'?.65:.20,gauge:'inherit',color:'theme'}];
+  const cv=new Canvas(880,330),calls=[],text=cv.text.bind(cv);
+  cv.text=function(s,x,y,size,color,opts){calls.push({s:String(s),x,opts});return text.apply(null,arguments);};
+  for(const rpm of [9,750,3211,null]){
+   calls.length=0;D.draw(cv,design,{x:13,y:7,w:800,h:300},{now:new Date(2026,10,7,11,58),speed:rpm,rpm,gear:'P',oil:99,coolant:101,connected:true});
+   const expected=13+(.23+.22/2)*800;
+   const readouts=type==='speed'||type==='rpm'?calls.filter(c=>['SPEED','ENGINE','RPM','mph','P',rpm==null?'—':String(Math.round(type==='speed'?rpm/1.609344:rpm))].includes(c.s)):calls;
+   assert(readouts.length,style+' '+type+' has readouts');
+   for(const c of readouts){assert.equal(c.opts.align,'center');assert(Math.abs(c.x-expected)<.0001,style+' '+type+' '+c.s+' anchors to the resized widget center');}
+  }
+ }
+}
+console.log('ok centered moved/resized text widgets and all dial styles with live and unavailable values');

@@ -17,7 +17,7 @@ class StudioService {
   return {assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!e.panelBlock,panelClearance:'native-gear-v1',output:this.store.output,
    features:this.features?{lighting:this.features.lighting,media:this.features.media,rows:this.features.rows.slice(0,6),scannedAt:this.features.scannedAt}:null,media:this.o.media?this.o.media.state():null,
    panelRemaining:Math.max(0,Math.ceil(((e.panelUntil||0)-e.now())/1000)),canPreview:testReason==='Ready for a parked test',canSelectPanel:panelReady,
-   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.15',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
+   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.16',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
    parked,state:e.state,renderer,data:this.o.telemetry.snapshot(),panel:e.target==='panel',recovery,displayVisible:display.visible,displayTarget:display.target,displayState:display.state,displayReason:display.reason,
    hud:{state:e.hud,holder:e.hudHolder||null,reason:e.hudReason||''}};
  }

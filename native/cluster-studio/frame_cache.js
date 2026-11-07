@@ -8,6 +8,8 @@ class FrameCache {
  constructor(w,h,panel){this.w=w;this.h=h;this.panel=panel;this.commands=[];this.prefixLength=0;this.prefix=new Canvas(w,h);this.frames=[new Canvas(w,h),new Canvas(w,h)];this.index=0;this.valid=false;}
  record(design,data){
   const commands=[],r={};
+  // Layout measurements must match the canvas used to replay the commands.
+  r.textWidth=this.prefix.textWidth.bind(this.prefix);
   for(const op of ['gradientRect','fillRect','roundRect','text','arc','line','strokeRoundRect','quad','polyline'])r[op]=function(){const args=Array.from(arguments);commands.push({op,args,key:op+JSON.stringify(args)});};
   const b={x:0,y:0,w:this.w,h:this.h};
   if(this.panel){
