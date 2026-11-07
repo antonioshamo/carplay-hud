@@ -1,4 +1,4 @@
-name: Import and publish video link feedback
+name: Import and publish widgets and gauge refresh
 on:
   workflow_dispatch:
 permissions:
@@ -18,38 +18,42 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import tested video link source
+      - name: Import tested widget and refresh source
         run: |
           set -eu
-          if [ -f media-import.bundle ]; then
-            echo 'e278f3285b192958cc975743678bc734fcfa2e3a800f6fa533916e96c1e1b300  media-import.bundle' | sha256sum -c -
-            git bundle verify media-import.bundle
-            git fetch ./media-import.bundle refs/heads/shamo/media-link-feedback:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '77469298b70e47113464241b47ada982770bcce8'
+          if [ -f widgets-import.bundle ]; then
+            echo 'b177ab2f2fdbbc4f8226f50703160b0988759747456781eed7dbb6ba856d7c37  widgets-import.bundle' | sha256sum -c -
+            git bundle verify widgets-import.bundle
+            git fetch ./widgets-import.bundle refs/heads/shamo/widgets-refresh:refs/remotes/import/release
+            test "$(git rev-parse refs/remotes/import/release)" = '99fb998dd2a5c64e4da6180879942f8435315f3b'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/release
-            git rm media-import.bundle
-            git commit -m 'Remove tested media source transport bundle'
+            git rm widgets-import.bundle
+            git commit -m 'Remove tested widget source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 77469298b70e47113464241b47ada982770bcce8 HEAD
+          git merge-base --is-ancestor 99fb998dd2a5c64e4da6180879942f8435315f3b HEAD
+      - name: Test renderer and queued image updates
+        run: make -C native/cluster-render test
       - name: Test app controls and saved gauge behavior
         run: |
           set -eu
           for test in apps/robertn_waze_cluster/tools/test_*.js; do
             node "$test"
           done
-          for test in test test_telemetry test_stability test_recovery test_startup_recovery test_polling test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_phone_media test_features; do
+          for test in test test_telemetry test_stability test_recovery test_startup_recovery test_polling test_widget_library test_renderer_integration test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_phone_media test_features; do
             node "native/cluster-studio/test/$test.js"
           done
+      - name: Verify car Node 8 runtime compatibility
+        run: sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
       - name: Test release packaging
         run: node release/test/release_test.js
-      - name: Verify reproducible helper artifact
-        run: node release/release.js check cluster-studio
-      - name: Publish Cluster Studio 0.1.19
+      - name: Verify reproducible app and helper artifacts
+        run: node release/release.js check cluster-studio robertn_waze_cluster
+      - name: Publish renderer 0.3.105, helper 0.1.20 and app 0.4.141
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish cluster-studio
+        run: node release/release.js publish cluster-render cluster-studio robertn_waze_cluster
