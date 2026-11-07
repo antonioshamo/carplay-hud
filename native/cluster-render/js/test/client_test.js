@@ -51,6 +51,15 @@ function track(c) {
 }
 
 async function main() {
+    const capability = new ClusterRender('capability');
+    capability._event({ev:'hello',targets:'panel:1920x720,hud:800x480',independent_panel_hud:true});
+    ok('separate mapping accepted only from the renderer hello', capability.independentPanelHud === true);
+    capability.close();ok('closing clears mapping capability', capability.independentPanelHud === false);
+    capability._event({ev:'hello',targets:'panel:1920x720,hud:800x480'});
+    ok('old renderer with identical target names is not assumed independent', capability.independentPanelHud === false);
+    capability._event({ev:'hello',independent_panel_hud:'true'});
+    ok('malformed mapping capability is not accepted', capability.independentPanelHud === false);
+    capability.close();
     let svc = await startService();
     const waze = new ClusterRender('waze', sock), ovl = new ClusterRender('overlay', sock);
     const ew = track(waze), eo = track(ovl);

@@ -39,6 +39,9 @@ class Engine {
   return {target:this.target,visible:!!(this.ref&&this.layerState==='shown'&&t&&t.state==='shown'),state:t?t.state:null,holder:t?t.holder:null,reason:(t&&t.reason)||this.layerReason||'',layerState:this.layerState};
  }
  hudAllowsPanel(){
+  // The renderer confirms distinct loaded scene IDs and slots. Older/shared
+  // mappings retain the existing conflict gate; Park checks remain below.
+  if(this.cr.ready&&this.cr.independentPanelHud===true)return true;
   if(['idle','released'].includes(this.hud))return true;
   // A queued HUD or a HUD suspended for a stock popup has no mapping of
   // its own. Keep the existing gauge demand so the slot manager can resume
@@ -72,7 +75,7 @@ class Engine {
   if(!this.telemetry.parked())throw Error('Full-screen test needs fresh speed 0 and gear P');
   if(!this.cr.ready||!/(^|,)panel:1920x720(,|$)/.test(this.cr.targets||''))throw Error('Full-cluster renderer unavailable');
   // Never steal the shared scene from HUD. Unknown ownership also blocks it.
-  if(!['idle','released'].includes(this.hud))throw Error('HUD is active or its state is unknown; full-screen test unavailable');
+  if(!this.hudAllowsPanel())throw Error('HUD is active or its state is unknown; full-screen test unavailable');
   this.panelDesign=M.validate(design);this.drop();this.panelUntil=this.now()+seconds*1000;this.introAt=this.now();this.introUntil=design.introEnabled?this.now()+I.duration(design):0;this.lastDraw=0;this.lastLease=0;
  }
  stopPreview(){if(this.panelUntil)this.introUntil=0;if(this.target==='panel')this.drop();this.panelUntil=0;}
