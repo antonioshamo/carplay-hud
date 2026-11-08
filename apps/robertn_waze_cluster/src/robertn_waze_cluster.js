@@ -18,6 +18,10 @@ const logger = logging.getSDKLogger();
 trace.record('sdk-import-complete');
 
 const STATE_NAME = 'ST_OnlineApps_WazeCluster';
+// Only the native home is needed before the modern cockpit can open. Do not
+// fill thirteen hidden fallback pages (or their log rows) on the launch path.
+const HOME_COMPONENTS = new Set(['wocStatus','wocDisplay','wocQuickStartup',
+    'wocSizePage','wocPositionPage','wocAppearancePage','wocSupportPage','wocModern']);
 const STATUS_NAME = 'wocStatus';
 const SETUP_NAME = 'wocSetup';
 const ENABLE_NAME = 'wocEnable';
@@ -88,6 +92,7 @@ class WazeClusterApp extends OnlineApp {
         this._pendingEntryUuid = null;
         this._resources = {};
         this._optionalStarted = false;
+        this._nativeDetailsReady = false;
         this._design = { ready:false, render(){}, close(){}, hostVisible(){}, hostFocus(){}, proxyPress(){}, proxyFocus(){} };
         this._profiles = null;
 
@@ -295,6 +300,11 @@ class WazeClusterApp extends OnlineApp {
             if (isTrue(event && event.visible)) {
                 this._sawForeground = true;
                 this._setVisible(true);
+                if (state !== this._state && state !== designHost) {
+                    this._nativeDetailsReady = true;
+                    this._render();
+                    this._renderLists();
+                }
             }
         }));
         return this._ensureResources(STATE_NAME).then(() => {
@@ -317,10 +327,11 @@ class WazeClusterApp extends OnlineApp {
             const state=this.rhmiApplication.getByName(on?HOST:STATE_NAME);
             return this._ensureResources(on?HOST:STATE_NAME)
                 .then(()=>{this._modern=on;this._design.proxyKey=null;return this.rhmiApplication.mapEntryState(this._entryUuid,state);})
-                .then(()=>this._visible?this.rhmiApplication.openState(on?HOST:STATE_NAME):undefined);
+                .then(()=>{this._render();return this._visible?this.rhmiApplication.openState(on?HOST:STATE_NAME):undefined;});
         }).catch(err=>{
             trace.error('graphics-mode-failed',err);logger.warn(`modern settings: ${err&&err.message}`);
             this._modern=false;this._design.hostVisible(false);
+            this._render();
             return Promise.resolve(this.rhmiApplication.mapEntryState(this._entryUuid,this._state))
                 .then(()=>this._visible?this.rhmiApplication.openState(STATE_NAME):undefined)
                 .catch(e=>logger.warn('Classic settings restore: '+e.message));
@@ -331,6 +342,7 @@ class WazeClusterApp extends OnlineApp {
     _openPage(name) {
         this._render();
         return this._ensureResources(name).then(() => {
+            this._nativeDetailsReady = true;
             this._written={};this._render();this._renderLists();
             return this.rhmiApplication.openState(name);
         })
@@ -438,6 +450,7 @@ class WazeClusterApp extends OnlineApp {
     /* ---- rendering ---- */
     /* Writes text into a component's row unless it already shows it. */
     _write(name, text) {
+        if (!this._nativeDetailsReady && !HOME_COMPONENTS.has(name) && !/^designProxy\d+$/.test(name)) return;
         if (this._written[name] !== text) {
             this._written[name] = text;
             Promise.resolve().then(()=>this._components[name].setValue(0, 'Text', text, 'Text'))
@@ -447,6 +460,7 @@ class WazeClusterApp extends OnlineApp {
 
     /* Enables a button unless it already holds that state. */
     _setEnabled(name, enabled) {
+        if (!this._nativeDetailsReady && !HOME_COMPONENTS.has(name) && !/^designProxy\d+$/.test(name)) return;
         const key = `enabled:${name}`;
         if (this._written[key] !== enabled) {
             this._written[key] = enabled;
@@ -457,6 +471,7 @@ class WazeClusterApp extends OnlineApp {
 
     /* Shows or hides a component unless it already holds that state. */
     _setVisibleComp(name, visible) {
+        if (!this._nativeDetailsReady && !HOME_COMPONENTS.has(name) && !/^designProxy\d+$/.test(name)) return;
         const key = `visible:${name}`;
         if (this._written[key] !== visible) {
             this._written[key] = visible;
@@ -469,9 +484,10 @@ class WazeClusterApp extends OnlineApp {
         if (!this._state || !this._initialized || this._shutdownPromise) {
             return;
         }
+        if(this._design)this._design.render();
+        if(this._modern)return;
         this._setEnabled('wocModern',this._design.ready);
         this._write('wocModern',this._design.ready?'Open modern settings':'Modern settings: MGU Renderer unavailable');
-        if(this._design)this._design.render();
         Object.keys(PAGES).forEach(name => this._setEnabled(name, true));
         this._setEnabled('wocMissingCapture', true);
         const c = this._control;
@@ -573,7 +589,7 @@ class WazeClusterApp extends OnlineApp {
     }
 
     _renderLists() {
-        if (!this._state || !this._initialized || this._shutdownPromise) {
+        if (!this._state || !this._initialized || this._shutdownPromise || this._modern || !this._nativeDetailsReady) {
             return;
         }
         /* Rows are only written, never hidden: on this HMI a row hidden at

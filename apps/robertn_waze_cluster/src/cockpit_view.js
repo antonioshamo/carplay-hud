@@ -50,18 +50,21 @@ function items(m,page){
 function frame(m,page,focus,scale){
  const r=new kit.Recorder(1600,580,{textScale:scale||1}),s=state(m),buttons=items(m,page),C=T.C;
  const txt=(v,x,y,z,c,w,center)=>T.text(r,v,x,y,z,c,w,center);
+ // First paint contains working controls and a vector car. Upload the detailed
+ // artwork after the renderer has acknowledged that first frame.
+ const car=(x,y,w)=>m.deferArtwork?T.icon(r,'car',x+w/2,y+w/4,T.C.active,w/7):T.car(r,x,y,w);
  T.background(r);
  txt({overview:'MY COCKPIT',apps:'ALL APPS',vehicle:'LIVE VEHICLE',climate:'CLIMATE & COMFORT'}[page],214,41,23,C.text,650);
  const connected=!!m.helperFresh,raw=connected&&m.helper&&m.helper.data||{};
  txt(connected?'HELPER ONLINE':'OFFLINE',1428,40,17,connected?'#a5dbcf':C.dim,250,true);
  txt('X4 M  /  COMPETITION',25,550,18,C.muted,350);
  txt('Your personal cockpit',1368,550,17,C.dim,218);
- function value(key,unit,precision){let n=raw[key];const d=m.helper&&m.helper.design||{};if(unit==='km'&&d.units==='mph'){n=n==null?n:n/1.609344;unit='mi';}if(unit==='°C'&&d.temperatureUnit==='F'){n=n==null?n:n*1.8+32;unit='°F';}if(unit==='bar'&&raw.pressureUnit==='psi'){n=n==null?n:n*14.5037738;unit='psi';}return Number.isFinite(n)?(precision?n.toFixed(precision):String(Math.round(n)))+(unit?' '+unit:''):'—';}
+ function value(key,unit,precision){let n=raw[key];const d=m.helper&&m.helper.design||{};if(unit==='km'&&d.units==='mph'){n=n==null?n:n/1.609344;unit='mi';}if(unit==='°C'&&d.temperatureUnit==='F'){n=n==null?n:n*1.8+32;unit='°F';}if(unit==='bar'&&['psi','kPa'].includes(raw.pressureUnit)){n=n==null?n:n*(raw.pressureUnit==='psi'?14.5037738:100);unit=raw.pressureUnit;}return Number.isFinite(n)?(precision?n.toFixed(precision):String(Math.round(n)))+(unit?' '+unit:''):'—';}
  if(page==='overview'){
   buttons.filter(b=>b.hero).forEach((b,i)=>{
    T.slant(r,b.x-20,b.y,b.w+20,b.h,i===1?'#405587':'#253753',62);
    T.slant(r,b.x+b.w-65,b.y,30,b.h,'#687fae',62);
-   if(!s.homePage&&i===1){r.polyline([[b.x+152,b.y+45],[b.x+306,b.y+45],[b.x+275,b.y+100],[b.x+199,b.y+100],[b.x+278,b.y+100],[b.x+250,b.y+164],[b.x+112,b.y+164]],18,'#7489ba');T.car(r,b.x+30,b.y+72,390);txt('Vehicle, engine and tire readings',b.x+40,b.y+292,20,C.muted,360);}
+   if(!s.homePage&&i===1){r.polyline([[b.x+152,b.y+45],[b.x+306,b.y+45],[b.x+275,b.y+100],[b.x+199,b.y+100],[b.x+278,b.y+100],[b.x+250,b.y+164],[b.x+112,b.y+164]],18,'#7489ba');car(b.x+30,b.y+72,390);txt('Vehicle, engine and tire readings',b.x+40,b.y+292,20,C.muted,360);}
    else if(!s.homePage&&i===0){
     r.arc(b.x+208,b.y+143,84,87,145,395,'#89a7eb');r.arc(b.x+208,b.y+143,78,80,145,325,'#4e689e');txt('PERSONAL',b.x+208,b.y+129,16,C.muted,220,true);txt('STUDIO',b.x+208,b.y+166,32,C.text,280,true);txt('103 looks. Your own layout.',b.x+38,b.y+292,20,C.muted,360);
    }else if(!s.homePage){r.strokeRoundRect(b.x+70,b.y+57,300,163,15,2,'#9cb7dd');r.polyline([[b.x+112,b.y+184],[b.x+192,b.y+111],[b.x+297,b.y+111]],5,'#8fbbff');T.icon(r,'hud',b.x+225,b.y+251,C.active,25);txt('Apple Maps, independently.',b.x+40,b.y+292,20,C.muted,360);}
@@ -77,14 +80,14 @@ function frame(m,page,focus,scale){
  }else if(page==='vehicle'){
   const tab=s.vehicleTab||'engine';
   txt('Your BMW. At a glance.',238,107,31,C.text,600);txt('M3 illustration · X4 M vehicle data',238,139,18,C.dim,600);
-  T.slant(r,213,168,602,244,'#293d64',110);T.car(r,235,162,570);
+  T.slant(r,213,168,602,244,'#293d64',110);car(235,162,570);
   const rows=tab==='tires'?[['Front left',value('pressureFL','bar',1)],['Front right',value('pressureFR','bar',1)],['Rear left',value('pressureRL','bar',1)],['Rear right',value('pressureRR','bar',1)],['Front tire temp.',value('tireTempFL','°C')],['Rear tire temp.',value('tireTempRL','°C')]]:tab==='journey'?[['Fuel level',value('fuel','L')],['Range',value('range','km')],['Odometer',value('odometer','km')],['Journey time',value('tripTime','min')],['Outside',value('outside','°C')],['Fuel warning',raw.fuelWarning||'—']]:[['Engine speed',value('rpm','RPM')],['Drive mode',raw.driveMode||'—'],['Oil',value('oil','°C')],['Coolant',value('coolant','°C')],['Fuel level',value('fuel','L')],['Range',value('range','km')]];
   rows.forEach((v,i)=>{const x=860+i%2*336,y=126+Math.floor(i/2)*108;r.line(x,y+87,x+300,y+87,1,C.line);txt(v[0],x,y+23,19,C.muted,300);txt(v[1],x,y+65,34,C.text,300);});
   txt(connected?'Fresh readings from the car. Unavailable signals show —.':'Connect the car to see live readings. No sample values are shown.',860,490,17,C.muted,680);
  }else if(page==='climate'){
   txt(CLIMATE[s.climateTab||0][0],226,104,31,C.text,850);
   txt(!(s.climateTab||0)?'Tap a control to change it. BMW status confirms each change.':'NOT VERIFIED · These controls are planned; command mapping is still pending.',226,139,20,C.muted,1300);
-  const climate=connected&&m.helper.climate;txt(s.climateNotice||(climate&&climate.message)||(connected&&!m.helper.climateSupported?'Update Cluster Studio to 0.1.23 for climate controls.':'Connect the car to check available climate controls.'),226,488,18,C.muted,860);txt('NOT VERIFIED IN CAR · Supported commands are ready for testing',226,451,17,C.amber,850);
+  const climate=connected&&m.helper.climate;txt(s.climateNotice||(climate&&climate.message)||(connected&&!m.helper.climateSupported?'Update Cluster Studio to 0.1.24 for climate controls.':'Connect the car to check available climate controls.'),226,488,18,C.muted,860);txt(s.climateTab?'NOT IMPLEMENTED · Command mapping is required before testing':'NOT VERIFIED IN CAR · Supported commands are ready for testing',226,451,17,C.amber,850);
  }
  buttons.forEach((b,i)=>{
   if(b.hero)return;
