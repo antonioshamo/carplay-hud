@@ -1,3 +1,13 @@
+## 0.4.147
+
+- Recover from rejected or unanswered tile opens by navigating directly to native Home.
+- Bound screen mapping/open requests so a failed transition cannot block every later tap.
+- Attempt native Home even when restoring the tile mapping fails.
+- Continue app initialization after entry registration errors/timeouts and record the degraded step.
+- Coalesce repeated entry events and avoid reopening Home after the user leaves.
+- Add eight failure-injection scenarios covering recovery and reopening. Preserve saved designs.
+- Offline recovery release; the current vehicle launch failure is not yet verified fixed.
+
 ## 0.4.146
 
 - Open the menu without populating hidden fallback pages or log rows first.
