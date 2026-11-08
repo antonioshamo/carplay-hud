@@ -1,3 +1,12 @@
+## 0.4.146
+
+- Open the menu without populating hidden fallback pages or log rows first.
+- Show working menu controls before uploading detailed car artwork.
+- Stop background classic-page updates while the modern cockpit is active.
+- Preserve kPa tire-pressure units, clarify unfinished climate tabs, and reject malformed climate enum readings.
+- Add first-frame diagnostics, startup work budgets, all app-route tests, and all climate-button routing checks.
+- Requires Cluster Studio 0.1.24. Actual vehicle launch time and HUD flicker still need in-car verification.
+
 ## 0.4.145
 
 - Reference-inspired cockpit home cards, app grid, consistent navigation and live vehicle pages.

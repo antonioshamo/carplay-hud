@@ -15,7 +15,7 @@ const ACTIONS={
  airPS:{label:'Passenger airflow',service:FRONT,field:'operationAirConditioningFront',member:'operationAirdistributionProgramPS',options:['UNTEN','MITTE','MITTE_UNTEN','OBEN','OBEN_UNTEN','OBEN_MITTE','OBEN_MITTE_UNTEN'],read:'airPS'},
  freshAir:{label:'Fresh / auto / recirculate',service:SPECIAL,field:'acSpecialFunction',member:'operationAUCFront',options:['FRISCHLUFT_GEWAEHLT','AUC_GEWAEHLT','UMLUFT_GEWAEHLT'],read:'freshAir'}
 };
-function enumValue(v,names){if(typeof v==='number'&&v>=0&&v<names.length)return v;const n=names.indexOf(v);return n<0?null:n;}
+function enumValue(v,names){if(Number.isInteger(v)&&v>=0&&v<names.length)return v;const n=names.indexOf(v);return n<0?null:n;}
 function airflow(v){if(v==='AUTO'||v===8)return 7;if(Number.isInteger(v)&&v>=1&&v<=7)return v-1;const n=['UNTEN','MITTE','MITTE_UNTEN','OBEN','OBEN_UNTEN','OBEN_MITTE','OBEN_MITTE_UNTEN'].indexOf(String(v).replace(/_S_/g,'_'));return n<0?null:n;}
 function decode(kind,v){v=v||{};
  if(kind==='functions')return {ac:enumValue(v.statusAC,['KLIMAANLAGE_AUS','KLIMAANLAGE_EIN']),maxAC:enumValue(v.statusMaximumAircon,['MAX_AC_AUS','MAX_AC_EIN']),defrost:enumValue(v.statusDefrost,['DEFROST_AUS','DEFROST_EIN']),freshAir:enumValue(v.statusAUCFront,['AUC_AUSSCHALTEN__S__UMLUFT_S_AUC_AUS','AUC_EINSCHALTEN__S__AUC_EIN','S__UMLUFT_EIN'])};

@@ -1,10 +1,10 @@
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-CarPlay HUD **0.4.145** adds reference-inspired home cards, an app grid, a live
+CarPlay HUD **0.4.146** adds reference-inspired home cards, an app grid, a live
 vehicle page, shared navigation and a dedicated climate section. Existing
 custom layouts are preserved. [Reference review and verification limits](docs/cockpit-0145-review.md).
 
-Cluster Studio **0.1.23** provides 37 movable widgets, fuel by default, saved
+Cluster Studio **0.1.24** provides 37 movable widgets, fuel by default, saved
 layouts, optional welcomes and Restore BMW defaults. Its new eight-action climate
 adapter waits for fresh vehicle readback; **climate is not yet verified in-car**.
 Temperature, fan, seat and rear-climate entries are disabled where command mapping
@@ -15,8 +15,8 @@ factory-preserving side widgets remain prototypes. Reliable route-free Apple Map
 startup and HUD flicker still require physical-car verification.
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps).
-Current component versions: app **0.4.145**, Waze on cluster **0.7.117**,
-Cluster Studio **0.1.23**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
+Current component versions: app **0.4.146**, Waze on cluster **0.7.117**,
+Cluster Studio **0.1.24**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
 comes from the official MGU Store source and draws the settings app; it is
 separate from cluster-render.
 

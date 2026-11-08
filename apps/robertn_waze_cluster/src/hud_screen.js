@@ -14,6 +14,7 @@ class HudScreen extends EventEmitter {
   this.active=false;this.info=null;this.scale=1;this.closed=false;this.touch=null;this.ccu=null;this.last={};this.dirty=false;this.suspended=false;
   this.studio=new StudioScreen(()=>{this.dirty=true;});
   this.sentAt=0;this.reshowTimer=null;
+  this.artworkReady=false;this.firstFrameSent=false;this.openedAt=Date.now();
   this.gpu.fps(60);
   this.gpu.on('ready',(screen,info)=>this._ready(info));
   this.gpu.on('close',()=>{this.ready=false;this.hide();this.emit('mode',false);});
@@ -26,13 +27,13 @@ class HudScreen extends EventEmitter {
   this.gpu.on('state',s=>trace.record('graphics-state',JSON.stringify(s)));
   this.gpu.on('touch',(p,x,y)=>this._touch(p,x,y));
   this.gpu.on('ccu',e=>this._ccu(e));
-  this.gpu.on('tick',()=>{if(this.dirty||Date.now()-this.motionAt<220||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
+  this.gpu.on('tick',()=>{if(this.active&&this.firstFrameSent&&!this.artworkReady){this.artworkReady=true;this.dirty=true;trace.record('settings-first-present','after '+(Date.now()-this.openedAt)+' ms; artwork follows');}if(this.dirty||Date.now()-this.motionAt<220||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
   this.timer=setInterval(()=>{if(this.active){this.observeClimate();this.render();}},1000);
   if(this.timer.unref)this.timer.unref();
  }
  connect(){this.gpu.connect();this.studio.open();}
  observeClimate(){const c=this.studio.client;if(this.closed||!this.active||this.page!=='climate'||!c.status||!c.status.climateSupported||c.pending||Date.now()-(c.statusAt||0)>=2000||Date.now()-(this.climateObservedAt||0)<2000)return;this.climateObservedAt=Date.now();c.send('climate-observe').then(()=>{this.dirty=true;},e=>{this.cockpit.climateNotice=e.message;this.dirty=true;});}
- _model(){return Object.assign(view.model(this.host.control),{cockpit:this.cockpit,helper:this.studio.client.status,helperFresh:!!this.studio.client.status&&Date.now()-(this.studio.client.statusAt||0)<2000});}
+ _model(){return Object.assign(view.model(this.host.control),{cockpit:this.cockpit,deferArtwork:!this.artworkReady,helper:this.studio.client.status,helperFresh:!!this.studio.client.status&&Date.now()-(this.studio.client.statusAt||0)<2000});}
  _ready(info){
   trace.record('graphics-ready',JSON.stringify(info));
   this.info=info;this.studio.videoSupported=!!(info&&info.video);
@@ -68,6 +69,7 @@ class HudScreen extends EventEmitter {
    if(proxyKey!==this.proxyKey){this.host.proxies(this.items);this.proxyKey=proxyKey;}
    // A false socket.write result means backpressure, not a lost frame.
    this.sentAt=Date.now();this.gpu.frame(f.record);
+   if(!this.firstFrameSent){this.firstFrameSent=true;trace.record('settings-first-frame','after '+(this.sentAt-this.openedAt)+' ms; words='+f.record.words().length);}
    this.dirty=false;
   } catch(err) {
    trace.error('graphics-render-failed',err);this.host.log.warn('Settings graphics: '+err.message);

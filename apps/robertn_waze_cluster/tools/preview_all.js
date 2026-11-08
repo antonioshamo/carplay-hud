@@ -21,6 +21,7 @@ const hud={target:'hud',state:'showing',width:60,offset:[0,0],step:10,background
 for(const k of ['canDisplay','canSize','canLarger','canSmaller','canMove','canStyle','canCorners','canStartup','canDisable','canCapture','canRestore'])hud[k]=true;
 for(const page of H.tabs.map(t=>t[0]).concat(['details']))frame('hud-menu',page,H.frame(hud,page,Math.max(0,H.tabs.findIndex(t=>t[0]===page)),0,1));
 const CV=require('../src/cockpit_view.js');
+for(const page of ['overview','vehicle'])frame('first-paint',page,CV.frame(Object.assign({},hud,{deferArtwork:true,cockpit:{},helperFresh:false}),page,0,1));
 for(const mode of ['offline','fresh','pending','stale']){
  const helper=Object.assign({},status,{climateSupported:true,data:s.previewData(),climate:{pending:mode==='pending',message:mode==='pending'?'Waiting for BMW confirmation…':'Sample climate status · offline rendering',controls:['ac','maxAC','defrost','freshAir','autoDR','autoPS','airDR','airPS'].map((id,i)=>({id,value:i%2,available:true}))}});
  const base=Object.assign({},hud,{helper:mode==='offline'?null:helper,helperFresh:mode==='fresh'||mode==='pending'});

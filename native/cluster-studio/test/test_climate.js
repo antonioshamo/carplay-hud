@@ -44,6 +44,7 @@ async function main(){
  await slow.open();const delayed=slow.command('ac',1);await new Promise(resolve=>setTimeout(resolve,10));slow.close();finishInit();await rejects(delayed,/closed/);assert.equal(lateWrites,0);assert(lateShutdown>0);
  const bad=fixture();delete bad.datatypes[ACTIONS.ac.service+'.'+ACTIONS.ac.field+'.'+ACTIONS.ac.member].items.KEINE_AUSWAHL;delete bad.datatypes[ACTIONS.ac.service+'.'+ACTIONS.ac.field+'.'+ACTIONS.ac.member].items.SIGNAL_UNBEFUELLT;assert.throws(()=>profile(bad,'ac'),/neutral/);
  assert.equal(decode('functions',{statusAC:3}).ac,null);assert.equal(decode('driver',{statusBlowerAutomaticDR:2}).autoDR,null);assert.equal(decode('driver',{statusAirInjectionManifoldProgramDR:'AUTO'}).airDR,7);assert.equal(decode('passenger',{statusAirDistributionProgramPS:'OBEN_MITTE'}).airPS,5);
+ for(const invalid of [NaN,Infinity,-1,.5,1.5,'1',true,{},null])assert.equal(decode('functions',{statusAC:invalid}).ac,null,'invalid climate enum must stay unavailable');
  const scan=inspect(db);assert(scan.climate>0);assert(scan.readOnly);
  console.log('ok climate schema allowlist, neutral fields, no writes on open, eight commands, fresh readback, stale/expired/invalid requests, rejection, concurrency and shutdown');
 }
