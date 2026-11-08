@@ -1,3 +1,10 @@
+## 0.4.149
+
+- Round the BMW-style dials with continuous curves and matching ticks/needles. Keep primary readings white while retaining accent and widget color controls.
+- Replace the hard center box with neutral side backgrounds and a smooth horizontal blend. Keep BMW's center and native badge transparent, and remove only the old duplicate badge at its default position.
+- Preserve the accepted P clearance, saved layouts and live data path. Requires Cluster Studio 0.1.26.
+- Appearance update only: full-panel activation in Drive remains unverified and unchanged. The requested external 3D model could not be downloaded and is not included.
+
 ## 0.4.148
 
 - New BMW original-style default: mirrored outer speed/RPM dials, silver markings, red needles, and editable side widgets. Includes fuel, range, coolant, oil and clock.

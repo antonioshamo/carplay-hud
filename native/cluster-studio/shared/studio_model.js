@@ -127,12 +127,14 @@ function validate(v){
  const missingFuel=!seen.has('fuel');
  for(const type of TYPES)if(!seen.has(type))out.widgets.push(newWidget(type));
  if(missingFuel)placeFuel(out);
+ // Retire only the previous default badge that duplicated BMW's native logo.
+ if(out.template==='bmw-factory'){const w=out.widgets.find(a=>a.type==='badge');if(w&&w.x===.405&&w.y===.105&&w.w===.19&&w.h===.11){w.on=false;w.x=.205;w.y=.51;w.w=.15;w.h=.13;}}
  out.widgets.forEach(w=>keepInFactorySide(out,w));
  return out;
 }
 function cleanText(v,max){if(typeof v!=='string'||!v.trim()||v.length>max||/[^\x20-\x7e]/.test(v))throw Error('Use 1-'+max+' printable characters');return v.trim();}
 function keepInFactorySide(d,w){
- if(d.template!=='bmw-factory'||w.y+w.h<=.22)return;
+ if(d.template!=='bmw-factory')return;
  const right=w.x+w.w/2>=.5;w.w=Math.min(w.w,.365);
  w.x=clamp(w.x,right?.635:0,right?1-w.w:.365-w.w);
 }
@@ -169,13 +171,13 @@ function idrivePreset(index){
 }
 // Separate identifier: legacy preset numbers and saved designs remain unchanged.
 // The middle is reserved for native BMW content, including when widgets are moved.
-const FACTORY_REGIONS=Object.freeze([[0,0,.365,1],[.635,0,.365,1],[.365,0,.27,.22]].map(Object.freeze));
+const FACTORY_REGIONS=Object.freeze([[0,0,.365,1],[.635,0,.365,1]].map(Object.freeze));
 function factoryPreset(){
  const d=preset(0);d.template='bmw-factory';d.name='BMW original style';d.gauge='bmw';
  d.background='gradient';d.borders=false;d.temperatureUnit='F';d.widgets.forEach(w=>w.on=false);
  const put=(type,x,y,w,h)=>Object.assign(d.widgets.find(a=>a.type===type),{x,y,w,h,on:true});
  put('speed',.015,.06,.35,.80);put('rpm',.635,.06,.35,.80);
- put('badge',.405,.105,.19,.11);
+ // The original BMW badge remains visible through the native center.
  put('fuel',.125,.625,.115,.105);put('range',.245,.625,.115,.105);
  put('coolant',.64,.625,.115,.105);put('oil',.76,.625,.115,.105);
  put('clock',.075,.89,.20,.075);put('outside',.815,.88,.14,.095);

@@ -98,6 +98,7 @@ function frame(s,focus,scale){
   const b=s.page==='gallery'?{x:274,y:153,w:976,h:256}:s.page==='properties'?{x:274,y:153,w:876,h:329}:BOX;
   r.roundRect(b.x-2,b.y-2,b.w+4,b.h+4,12,'#2a3d55');r.fillRect(b.x,b.y,b.w,b.h,'#050910');
   const inner=s.page==='gallery'?{x:b.x+147,y:b.y,w:682,h:256}:b;
+  if(d.template==='bmw-factory'){r.fillRect(inner.x,inner.y,inner.w,inner.h,'#181e28');T.text(r,'BMW center',inner.x+inner.w/2,inner.y+inner.h*.55,s.page==='gallery'?13:18,'#84909f',inner.w*.24,true);}
   if(s.page==='intro')D.sequence(r,d,inner,s.previewData(),s.animationAt?Date.now()-s.animationAt:d.introDuration*.55);
   else D.draw(r,d,inner,s.previewData(),{selected:['edit','properties'].includes(s.page)?s.selected:null,grid:['edit','properties'].includes(s.page)&&s.design.snap});
   if(s.page==='gallery'){text(d.template&&d.template!=='standard'?d.name:M.LAYOUTS[d.preset%10],b.x+18,b.y+30,20,'#d2e1f5',240);text(d.template==='bmw-factory'?'Editable BMW style':d.template&&d.template!=='standard'?'iDrive 8 inspired':String(d.preset+1).padStart(3,'0')+' / 100',b.x+18,b.y+59,16,'#8199b5',160);}
