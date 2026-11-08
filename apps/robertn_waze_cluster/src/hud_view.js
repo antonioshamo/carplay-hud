@@ -2,6 +2,7 @@
 'use strict';
 const kit=require('./kit_record.js');
 const fonts=require('./kit_fonts.js');
+const cockpit=require('./cockpit_view.js'),T=require('./cockpit_theme.js');
 const W=1600,H=580;
 const C={bg:'#070c13',nav:'#0b121c',panel:'#162232',edge:'#304259',text:'#f4f7fc',dim:'#b0bfd1',blue:'#55c5ff',deep:'#103f65',muted:'#78899e',green:'#71ddb7',amber:'#efc684'};
 const tabs=[['overview','My cockpit','hud'],['layout','HUD layout','layout'],['appearance','Map style','sun'],['startup','Startup','power'],['support','Help & reset','help']];
@@ -26,23 +27,16 @@ function status(m) {
  return m.state==='offline'?'Connecting to map tool':'Waiting for map';
 }
 function layout(m,page,logPage) {
+ if(['overview','apps','vehicle','climate'].includes(page))return cockpit.items(m,page);
  const items=[];
  function add(id,label,x,y,w,h,enabled,selected,sub,icon){items.push({id,label,x,y,w,h,enabled:enabled!==false,selected:!!selected,sub,icon});}
- tabs.forEach((t,i)=>add('nav:'+t[0],t[1],18,116+i*78,224,66,true,page===t[0]||(page==='details'&&t[0]==='support'),'',t[2]));
+ tabs.slice(1).forEach((t,i)=>{add('nav:'+t[0],t[1],18,109+i*94,224,80,true,page===t[0]||(page==='details'&&t[0]==='support'),'',t[2]);items[items.length-1].chrome='rail';});
+ T.dock(items,page);
  add('navigate-back','Back',18,24,224,55,true);
  add('apply-current','Apply settings',1310,24,268,55,m.canDisplay);
- if(page==='overview') {
-  [
-   ['open-studio','My gauges','Templates, colors & widgets','cluster'],
-   ['go:layout','HUD layout','Map size & position','layout'],
-   ['go:startup','CarPlay startup','Set up your separate map','hud'],
-   ['studio:intro','Welcome','Choose or turn off animation','power'],
-   ['studio:library','Saved designs','Keep your favorite layouts','round'],
-   ['go:support','Help & restore','Connection & BMW defaults','help']
-  ].forEach((a,i)=>add(a[0],a[1],310+(i%3)*422,132+Math.floor(i/3)*164,402,146,true,false,a[2],a[3]));
-  add('hud','Windshield HUD',986,470,280,54,m.canDisplay,m.target==='hud');
-  add('cluster','Cluster center',1280,470,276,54,m.canDisplay,m.target==='map');
- } else if(page==='layout') {
+ if(page==='layout') {
+  add('hud','Windshield HUD',310,451,224,55,m.canDisplay,m.target==='hud');
+  add('cluster','Cluster center',548,451,224,55,m.canDisplay,m.target==='map');
   add('size:40','Small',800,180,115,64,m.canSize,m.width===40);
   add('size:60','Medium',923,180,115,64,m.canSize,m.width===60);
   add('size:75','Large',1046,180,115,64,m.canSize,m.width===75);
@@ -84,13 +78,10 @@ function fit(text,size,max,font) {
  return s+'…';
 }
 function frame(m,page,focus,logPage,textScale) {
+ if(['overview','apps','vehicle','climate'].includes(page))return cockpit.frame(m,page,focus,textScale);
  const r=new kit.Recorder(W,H,{textScale:textScale||1}),items=layout(m,page,logPage||0);
  const text=(s,x,y,size,color,max,font)=>r.text(fit(s,size,max||1300,font),x,y,size,color||C.text,{font:font||'label'});
- r.clear(C.bg);r.gradientRect(260,0,W-260,H,[[0,'#172b40'],[.5,'#0c1622'],[1,C.bg]]);
- r.fillRect(0,0,260,H,C.nav);r.line(260,22,260,H-26,1,C.edge);
- // Small motorsport accents; no claim of BMW authorship or proprietary assets.
- ['#55c3f1','#3659ba','#e34e59'].forEach((c,i)=>r.fillRect(30+i*17,542,12,20,c));
- text('CARPLAY HUD',96,558,16,C.dim,145,'bold');
+ T.background(r);
  const title={overview:'Make it yours.',layout:'HUD map layout',appearance:'Map appearance',startup:'CarPlay startup',support:'Help & restore',details:'Connection details'}[page]||'CarPlay HUD';
  text(title,304,56,30,C.text,646,'bold');
  const st=status(m);r.roundRect(970,28,322,42,21,'#132a3c');r.circle(990,49,5,m.state==='showing'?C.green:m.state==='frozen'?C.amber:C.blue);text(st,1006,56,18,C.text,267);
@@ -116,8 +107,8 @@ function frame(m,page,focus,logPage,textScale) {
   text('APPLE MAPS DISPLAY',310,491,17,C.dim,620,'bold');
   text('Choose where the separate map appears',310,519,22,C.text,640);
  } else if(page==='layout') {
-  preview(310,112,462,328);text(m.width===null?'Waiting for tool':m.width===0?'Standard width':m.width+'% map width',338,478,30,C.text,420,'bold');
-  text(m.offset?'Position  '+m.offset[0]+' / '+m.offset[1]+' px':'Waiting for position',338,509,19,C.dim,420);
+  preview(310,112,462,275);text(m.width===null?'Waiting for tool':m.width===0?'Standard width':m.width+'% map width',338,414,21,C.text,420,'bold');
+  text(m.offset?'Position  '+m.offset[0]+' / '+m.offset[1]+' px':'Waiting for position',338,438,17,C.dim,420);
   panel(784,112,393,394);text('SIZE',800,149,18,C.dim,360,'bold');panel(1196,112,380,394);text('POSITION',1228,149,18,C.dim,320,'bold');
   text('Changes rectangle size, not street zoom.',800,477,16,C.dim,361);
  } else if(page==='appearance') {
@@ -152,7 +143,7 @@ function frame(m,page,focus,logPage,textScale) {
   else {r.strokeRoundRect(x-13,y-13,26,26,13,2,col);text(name==='help'?'?':'i',x-4,y+7,20,col,16,'bold');}
  }
  for(let i=0;i<items.length;i++){
-  const b=items[i],nav=b.id.indexOf('nav:')===0&&b.x<260,focused=i===focus,col=b.enabled?C.text:C.muted;
+  const b=items[i];if(b.chrome){T.button(r,b,i===focus);continue;}const nav=b.id.indexOf('nav:')===0&&b.x<260,focused=i===focus,col=b.enabled?C.text:C.muted;
   const bg=b.id==='apply-current'?'#156498':b.selected?C.deep:nav?C.nav:C.panel;
   if(!nav&&b.h>120){r.card(b.x,b.y,b.w,b.h,14,[[0,b.selected?'#174b70':'#1c3046'],[1,bg]]);r.line(b.x+18,b.y+1,b.x+b.w-18,b.y+1,1,'#42617e');}
   else r.roundRect(b.x,b.y,b.w,b.h,nav?7:10,bg);
@@ -167,9 +158,9 @@ function frame(m,page,focus,logPage,textScale) {
   if(b.sub)text(b.sub,tx,b.y+(b.h>120?94:b.h>90?70:b.h-14),b.h>120?22:18,b.enabled?C.dim:C.muted,b.w-(b.icon?78:34));
   if(b.selected&&!nav&&b.h>120){r.circle(b.x+b.w-27,b.y+26,7,C.blue);}
  }
- r.line(284,535,1576,535,1,C.edge);
- const note=m.busy?'Applying and saving your changes…':m.target!=='hud'&&['layout','appearance'].indexOf(page)>=0?'Select Windshield HUD in My cockpit to use these controls.':page==='appearance'&&!m.canStyle?'Appearance changes apply to the normal HUD map stream.':m.notice;
- text(note,306,565,19,m.busy?C.blue:/fail|not confirm|could not|unavailable/i.test(note)?C.amber:C.dim,1240);
+
+ const note=m.busy?'Applying and saving your changes…':m.target!=='hud'&&['layout','appearance'].indexOf(page)>=0?'Select Windshield HUD on the HUD layout page to use these controls.':page==='appearance'&&!m.canStyle?'Appearance changes apply to the normal HUD map stream.':m.notice;
+ text(note,20,564,15,m.busy?C.blue:/fail|not confirm|could not|unavailable/i.test(note)?C.amber:C.dim,360);
  text(m.busy?'SAVING…':'AUTO-SAVE',1050,89,16,m.busy?C.amber:C.green,210,'bold');
  return {record:r,items};
 }

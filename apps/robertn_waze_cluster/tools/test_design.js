@@ -27,12 +27,12 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   h.hostVisible(true);await until(()=>g.count(7)>0);await settled();
   assert.equal(client.maxFps,60,'preview requests 60 fps');assert(h.active);assert.equal(g.last(3).payload.readUInt32LE(),1);assert.equal(g.last(0x4d520002).payload.readUInt32LE(),1);
   const pl=g.last(2).payload;assert.deepEqual([0,4,8,12].map(i=>pl.readInt32LE(i)),[160,100,1600,580]);
-  assert(g.count(4)>0,'actual font atlases uploaded');assert(proxyItems.some(x=>x.id==='hud'));
+  assert(g.count(4)>0,'actual font atlases uploaded');assert(proxyItems.some(x=>x.id==='go:layout'));
   const proxyBefore=proxyUpdates;h.render();await settled();h.render();await settled();assert.equal(proxyUpdates,proxyBefore,'animation frames do not rewrite unchanged BMW proxies');
   console.log('ok real renderer handshake, placement, atlas upload, frame and foreground input claims');
-  await tap('hud');await until(()=>c.displayTarget()==='hud'&&!c._busy());assert.equal(c.settingsNotice(),'Applied and saved');
+  await tap('go:layout');await tap('hud');await until(()=>c.displayTarget()==='hud'&&!c._busy());assert.equal(c.settingsNotice(),'Applied and saved');
   assert(p.received.some(m=>m.cmd==='target'&&m.target==='hud'));
-  await tap('nav:layout');assert.equal(h.page,'layout');await tap('size:75');await until(()=>c.hudWidth()===75&&!c._busy());
+  assert.equal(h.page,'layout');await tap('size:75');await until(()=>c.hudWidth()===75&&!c._busy());
   await tap('right');await until(()=>c.hudOffset()[0]===10&&!c._busy());await tap('step');assert.equal(c.moveStep,40);
   await tap('up');await until(()=>c.hudOffset()[1]===-40&&!c._busy());await tap('center');await until(()=>c.hudOffset().every(x=>x===0)&&!c._busy());
   console.log('ok graphic touch controls change and confirm HUD target, width, movement and saved settings');
@@ -43,14 +43,15 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   console.log('ok touch-drag cancellation; popup hides graphics and releases touch/dial; hidden input ignored');
   const beforeCloseModes=modes.length;client.emit('closed');assert(h.ready&&!h.active,'foreground exit keeps graphics capability');assert.equal(modes.length,beforeCloseModes,'exit does not remap the entry to classic');h.hostVisible(true);await settled();assert(h.active,'modern host reopens after a foreground exit');
   h.focus=0;g.ccu(1,100,1);await wait(20);assert.equal(h.focus,0,'first controller sample is a baseline');
-  g.ccu(2,102,0);await until(()=>h.focus===2);g.ccu(3,102,1);await until(()=>h.page==='appearance');
-  assert.equal(h.focus,2);g.ccu(4,10000,0);await wait(20);assert.equal(h.focus,2,'reconnect jumps do not change selection');
+  g.ccu(2,101,0);await until(()=>h.focus===1);g.ccu(3,101,1);await until(()=>h.page==='appearance');
+  assert.equal(h.focus,1);g.ccu(4,10000,0);await wait(20);assert.equal(h.focus,1,'reconnect jumps do not change selection');
   const before=p.received.length;assert.equal(h.press(h.items.findIndex(x=>x.id==='clear')),false);assert.equal(p.received.length,before,'unsupported settings stay inert');
-  h.info.controller=false;h.proxyFocus(4,true);assert.equal(h.focus,4);h.proxyPress(4);await until(()=>h.page==='support');
+  h.info.controller=false;const support=h.items.findIndex(b=>b.id==='nav:support');h.proxyFocus(support,true);assert.equal(h.focus,support);h.proxyPress(support);await until(()=>h.page==='support');
   await tap('nav:overview');
-  for(const shortcut of ['go:layout','go:startup','go:support']){await tap(shortcut);assert.equal(h.page,shortcut.slice(3));await wait(310);await tap('navigate-back');assert.equal(h.page,'overview');}
-  for(const shortcut of ['studio:intro','studio:library']){await tap(shortcut);assert.equal(h.studio.page,shortcut.slice(7));assert(h.items[h.focus].selected,'shortcut focuses the active category, not Back');await wait(310);await tap('navigate-back');assert.equal(h.page,'overview','shortcut Back returns directly to cockpit');}
-  await tap('open-studio');assert.equal(h.page,'studio');assert.equal(h.studio.entryPage,'gallery');
+  await tap('nav:apps');
+  for(const shortcut of ['go:layout','go:startup']){await tap(shortcut);assert.equal(h.page,shortcut.slice(3));await wait(310);await tap('navigate-back');assert.equal(h.page,'apps');}
+  for(const shortcut of ['studio:intro','studio:library']){await tap(shortcut);assert.equal(h.studio.page,shortcut.slice(7));assert(h.items[h.focus].selected,'shortcut focuses the active category, not Back');await wait(310);await tap('navigate-back');assert.equal(h.page,'apps','shortcut Back returns to the app grid');}
+  await wait(310);await tap('nav:overview');await tap('open-studio');assert.equal(h.page,'studio');assert.equal(h.studio.entryPage,'gallery');
   await tap('page:edit');assert.equal(h.studio.page,'edit');await settled();
   const sw=h.studio.widget(),sx=274+(sw.x+sw.w/2)*976,sy=153+(sw.y+sw.h/2)*366,sold=sw.x;
   g.touch(1,sx,sy);g.touch(2,sx+60,sy+10);g.touch(3,sx+60,sy+10);await wait(30);assert(h.studio.widget().x>sold,'real touch wire drags Studio widget');
@@ -62,7 +63,7 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   console.log('ok new widget chooser, geometry, color, lock and undo/redo through actual graphical input packets');
   h.studio.page='media';h.studio.client.status={media:{target:'center',playing:true,active:true,generation:1,rect:{x:0,y:0,w:1,h:1}},slots:[]};h.studio.client.statusAt=Date.now();h.render();await settled();assert(g.count(13)>0,'media binds a real VIDEO shared-file source');const videoCount=g.count(13);h.studio.client.status.media.generation=2;h.render();await settled();assert(g.count(13)>videoCount&&g.count(14)>0,'reopened shared file rebinds after pause');h.studio.videoFull=true;h.render();await settled();assert.equal(h.items.length,4,'movie view keeps Back, live editing, Apply and Stop controls');h.studio.client.statusAt=Date.now()-3000;h.render();await settled();assert(!h.videoBound,'stale helper status removes center video');h.studio.page='edit';h.studio.client.status=null;h.render();await settled();
   h.hostFocus(false);const hiddenX=h.studio.widget().x;g.touch(1,sx,sy);g.touch(2,sx+120,sy);g.touch(3,sx+120,sy);await wait(20);assert.equal(h.studio.widget().x,hiddenX);
-  h.hostVisible(true);h.studio.nav=[];h.studio.page='gallery';h.render();await settled();await tap('navigate-back');assert.equal(h.page,'overview');await wait(310);await tap('nav:support');
+  h.hostVisible(true);h.studio.nav=[];h.studio.page='gallery';h.render();await settled();await tap('navigate-back');assert.equal(h.page,'overview');await wait(310);await tap('go:layout');await tap('nav:support');
   await tap('classic');assert.equal(classic,1);
   console.log('ok rotary selection/press, baseline and jump handling, native-proxy fallback, disabled actions and Classic');
   const m=view.model(c);
@@ -70,7 +71,7 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
    for(const sample of [m,Object.assign({},m,{target:'hud',canRestart:true,startup:true,width:85,offset:[400,-400]}),Object.assign({},m,{target:null,state:'offline',busy:true})]){
     const f=view.frame(sample,page,0,0,.5),items=f.items;assert(items.length<=PROXIES);
     for(let i=0;i<items.length;i++){
-     const a=items[i];assert(a.x>=0&&a.y>=0&&a.x+a.w<=view.W&&a.y+a.h<=535);
+     const a=items[i];assert(a.x>=0&&a.y>=0&&a.x+a.w<=view.W&&a.y+a.h<=(a.chrome==='dock'?574:535));
      for(let j=i+1;j<items.length;j++){const b=items[j];assert(!(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y),'overlapping controls');}
     }
    }

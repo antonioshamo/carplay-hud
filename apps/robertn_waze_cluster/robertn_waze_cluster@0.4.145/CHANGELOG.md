@@ -1,3 +1,11 @@
+## 0.4.145
+
+- Reference-inspired cockpit home cards, app grid, consistent navigation and live vehicle pages.
+- Climate page with eight schema-checked actions and fresh vehicle readback; not yet verified in-car.
+- Explicitly disabled mapping-pending temperature, fan, seat and rear-climate features.
+- Restore HUD target selection on its layout page; keep widget grid lines behind text.
+- Requires Cluster Studio 0.1.23. Factory Home and driving-assistance behavior are unchanged.
+
 ## 0.4.144
 
 - Add a six-card cockpit home, clear page titles, consistent navigation, and

@@ -10,7 +10,7 @@ const HOST='ST_WOC_Design',PROXIES=24;
 class HudScreen extends EventEmitter {
  constructor(host,options) {
   super();this.host=host;this.gpu=options&&options.client||new RenderClient('robertn_waze_cluster',host.log,{kit,mode:'layer'});
-  this.page='overview';this.navigation=[];this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
+  this.cockpit={homePage:0,appPage:0,category:'all',vehicleTab:'engine',climateTab:0};this.motionAt=0;this.page='overview';this.navigation=[];this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
   this.active=false;this.info=null;this.scale=1;this.closed=false;this.touch=null;this.ccu=null;this.last={};this.dirty=false;this.suspended=false;
   this.studio=new StudioScreen(()=>{this.dirty=true;});
   this.sentAt=0;this.reshowTimer=null;
@@ -26,11 +26,13 @@ class HudScreen extends EventEmitter {
   this.gpu.on('state',s=>trace.record('graphics-state',JSON.stringify(s)));
   this.gpu.on('touch',(p,x,y)=>this._touch(p,x,y));
   this.gpu.on('ccu',e=>this._ccu(e));
-  this.gpu.on('tick',()=>{if(this.dirty||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
-  this.timer=setInterval(()=>{if(this.active)this.render();},1000);
+  this.gpu.on('tick',()=>{if(this.dirty||Date.now()-this.motionAt<220||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
+  this.timer=setInterval(()=>{if(this.active){this.observeClimate();this.render();}},1000);
   if(this.timer.unref)this.timer.unref();
  }
- connect(){this.gpu.connect();}
+ connect(){this.gpu.connect();this.studio.open();}
+ observeClimate(){const c=this.studio.client;if(this.closed||!this.active||this.page!=='climate'||!c.status||!c.status.climateSupported||c.pending||Date.now()-(c.statusAt||0)>=2000||Date.now()-(this.climateObservedAt||0)<2000)return;this.climateObservedAt=Date.now();c.send('climate-observe').then(()=>{this.dirty=true;},e=>{this.cockpit.climateNotice=e.message;this.dirty=true;});}
+ _model(){return Object.assign(view.model(this.host.control),{cockpit:this.cockpit,helper:this.studio.client.status,helperFresh:!!this.studio.client.status&&Date.now()-(this.studio.client.statusAt||0)<2000});}
  _ready(info){
   trace.record('graphics-ready',JSON.stringify(info));
   this.info=info;this.studio.videoSupported=!!(info&&info.video);
@@ -58,7 +60,7 @@ class HudScreen extends EventEmitter {
   // Force the first frame on return; keep subsequent recovery at 1 Hz.
   if(!force&&this.gpu.waiting&&Date.now()-this.sentAt<1000){this.dirty=true;return;}
   try {
-   const f=this.page==='studio'?this.studio.frame(this.focus,this.scale):view.frame(view.model(this.host.control),this.page,this.focus,this.logPage,this.scale);
+   const f=this.page==='studio'?this.studio.frame(this.focus,this.scale):view.frame(this._model(),this.page,this.focus,this.logPage,this.scale);
    const media=this.studio.client.status&&this.studio.client.status.media;const showVideo=this.page==='studio'&&this.studio.page==='media'&&media&&media.target==='center'&&media.playing&&Date.now()-(this.studio.client.statusAt||0)<2000&&this.studio.videoSupported;
    if(showVideo&&(!this.videoBound||this.videoGeneration!==media.generation)){if(this.videoBound)this.gpu.video(9001,null);this.gpu.video(9001,'/dev/shm/mgu-video-shamo-clips');this.videoBound=true;this.videoGeneration=media.generation;}else if(!showVideo&&this.videoBound){this.gpu.video(9001,null);this.videoBound=false;}
    this.items=f.items;this.focus=Math.max(0,Math.min(this.focus,this.items.length-1));
@@ -77,13 +79,24 @@ class HudScreen extends EventEmitter {
  press(i){
   if(!this.active||!this.items[i])return false;
   const id=this.items[i].id;
-  const fresh=(this.page==='studio'?require('./studio_view.js').items(this.studio):view.layout(view.model(this.host.control),this.page,this.logPage)).find(b=>b.id===id);
+  const fresh=(this.page==='studio'?require('./studio_view.js').items(this.studio):view.layout(this._model(),this.page,this.logPage)).find(b=>b.id===id);
   if(!fresh||!fresh.enabled)return false;
   const now=Date.now();if(now-(this.last[id]||0)<300)return false;this.last[id]=now;
-  if(this.page==='studio'){const before=this.studio.page;const handled=this.studio.press(id);if(id==='exit'||(id==='navigate-back'&&!handled)){this.page='overview';this.studio.drag=null;this.focus=0;}else if(before!==this.studio.page)this.focus=Math.max(0,require('./studio_view.js').items(this.studio).findIndex(b=>b.x<250&&b.selected));this.render();return true;}
+  if(this.page==='studio'){const before=this.studio.page;const handled=this.studio.press(id);if(id==='exit'||(id==='navigate-back'&&!handled)){this.page=this.studioReturn||'overview';this.studio.drag=null;this.focus=0;}else if(before!==this.studio.page)this.focus=Math.max(0,require('./studio_view.js').items(this.studio).findIndex(b=>b.id.indexOf('page:')===0&&b.selected));this.render();return true;}
+  if(['home-prev','home-next','apps-prev','apps-next'].includes(id)||/^(category:|vtab:|ctab:)/.test(id)){
+   if(id==='home-prev'||id==='home-next')this.cockpit.homePage=id==='home-next'?1:0;
+   if(id==='apps-prev')this.cockpit.appPage=Math.max(0,this.cockpit.appPage-1);
+   if(id==='apps-next')this.cockpit.appPage=Math.min(Math.ceil(require('./cockpit_view.js').appList(this._model()).length/12)-1,this.cockpit.appPage+1);
+   if(id.indexOf('category:')===0){this.cockpit.category=id.slice(9);this.cockpit.appPage=0;}
+   if(id.indexOf('vtab:')===0)this.cockpit.vehicleTab=id.slice(5);
+   if(id.indexOf('ctab:')===0)this.cockpit.climateTab=Number(id.slice(5));
+   this.motionAt=Date.now();this.cockpit.enterAt=this.motionAt;this.render();return true;
+  }
+  if(id.indexOf('climate-set:')===0){const action=id.slice(12),c=require('./cockpit_view.js').control(this._model(),action);if(!c||!c.available||this.cockpit.climateBusy)return false;this.cockpit.climateBusy=true;this.cockpit.climateNotice='Waiting for BMW confirmation…';const count=action==='freshAir'?3:/^air/.test(action)?7:2;this.studio.client.send('climate-set',{action,value:(c.value+1)%count}).then(()=>{this.cockpit.climateBusy=false;this.cockpit.climateNotice='';this.dirty=true;},e=>{this.cockpit.climateBusy=false;this.cockpit.climateNotice=e.message;this.dirty=true;});this.render();return true;}
+  if(id.indexOf('vehicle:')===0){this.navigation.push(this.page);this.page='vehicle';this.cockpit.vehicleTab=id.slice(8);this.focus=0;this.render();return true;}
   if(id==='navigate-back'){if(this.navigation.length)this.page=this.navigation.pop();else if(this.page!=='overview')this.page='overview';else if(this.host.exit)this.host.exit();this.focus=0;this.render();return true;}
-  if(id==='open-studio'||id.indexOf('studio:')===0){this.page='studio';this.studio.page=id==='open-studio'?'gallery':id.slice(7);this.studio.entryPage=this.studio.page;this.studio.nav=[];this.studio.open();this.focus=Math.max(0,require('./studio_view.js').items(this.studio).findIndex(b=>b.x<250&&b.selected));this.render();return true;}
-  if(id.indexOf('nav:')===0||id.indexOf('go:')===0){const next=id.slice(id.indexOf(':')+1);if(this.page!==next)this.navigation.push(this.page);if(this.navigation.length>20)this.navigation.shift();this.page=next;this.logPage=0;this.focus=Math.max(0,view.tabs.findIndex(t=>t[0]===this.page));this.touch=null;this.ccu=null;this.render();return true;}
+  if(id==='open-studio'||id.indexOf('studio:')===0){this.studioReturn=this.page;this.page='studio';this.studio.page=id==='open-studio'?'gallery':id.slice(7);this.studio.entryPage=this.studio.page;this.studio.nav=[];this.studio.open();this.focus=Math.max(0,require('./studio_view.js').items(this.studio).findIndex(b=>b.id.indexOf('page:')===0&&b.selected));this.render();return true;}
+  if(id.indexOf('nav:')===0||id.indexOf('go:')===0){const next=id.slice(id.indexOf(':')+1);if(this.page!==next)this.navigation.push(this.page);if(this.navigation.length>20)this.navigation.shift();this.page=next;if(next==='climate'){this.cockpit.climateNotice='';this.observeClimate();}this.motionAt=Date.now();this.cockpit.enterAt=this.motionAt;this.logPage=0;this.focus=Math.max(0,view.layout(this._model(),this.page,0).findIndex(b=>b.selected));this.touch=null;this.ccu=null;this.render();return true;}
   const c=this.host.control;
   switch(id){
    case 'apply-current':c.applyCurrent();break;
@@ -121,7 +134,7 @@ class HudScreen extends EventEmitter {
   if(phase==='down'){this.touch={i:this.hit(x,y),x,y,page:this.page};return;}
   const t=this.touch;if(!t)return;
   if(Math.hypot(x-t.x,y-t.y)>20)t.cancel=true;
-  if(phase==='up'){this.touch=null;if(!t.cancel&&t.page===this.page&&t.i>=0&&t.i===this.hit(x,y)){this.focus=t.i;this.press(t.i);}}
+  if(phase==='up'){this.touch=null;if(t.page==='overview'&&this.page==='overview'&&t.y>=100&&t.y<450&&Math.abs(x-t.x)>90&&Math.abs(y-t.y)<60){const id=x<t.x?'home-next':'home-prev',i=this.items.findIndex(b=>b.id===id);if(i>=0)this.press(i);return;}if(!t.cancel&&t.page===this.page&&t.i>=0&&t.i===this.hit(x,y)){this.focus=t.i;this.press(t.i);}}
  }
  _ccu(e){
   if(!this.active||!(this.info&&this.info.controller))return;

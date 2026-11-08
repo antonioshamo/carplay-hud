@@ -10,7 +10,7 @@ function inspect(){
  for(const id of ['navigate-back','live-toggle','apply'])assert(buttons.some(b=>b.id===id),s.page+' '+id);
  assert(rendered.includes(V.TITLES[s.page]),s.page+' clear page title');
  for(let i=0;i<buttons.length;i++){
-  const a=buttons[i];assert(a.x>=0&&a.y>=0&&a.x+a.w<=1600&&a.y+a.h<=535,s.page+' bounds '+a.id);
+  const a=buttons[i];assert(a.x>=0&&a.y>=0&&a.x+a.w<=1600&&a.y+a.h<=(a.chrome==='dock'?574:535),s.page+' bounds '+a.id);
   assert(rendered.includes(a.label),s.page+' clipped button: '+a.label);
   for(let j=i+1;j<buttons.length;j++){const b=buttons[j];assert(!(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y),s.page+' overlapping '+a.id+' / '+b.id);}
  }

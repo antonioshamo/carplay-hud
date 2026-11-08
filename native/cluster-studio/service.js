@@ -2,6 +2,7 @@
 'use strict';
 const fs=require('fs'),path=require('path'),net=require('net');
 const M=require('./shared/studio_model.js');
+const {ClimateControls}=require('./climate_controls.js');
 const {Assistance}=require('./assistance.js');
 const {StartupRecovery}=require('./startup_recovery.js');
 const capabilities=require('./capabilities.js'),{ParkedMedia}=require('./parked_media.js');
@@ -15,10 +16,10 @@ class StudioService {
   const recovery=e.health(),display=e.display();
   const panelReady=!e.panelBlock&&parked&&renderer&&/(^|,)panel:1920x720(,|$)/.test(e.cr.targets||'');
   const testReason=e.panelBlock||(!parked?'Needs fresh speed 0 and gear P':!renderer?'Waiting for cluster renderer':!panelReady?'Full-cluster renderer unavailable':recovery.paused?'Renderer paused; retry saved display':recovery.retryInMs?'Waiting for renderer retry':!e.hudAllowsPanel()?'HUD active or ownership unknown':'Ready for a parked test');
-  return {assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!e.panelBlock,panelClearance:'native-gear-v1',independentPanelHud:renderer&&e.cr.independentPanelHud===true,output:this.store.output,
-   features:this.features?{lighting:this.features.lighting,media:this.features.media,rows:this.features.rows.slice(0,6),scannedAt:this.features.scannedAt}:null,media:this.o.media?this.o.media.state():null,
+  return {climateSupported:true,climate:this.climate?this.climate.status():null,assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!e.panelBlock,panelClearance:'native-gear-v1',independentPanelHud:renderer&&e.cr.independentPanelHud===true,output:this.store.output,
+   features:this.features?{lighting:this.features.lighting,climate:this.features.climate,media:this.features.media,rows:this.features.rows.slice(0,6),scannedAt:this.features.scannedAt}:null,media:this.o.media?this.o.media.state():null,
    panelRemaining:Math.max(0,Math.ceil(((e.panelUntil||0)-e.now())/1000)),canPreview:testReason==='Ready for a parked test',canSelectPanel:panelReady,
-   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.21',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
+   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.23',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
    parked,state:e.state,renderer,data:this.o.telemetry.snapshot(),panel:e.target==='panel',recovery,displayVisible:display.visible,displayTarget:display.target,displayState:display.state,displayReason:display.reason,
    hud:{state:e.hud,holder:e.hudHolder||null,reason:e.hudReason||''}};
  }
@@ -27,6 +28,12 @@ class StudioService {
   let next=M.clone(this.store);
   switch(m.cmd){
    case 'status':return this.state();
+   case 'climate-observe':
+    if(!this.climate||this.climate.closed)this.climate=this.o.createClimate?this.o.createClimate():new ClimateControls();
+    return this.climate.open().then(()=>this.state());
+   case 'climate-set':
+    if(!this.climate)throw Error('Open Climate before changing a setting');
+    return this.climate.command(m.action,m.value).then(()=>this.state());
    case 'retry':
     if(!this.store.enabled)throw Error('Choose an enabled output before retrying');
     if(!this.o.telemetry.parked())throw Error('Retry requires fresh speed 0 and gear P (Park)');
@@ -65,9 +72,9 @@ class StudioService {
   });
   await new Promise((resolve,reject)=>{this.server.once('error',reject);this.server.listen(socket,resolve);});
   fs.chmodSync(socket,432); // 0660, group inherited from systemd RuntimeDirectory
-  this.timer=setInterval(()=>{const data=JSON.stringify(this.state())+'\n';this.clients.forEach(s=>{if(s.bufferSize>131072)s.destroy();else s.write(data);});},1000);
+  this.timer=setInterval(()=>{if(this.climate&&!this.climate.pending&&Date.now()>=this.climate.leaseUntil)this.climate.close();const data=JSON.stringify(this.state())+'\n';this.clients.forEach(s=>{if(s.bufferSize>131072)s.destroy();else s.write(data);});},1000);
  }
- close(){clearInterval(this.timer);this.clients.forEach(s=>s.destroy());if(this.server)this.server.close();}
+ close(){if(this.climate)this.climate.close();clearInterval(this.timer);this.clients.forEach(s=>s.destroy());if(this.server)this.server.close();}
 }
 async function main(){
  const file='/var/opt/cluster-studio/studio.json',socket='/run/cluster-studio/control.sock';

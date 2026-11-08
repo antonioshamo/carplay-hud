@@ -1,6 +1,6 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.144",
+  "version": "0.4.145",
   "description": "Personal cockpit editor with Back and Apply on every screen, live parked editing, 12 dial styles, three iDrive 8-inspired templates, 100 layout/color combinations and saved designs.",
   "private": false,
   "main": "javascript/runner.js",

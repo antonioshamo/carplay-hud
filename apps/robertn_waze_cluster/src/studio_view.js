@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
 const kit=require('./kit_record.js'),M=require('./studio_model.js'),D=require('./studio_draw.js'),fonts=require('./kit_fonts.js');
+const T=require('./cockpit_theme.js');
 const BOX={x:274,y:153,w:976,h:366};
 const QR=require('./qrcodegen.js'),{videoOp}=require('./mgu_render_client.js');
 const PAGES=[['gallery','Templates'],['edit','Arrange widgets'],['style','Colors & dials'],['intro','Welcome'],['library','My designs'],['output','Display output'],['tools','More features']];
-const TITLES={gallery:'Choose your look',idrive:'iDrive 8 inspired',layouts:'Choose a layout',themes:'Choose your colors',gauges:'Choose your dials',edit:'Arrange your widgets',add:'Add a widget',widgets:'Choose a widget',properties:'Widget details',style:'Colors & dial style',intro:'Your welcome animation',library:'Your saved designs',phone:'Design on your phone',output:'Choose your display',tools:'More features',features:'Lighting & feature scan',assistance:'BMW driving assistance',media:'Phone video'};
+const TITLES={gallery:'Choose your look',idrive:'iDrive 8 inspired',layouts:'Choose a layout',themes:'Choose your colors',gauges:'Choose your dials',edit:'Arrange your widgets',add:'Add a widget',widgets:'Choose a widget',properties:'Widget details',style:'Colors & dial style',intro:'Your welcome animation',library:'Your saved designs',phone:'Design on your phone',output:'Choose your display',tools:'More features',features:'Car feature scan',assistance:'BMW driving assistance',media:'Phone video'};
 const WIDGETS_PER_PAGE=8;
 let qrText=null,qrCode=null;
 function items(s){
@@ -15,7 +16,7 @@ function items(s){
  add('live-toggle','Live changes: '+(s.liveChanges?'On':'Off'),1050,24,244,55,true,s.liveChanges);
  const ready=!!s.client.status&&!s.client.pending&&!s.liveSending;
  add('apply','Apply changes',1310,24,268,55,ready&&(!(s.client.status.output==='parked-panel')||s.client.status.parked));
- PAGES.forEach((p,i)=>add('page:'+p[0],p[1],18,110+i*57,222,48,true,s.page===p[0]||(p[0]==='edit'&&['widgets','add','properties'].includes(s.page))||(p[0]==='gallery'&&['layouts','idrive'].includes(s.page))||(p[0]==='style'&&['themes','gauges'].includes(s.page))||(p[0]==='library'&&s.page==='phone')||(p[0]==='tools'&&['assistance','features','media'].includes(s.page))));
+ PAGES.forEach((p,i)=>{add('page:'+p[0],p[1],i<4?18:440+(i-4)*320,i<4?109+i*94:522,i<4?222:306,i<4?80:50,true,s.page===p[0]||(p[0]==='edit'&&['widgets','add','properties'].includes(s.page))||(p[0]==='gallery'&&['layouts','idrive'].includes(s.page))||(p[0]==='style'&&['themes','gauges'].includes(s.page))||(p[0]==='library'&&s.page==='phone')||(p[0]==='tools'&&['assistance','features','media'].includes(s.page)));const b=out[out.length-1];b.chrome=i<4?'rail':'dock';b.icon=['gauge','widgets','sun','play','save','hud','apps'][i];});
  const d=s.design,connected=!!s.client.status,busy=!!s.client.pending;
  if(s.page==='gallery'){
   add('previous','Previous',274,427,170,62);add('next','Next',458,427,170,62);add('shuffle','Surprise me',642,427,220,62);add('edit','Customize',876,427,374,62);
@@ -67,7 +68,7 @@ function items(s){
   add('preview','Try full cluster',1300,401,254,48,fixed&&!busy&&s.client.status.canPreview);
   add('stop-preview','End timed test',1034,459,520,48,connected&&!busy&&s.client.status.panelRemaining>0);
  }else if(s.page==='tools'){
-  [['assistance','Driving assistance'],['features','Lighting & feature scan'],['media','Parked video'],['phone','Phone designer']].forEach((a,i)=>add('page:'+a[0],a[1],286+(i%2)*646,174+Math.floor(i/2)*140,622,112));
+  [['assistance','Driving assistance'],['features','Car feature scan'],['media','Parked video'],['phone','Phone designer']].forEach((a,i)=>add('page:'+a[0],a[1],286+(i%2)*646,174+Math.floor(i/2)*140,622,112));
  }else if(s.page==='features'){
   add('scan','Scan this car',1050,146,500,65,connected&&!busy&&s.client.status.parked===true);
   add('page:media','Get report on phone',1050,227,500,65,connected&&!busy);
@@ -83,14 +84,15 @@ function items(s){
 }
 function frame(s,focus,scale){
  const r=new kit.Recorder(1600,580,{textScale:scale||1}),buttons=items(s),d=s.design,t=M.THEMES[d.theme];
- function text(str,x,y,size,col,max){str=String(str||'');const font=fonts.get('bold',size);while(max&&fonts.measure(font,str)*size/font.size>max&&str.length)str=str.slice(0,-2)+'…';r.text(str,x,y,size,col||'#f0f5ff',{font:'bold'});}
+ function text(str,x,y,size,col,max){if(y>=522)return;str=String(str||'');const font=fonts.get('bold',size);while(max&&fonts.measure(font,str)*size/font.size>max&&str.length)str=str.slice(0,-2)+'…';r.text(str,x,y,size,col||'#f0f5ff',{font:'bold'});}
  const live=s.client.status&&s.client.status.media;
  if(s.page==='media'&&s.videoFull&&live&&live.playing&&live.target==='center'&&Date.now()-(s.client.statusAt||0)<2000){r.clear('#000000');const op=videoOp(9001,0,0,1600,460,0);r._grow(op.length);r.u.set(op,r.n);r.n+=op.length;buttons.forEach(b=>{r.roundRect(b.x,b.y,b.w,b.h,8,'#183858');text(b.label,b.x+15,b.y+35,23);});return {record:r,items:buttons};}
- r.clear('#070c13');r.gradientRect(252,0,1348,580,[[0,'#172b40'],[.5,'#0c1622'],[1,'#070c13']]);r.fillRect(0,0,252,580,'#0b121c');r.line(252,22,252,556,1,'#304259');
+ T.background(r);
  text('CLUSTER STUDIO / X4 M COMPETITION',276,24,14,'#94b5cf',740);
  text(TITLES[s.page]||'Cluster Studio',276,65,31,'#f0f5ff',750);
  const subtitle={idrive:'Three iDrive 8-inspired designs. Every widget can be moved, resized and recolored.',gallery:'Choose a template. Arrange, style and apply it to your car.',layouts:'Choose your layout. Your colors and welcome are kept.',gauges:'Choose a dial style. Speed and RPM can each use a different design.',themes:'Choose your color palette. Your widget positions are kept.',add:'37 widgets. Choose a category, add a widget, then drag it into place.',widgets:'Choose a category and a widget to move, resize, recolor or hide.',properties:'Independent width, height, alignment, layer order and widget styling.',edit:'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',phone:'Name your design and welcome, choose exact colors, import or export. Parked setup.',output:'Choose how to use your design.',assistance:'Your BMW assistance preferences. Read-only; these are not live warning indicators.',tools:'More ways to personalize your cockpit.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
  if(['add','widgets'].includes(s.page)){const group=M.GROUPS[s.widgetGroup||0],pages=Math.ceil(group[1].length/WIDGETS_PER_PAGE);text('Page '+(Math.min(s.widgetPage||0,pages-1)+1)+' of '+pages+'  ·  '+group[1].length+' widgets',286,506,22,'#b0bfd1',720);text('Live readings depend on vehicle support. Missing values show unavailable.',286,546,17,'#91acc8',1260);}
+ if(['gallery','edit','properties','style','intro','idrive','library'].includes(s.page))T.text(r,'PREVIEW · SAMPLE READINGS',970,88,14,'#b3bdd4',300,true);
  const preview=['gallery','edit','properties','style','intro'].includes(s.page);
  if(preview){
   const b=s.page==='gallery'?{x:274,y:153,w:976,h:256}:s.page==='properties'?{x:274,y:153,w:876,h:329}:BOX;
@@ -150,10 +152,10 @@ function frame(s,focus,scale){
   text('Use the phone designer for names, exact colors, import and export.',286,487,22,'#a4c4e4',1260);
  }else if(s.page==='features'){
   const f=s.client.status&&s.client.status.features;
-  text('Interior lighting & playback',286,173,28,t[1],740);
-  text(f?'Lighting candidates: '+f.lighting+' / media candidates: '+f.media:'Run a scan while parked.',286,218,23,'#d6e1ef',740);
+  text('Lighting, climate & playback',286,173,28,t[1],740);
+  text(f?'Lighting: '+f.lighting+' · climate: '+(f.climate||0)+' · media: '+f.media:'Run a scan while parked.',286,218,23,'#d6e1ef',740);
   (f?f.rows:[]).slice(0,5).forEach((a,i)=>{text(a.name+(a.setter?' · setter declared':''),286,263+i*40,19,'#a4c4e4',740);});
-  text('A candidate is not a verified control. No light settings are changed.',286,491,19,'#e6ba82',1200);
+  text('NOT VERIFIED · A scan finds interfaces; it does not activate controls.',286,491,19,'#e6ba82',1200);
   text('The phone report includes field types for a supported lighting adapter.',286,523,19,'#a4c4e4',1200);
  }else if(s.page==='media'){
   const m=s.client.status&&s.client.status.media,url=m&&m.target!=='design'&&m.urls&&m.urls[0],fresh=Date.now()-(s.client.statusAt||0)<2000;
@@ -169,20 +171,14 @@ function frame(s,focus,scale){
   text(m?m.note:'Install Cluster Studio 0.1.22.',286,533,19,'#a4c4e4',1270);
  }
  buttons.forEach((b,i)=>{
-  const nav=b.x<250&&b.id.startsWith('page:'),primary=b.id==='apply'||b.id==='page:add',col=b.enabled?'#f1f6ff':'#78899e';
-  if(nav)r.roundRect(b.x,b.y,b.w,b.h,8,b.selected?'#103f65':'#0b121c');
-  else r.card(b.x,b.y,b.w,b.h,10,[[0,primary?'#127ab4':b.selected?'#174b70':'#1c3046'],[1,primary?'#125b8c':b.selected?'#103f65':'#152131']]);
-  if(i===focus&&b.enabled)r.strokeRoundRect(b.x+1,b.y+1,b.w-2,b.h-2,9,3,'#70d5ff');
-  else if(!nav)r.strokeRoundRect(b.x,b.y,b.w,b.h,10,1,b.selected?'#55c5ff':'#304259');
-  if(b.selected)r.fillRect(b.x,b.y+11,3,b.h-22,'#62c1ff');
+  if(b.chrome){T.button(r,b,i===focus);return;}
+  const primary=b.id==='apply'||b.id==='page:add';
+  T.button(r,Object.assign({},b,{primary,label:b.widgetCard?'':b.label}),i===focus);
   if(s.page==='themes'&&b.id.startsWith('pick-theme:'))r.fillRect(b.x+2,b.y+2,6,b.h-4,M.THEMES[Number(b.id.split(':')[1])][1]);
-  const size=nav?21:b.id==='select'?18:b.widgetCard?24:b.w<160?17:b.w<210?18:b.id==='live-toggle'?20:23;
-  const pad=b.w<210?10:18;
-  text(b.label,b.x+pad,b.y+b.h/2+size*.34,size,col,b.w-(b.badge?168:pad*2));
-  if(b.badge){r.roundRect(b.x+b.w-140,b.y+13,122,31,15,b.enabled?'#173e58':'#162638');text(b.badge,b.x+b.w-126,b.y+34,17,b.enabled?'#8ddcff':'#9daec1',96);}
+  if(b.widgetCard){text(b.label,b.x+18,b.y+37,24,b.enabled?'#f1f6ff':'#78899e',b.w-168);text(b.badge,b.x+b.w-130,b.y+36,17,b.enabled?'#b9ceff':'#8191aa',115);}
  });
  const status=s.notice||s.editStatus()||(s.client.status?s.client.status.state:'Install Cluster Studio to save and display layouts');
- ['#55c3f1','#3659ba','#e34e59'].forEach((c,i)=>r.fillRect(22+i*16,538,10,19,c));text(s.client.status?'Connected':'Offline draft',84,553,16,'#aec5df',150);r.line(276,555,1578,555,1,'#304259');text(status,276,574,17,s.dirty?'#efc684':'#aec5df',1290);
+ T.text(r,status,20,548,16,s.dirty?'#efc684':'#aec5df',395);T.text(r,s.client.status?'Connected':'Offline draft',20,571,14,'#879dbd',395);
  return {record:r,items:buttons};
 }
 module.exports={frame,items,BOX,TITLES,WIDGETS_PER_PAGE};

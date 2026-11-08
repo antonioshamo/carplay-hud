@@ -20,6 +20,12 @@ for(let group=0;group<M.GROUPS.length;group++)for(let page=0;page<Math.ceil(M.GR
 const hud={target:'hud',state:'showing',width:60,offset:[0,0],step:10,background:false,corners:true,startup:false,startupResult:'Separate map preference saved',notice:'Sample status — offline render',captureText:'No capture running',captureButton:'Capture logs (5 min)',logs:['Sample connection status','Output: windshield HUD','Width: 60%']};
 for(const k of ['canDisplay','canSize','canLarger','canSmaller','canMove','canStyle','canCorners','canStartup','canDisable','canCapture','canRestore'])hud[k]=true;
 for(const page of H.tabs.map(t=>t[0]).concat(['details']))frame('hud-menu',page,H.frame(hud,page,Math.max(0,H.tabs.findIndex(t=>t[0]===page)),0,1));
+const CV=require('../src/cockpit_view.js');
+for(const mode of ['offline','fresh','pending','stale']){
+ const helper=Object.assign({},status,{climateSupported:true,data:s.previewData(),climate:{pending:mode==='pending',message:mode==='pending'?'Waiting for BMW confirmation…':'Sample climate status · offline rendering',controls:['ac','maxAC','defrost','freshAir','autoDR','autoPS','airDR','airPS'].map((id,i)=>({id,value:i%2,available:true}))}});
+ const base=Object.assign({},hud,{helper:mode==='offline'?null:helper,helperFresh:mode==='fresh'||mode==='pending'});
+ for(const variant of [['overview',{homePage:0}],['overview',{homePage:1}],['apps',{category:'all',appPage:0}],['apps',{category:'all',appPage:1}],['apps',{category:'display'}],['apps',{category:'vehicle'}],['apps',{category:'comfort'}],['vehicle',{vehicleTab:'engine'}],['vehicle',{vehicleTab:'tires'}],['vehicle',{vehicleTab:'journey'}],['climate',{climateTab:0}],['climate',{climateTab:1}],['climate',{climateTab:2}]])frame('cockpit-'+mode,variant[0]+'-'+Object.values(variant[1]).join('-'),CV.frame(Object.assign({},base,{cockpit:variant[1]}),variant[0],5,1));
+}
 for(const width of [0,40,60,75,95])for(const offset of [[0,0],[400,-400],[-400,400]])frame('hud-layout',width+'-'+offset.join('_'),H.frame(Object.assign({},hud,{width,offset}),'layout',1,0,1));
 const data=s.previewData();
 for(let n=0;n<103;n++){
