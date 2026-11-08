@@ -1,4 +1,4 @@
-name: Verify and publish HUD blank-frame repair
+name: Verify and publish HUD profile coordination
 on:
   workflow_dispatch:
 permissions:
@@ -21,25 +21,24 @@ jobs:
       - name: Import tested recovery source
         run: |
           set -eu
-          if [ -f bmw-map-flicker-0117.bundle ]; then
-            echo '4fdd262ea4eed50ec97c3666dbc0d71290d30833a3cc76f57b1226d624154709  bmw-map-flicker-0117.bundle' | sha256sum -c -
-            git bundle verify bmw-map-flicker-0117.bundle
-            git fetch ./bmw-map-flicker-0117.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = 'bcee21242142929e37ce51cbfb8376669751f951'
+          if [ -f bmw-conflict-0142.bundle ]; then
+            echo '63d7103314bcd24412ee0e9b2ae13ad57edc225a6067f5055086fd9a66806f78  bmw-conflict-0142.bundle' | sha256sum -c -
+            git bundle verify bmw-conflict-0142.bundle
+            git fetch ./bmw-conflict-0142.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = '4667c8dbc96823f0fd8bbcdc89fbd3c784ce2fab'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-map-flicker-0117.bundle
-            git commit -m 'Remove tested HUD recovery source transport bundle'
+            git rm bmw-conflict-0142.bundle
+            git commit -m 'Remove tested profile coordination source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor bcee21242142929e37ce51cbfb8376669751f951 HEAD
+          git merge-base --is-ancestor 4667c8dbc96823f0fd8bbcdc89fbd3c784ce2fab HEAD
       - name: Verify renderer host integration
         run: make -C native/cluster-render test
-      - name: Verify map tool and vehicle binary
+      - name: Verify map tool integration
         run: |
           make -C native/waze-on-cluster test
-          make -C native/waze-on-cluster test-x86 target
       - name: Verify app, helper and factory preview
         run: |
           set -eu
@@ -50,11 +49,11 @@ jobs:
           node native/cluster-studio/test/assistance-window/test.js
           sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
           node release/test/release_test.js
-      - name: Verify reproducible map-tool artifact
-        run: node release/release.js check waze-on-cluster
-      - name: Publish Waze on cluster 0.7.117
+      - name: Verify reproducible app artifact
+        run: node release/release.js check robertn_waze_cluster
+      - name: Publish CarPlay HUD 0.4.142
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish waze-on-cluster
+        run: node release/release.js publish robertn_waze_cluster
