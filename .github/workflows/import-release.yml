@@ -22,10 +22,10 @@ jobs:
         run: |
           set -eu
           if [ -f bmw-menu-0147.bundle ]; then
-            echo 'c91e975b42cd719afe4504db93e0af75e86717e06f30c354fb6afd1c20703a7a  bmw-menu-0147.bundle' | sha256sum -c -
+            echo '420e4a2d1425c88b73e860e3434cee37318974d959cb27e373140024c71fd347  bmw-menu-0147.bundle' | sha256sum -c -
             git bundle verify bmw-menu-0147.bundle
             git fetch ./bmw-menu-0147.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = 'd520ea7801cc7c5d50be0b73e1d2d5661b96dd54'
+            test "$(git rev-parse refs/remotes/import/recovery)" = '342ebca4f7e2a4f2e962d1fde07e9e699aa299b5'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
@@ -33,7 +33,7 @@ jobs:
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor d520ea7801cc7c5d50be0b73e1d2d5661b96dd54 HEAD
+          git merge-base --is-ancestor 342ebca4f7e2a4f2e962d1fde07e9e699aa299b5 HEAD
       - name: Verify renderer host integration
         run: make -C native/cluster-render test
       - name: Verify map tool integration
