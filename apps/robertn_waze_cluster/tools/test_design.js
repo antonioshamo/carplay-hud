@@ -47,7 +47,10 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   assert.equal(h.focus,2);g.ccu(4,10000,0);await wait(20);assert.equal(h.focus,2,'reconnect jumps do not change selection');
   const before=p.received.length;assert.equal(h.press(h.items.findIndex(x=>x.id==='clear')),false);assert.equal(p.received.length,before,'unsupported settings stay inert');
   h.info.controller=false;h.proxyFocus(4,true);assert.equal(h.focus,4);h.proxyPress(4);await until(()=>h.page==='support');
-  await tap('nav:overview');await tap('open-studio');assert.equal(h.page,'studio');
+  await tap('nav:overview');
+  for(const shortcut of ['go:layout','go:startup','go:support']){await tap(shortcut);assert.equal(h.page,shortcut.slice(3));await wait(310);await tap('navigate-back');assert.equal(h.page,'overview');}
+  for(const shortcut of ['studio:intro','studio:library']){await tap(shortcut);assert.equal(h.studio.page,shortcut.slice(7));assert(h.items[h.focus].selected,'shortcut focuses the active category, not Back');await wait(310);await tap('navigate-back');assert.equal(h.page,'overview','shortcut Back returns directly to cockpit');}
+  await tap('open-studio');assert.equal(h.page,'studio');assert.equal(h.studio.entryPage,'gallery');
   await tap('page:edit');assert.equal(h.studio.page,'edit');await settled();
   const sw=h.studio.widget(),sx=274+(sw.x+sw.w/2)*976,sy=153+(sw.y+sw.h/2)*366,sold=sw.x;
   g.touch(1,sx,sy);g.touch(2,sx+60,sy+10);g.touch(3,sx+60,sy+10);await wait(30);assert(h.studio.widget().x>sold,'real touch wire drags Studio widget');

@@ -30,7 +30,7 @@ void main(){
   float k=u_mode>0.5?0.65+0.35*u_motion.x:1.0;
   vec2 size=vec2(0.85,0.85*u_artRatio*u_aspect)*k;
   vec2 origin=(vec2(1.0)-size)*0.5;
-  if(u_mode<0.5)origin.x+=(1.0-u_motion.x)*0.82;
+  if(u_mode<0.5)origin.x+=(1.0-u_motion.x)*1.02;
   vec2 uv=(v_uv-origin)/size;c=art(uv);
   float sweep=u_motion.z*1.4-0.2;
   float light=max(0.0,1.0-abs(uv.x-uv.y*0.12-sweep)/0.11)*0.85*u_shine*step(0.00001,u_motion.z)*(1.0-step(0.99999,u_motion.z));

@@ -46,7 +46,7 @@ function intro(r,d,b,ms){
   r.fillRect(b.x+b.w*.35,b.y+b.h*.72,b.w*.30*a.entrance,b.h*.006,color);
  }else {
   const sweep=d.introShine&&a.p>.24&&a.p<.72?a.shine*11:-1,lo=sweep<0?-1:Math.floor(sweep),img=badgeFrame(lo,color),next=sweep>=0&&lo<11?badgeFrame(lo+1,color):null,w=b.w*.85,h=w*img.h/img.w;
-  const x=b.x+(b.w-w)/2+(d.intro==='reveal'?0:(1-a.entrance)*b.w*.82),y=b.y+(b.h-h)/2;
+  const x=b.x+(b.w-w)/2+(d.intro==='reveal'?0:(1-a.entrance)*b.w*1.02),y=b.y+(b.h-h)/2;
   const k=d.intro==='reveal'?.65+.35*a.entrance:1,xx=x+w*(1-k)/2,yy=y+h*(1-k)/2;
   r.image(img,xx,yy,w*k,h*k);
   if(next){const opacity=sweep-lo;if(r.alpha){r.alpha(opacity);r.image(next,xx,yy,w*k,h*k);r.alpha(1);}else r.image(next,xx,yy,w*k,h*k,0,opacity);}

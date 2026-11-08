@@ -16,6 +16,14 @@ function clientModule(file){
 }
 const packet=messages=>messages.map(m=>JSON.stringify(m)+'\n').join('');
 const tests=[];function test(name,run){tests.push({name,run});}
+test('Reopening Studio replaces its old reconnect timer and shutdown stays closed',()=>{
+ const r=clientModule('studio_client.js'),c=new r.exports.StudioClient();
+ c.connect();r.sockets[0].emit('close');assert.strictEqual(r.timers.size,1);
+ c.connect();assert.strictEqual(r.timers.size,0,'manual reopen must cancel the previous retry');
+ r.sockets[1].emit('close');assert.strictEqual(r.timers.size,1);
+ c.close();assert.strictEqual(r.timers.size,0,'closing must leave no retry that can reopen the session');
+ assert.strictEqual(c.closed,true);assert.strictEqual(c.socket,null);
+});
 test('Studio ignores remaining packet messages after settings close',()=>{
  const r=clientModule('studio_client.js'),c=new r.exports.StudioClient();c.connect();
  c.once('change',()=>c.close());r.sockets[0].emit('data',packet([{ev:'status',enabled:true},{ev:'status',enabled:true}]));

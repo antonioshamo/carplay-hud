@@ -16,6 +16,7 @@ async function until(fn){for(let i=0;i<100;i++){if(fn())return;await wait(10);}t
    const cv=new Canvas(480,180);D.sequence(cv,d,b,data,phase*d.introDuration);
    const rec=new kit.Recorder(480,180);D.sequence(rec,d,b,data,phase*d.introDuration);const soft=new Canvas(480,180);kit.play(rec.words(),soft);
    assert(cv.d.some(v=>v>0));assert(soft.d.some(v=>v>0),'GPU frame can be replayed');
+   if(phase===0&&mode==='slide')for(const pixels of [cv.d,soft.d])for(let i=0;i<pixels.length;i+=4)assert.equal(pixels[i]+pixels[i+1]+pixels[i+2],0,'slide begins entirely outside the screen');
    if(phase===.93&&mode!=='none')for(let i=0;i<cv.d.length;i+=4)assert.equal(cv.d[i]+cv.d[i+1]+cv.d[i+2],0,'black transition frame');
    if(phase===1||mode==='none'){const expected=new Canvas(480,180);D.draw(expected,d,b,data);assert.deepEqual(cv.d,expected.d,'finishes on chosen gauges');}
   }

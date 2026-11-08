@@ -20,7 +20,7 @@ now+=2001;assert(!t.parked());assert.equal(t.snapshot().power,null);assert.equal
 const imperial=M.idrivePreset(0);assert.equal(M.reading('range',imperial,{range:160.9344}).value,'100');assert.equal(M.reading('fuel',imperial,{fuel:3.785411784}).value,'1.0');assert.equal(M.reading('outside',imperial,{outside:0}).value,'32');assert(!M.reading('fuel',imperial,{fuel:NaN}).available);
 const client=new EventEmitter();client.close=()=>{};const screen=new StudioScreen(()=>{},{client});screen.liveChanges=false;screen.design=fixed;
 for(let i=0;i<M.GROUPS.length;i++){
- screen.page='add';screen.press('widget-group:'+i);const found=[];for(let page=0;page<Math.ceil(M.GROUPS[i][1].length/9);page++){const controls=V.items(screen);assert(controls.length<=24);found.push(...controls.filter(b=>b.id.startsWith('add-widget:')).map(b=>b.id.slice(11)));screen.press('widget-next');}assert.deepEqual(found,M.GROUPS[i][1]);
+ screen.page='add';screen.press('widget-group:'+i);const found=[];for(let page=0;page<Math.ceil(M.GROUPS[i][1].length/V.WIDGETS_PER_PAGE);page++){const controls=V.items(screen);assert(controls.length<=24);found.push(...controls.filter(b=>b.id.startsWith('add-widget:')).map(b=>b.id.slice(11)));screen.press('widget-next');}assert.deepEqual(found,M.GROUPS[i][1]);
  for(const b of V.items(screen)){assert(b.y+b.h<535);assert(b.x+b.w<=1600);}
  for(const type of M.GROUPS[i][1]){const w=screen.design.widgets.find(w=>w.type===type);w.on=false;screen.press('add-widget:'+type);assert(screen.widget().on);assert.equal(screen.selected,type);assert.equal(screen.page,'edit');screen.press('undo');assert(!screen.design.widgets.find(w=>w.type===type).on);screen.page='add';}
 }
