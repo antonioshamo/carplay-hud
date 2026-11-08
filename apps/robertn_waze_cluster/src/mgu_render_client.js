@@ -139,17 +139,20 @@ class RenderClient extends EventEmitter {
         const s = net.createConnection(paths[i]);
         this.sock = s;
         s.on('connect', () => {
+            if(this.sock!==s||this.closed)return;
             this.connected = true;
             this._reset();
             s.setNoDelay(true);
             this._write(hello);
         });
-        s.on('data', (d) => this._data(d));
+        s.on('data', (d) => {if(this.sock===s&&!this.closed)this._data(d);});
         s.on('error', (e) => {
+            if(this.sock!==s||this.closed)return;
             if (!this.connected && i + 1 < paths.length) { next = true; return; }
             if (!this.errLogged) { this.errLogged = true; this.log.warn('mgu-render: ' + e.message); }
         });
         s.on('close', () => {
+            if(this.sock!==s)return;
             const was = this.ready;
             this.connected = this.ready = this.native = false; this.sock = null; this.waiting = false;
             if (was) { this.log.warn('mgu-render: connection closed'); this.emit('close'); }
@@ -158,6 +161,19 @@ class RenderClient extends EventEmitter {
             else this.retry = setTimeout(() => { this.retry = null; this.connect(); }, 3000);
         });
         return this;
+    }
+    // Replace this app's surface/connection without restarting the shared
+    // renderer or touching the cluster/HUD helpers. Ignore the old socket's
+    // delayed events so they cannot tear down the replacement connection.
+    reconnect() {
+        if(this.closed||this.fd!==null)return;
+        clearTimeout(this.retry);this.retry=null;
+        const old=this.sock,was=this.ready;this.sock=null;
+        this.connected=this.ready=this.native=false;this.waiting=false;
+        this.inbuf=Buffer.alloc(0);this.info=null;
+        if(old)old.destroy();
+        if(was)this.emit('close');
+        if(!this.closed)this.connect();
     }
     close() {
         this.closed = true;

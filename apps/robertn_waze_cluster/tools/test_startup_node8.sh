@@ -13,6 +13,7 @@ tar -xzf "$runtime_dir/node.tar.gz" -C "$runtime_dir"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_session_conflicts.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_profiles.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_design_lifecycle.js"
+"$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_presentation.js"
 
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_customization.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_editor_live.js"

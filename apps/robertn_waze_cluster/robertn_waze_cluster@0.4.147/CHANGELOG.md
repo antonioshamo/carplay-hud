@@ -6,6 +6,10 @@
 - Continue app initialization after entry registration errors/timeouts and record the degraded step.
 - Coalesce repeated entry events and avoid reopening Home after the user leaves.
 - Add eight failure-injection scenarios covering recovery and reopening. Preserve saved designs.
+- Monitor renderer visibility as well as frame acknowledgements; reconnect this app's graphics once if the picture never appears.
+- Recover to functional native settings with an explicit Retry graphical menu button after persistent graphics failure.
+- Ignore delayed events from discarded graphics sockets and handle renderer errors without leaving an inert proxy list.
+- Validate drawing packets with the official Renderer 0.6.15 in an offline Mesa replay.
 - Offline recovery release; the current vehicle launch failure is not yet verified fixed.
 
 ## 0.4.146
