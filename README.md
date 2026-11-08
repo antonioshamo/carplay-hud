@@ -1,20 +1,22 @@
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-CarPlay HUD **0.4.144** adds a simpler cockpit home, larger widget cards,
-clear page titles, fixed Back/Live changes/Apply controls and two-way widget
-paging. It fixes a reconnect timer found during repeated menu navigation.
-Starter templates now avoid overlapping labels and the reserved gear opening.
-Existing custom layouts are preserved. These changes are tested offline;
-reliable route-free startup and HUD flicker still need physical-car verification.
+CarPlay HUD **0.4.145** adds reference-inspired home cards, an app grid, a live
+vehicle page, shared navigation and a dedicated climate section. Existing
+custom layouts are preserved. [Reference review and verification limits](docs/cockpit-0145-review.md).
 
-Cluster Studio **0.1.22** provides 37 movable widgets, fuel by default, saved
-layouts, optional welcome animations and Restore BMW defaults. Full-panel output
-currently requires fresh Park data. The factory-preserving side-widget design
-is a prototype, not a released replacement for BMW's menus or assistance display.
+Cluster Studio **0.1.23** provides 37 movable widgets, fuel by default, saved
+layouts, optional welcomes and Restore BMW defaults. Its new eight-action climate
+adapter waits for fresh vehicle readback; **climate is not yet verified in-car**.
+Temperature, fan, seat and rear-climate entries are disabled where command mapping
+is still pending. These states are labeled in the menu.
+
+Full-panel output still requires fresh Park data. Factory Home replacement and
+factory-preserving side widgets remain prototypes. Reliable route-free Apple Maps
+startup and HUD flicker still require physical-car verification.
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps).
-Current component versions: app **0.4.144**, Waze on cluster **0.7.117**,
-Cluster Studio **0.1.22**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
+Current component versions: app **0.4.145**, Waze on cluster **0.7.117**,
+Cluster Studio **0.1.23**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
 comes from the official MGU Store source and draws the settings app; it is
 separate from cluster-render.
 
