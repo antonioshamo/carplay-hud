@@ -440,9 +440,9 @@ class WazeClusterApp extends OnlineApp {
         }
         // Some units send the same launch event twice. Share the in-flight
         // request instead of queuing another timeout for every tap/event.
-        if (this._entryOpen) return this._entryOpen;
         this._sawForeground = true;
         this._setVisible(true);
+        if (this._entryOpen) return this._entryOpen;
         this._entryOpen = Promise.resolve().then(()=>this._design.ready ?
             this._useModern(true) : this._rhmiRequest('Open settings entry',()=>this.rhmiApplication.openEntryState(uuid)))
             .catch((err) => {
