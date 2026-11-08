@@ -356,8 +356,8 @@ function play(words, real) {
         }
         case OP.LAYER: { const L = layerById.get(u[i]); if (L) cv.blit(softLayer(L), f[i + 1], f[i + 2]); i += 3; break; }
         case OP.IMAGE: { const img = imageById.get(u[i + 5]); if (img) cv.image(img, f[i], f[i + 1], f[i + 2], f[i + 3], f[i + 4], alpha); i += 6; break; }
-        case OP.CLIP: clip = [f[i], f[i + 1], f[i + 2], f[i + 3]]; i += 4; break;     // (software path: ignored)
-        case OP.NOCLIP: clip = null; break;
+        case OP.CLIP: clip = [f[i], f[i + 1], f[i + 2], f[i + 3]]; if(cv.clip)cv.clip.apply(cv,clip); i += 4; break;
+        case OP.NOCLIP: clip = null; if(cv.noclip)cv.noclip(); break;
         case OP.ALPHA: alpha = f[i]; i += 1; break;
         case OP.XF: cv = f[i] > 0 ? NOP : real; i += 3; break;
         default: return real;

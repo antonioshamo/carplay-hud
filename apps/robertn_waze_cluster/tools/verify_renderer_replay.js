@@ -11,7 +11,7 @@ assert(renderer,'Pass the native mgu-render executable and an output directory')
 fs.mkdirSync(out,{recursive:true});
 const model={target:'hud',state:'showing',width:60,offset:[0,0],step:10,background:false,corners:true,
  startup:false,startupResult:'Sample status',notice:'Offline render',captureText:'No capture running',captureButton:'Capture logs',logs:[],
- helperFresh:true,helper:{design:M.preset(0),slots:[],data:{rpm:738,oil:90,fuel:32,range:310},climateSupported:true,
+ helperFresh:true,helper:{design:M.defaultDesign(),slots:[],data:{rpm:738,oil:90,fuel:32,range:310},climateSupported:true,
  climate:{controls:['ac','maxAC','defrost','freshAir','autoDR','autoPS','airDR','airPS'].map(id=>({id,value:0,available:true}))}}};
 for(const key of ['canDisplay','canSize','canLarger','canSmaller','canMove','canStyle','canCorners','canStartup','canDisable','canCapture'])model[key]=true;
 const cases=[['home-first','overview',{deferArtwork:true}],['home-artwork','overview',{}],['home-second','overview',{cockpit:{homePage:1}}],
@@ -37,5 +37,5 @@ function verify(name,record){
 }
 for(const [name,page,extra] of cases)verify(name,H.frame(Object.assign({},model,extra),page,0,0,1).record);
 const studio=new StudioScreen(()=>{});studio.client.status=model.helper;studio.client.statusAt=Date.now();
-try{for(const page of ['gallery','edit','add']){studio.page=page;verify('studio-'+page,studio.frame(0,1).record);}}finally{studio.close();}
+try{for(const page of ['gallery','edit','add','gauges']){studio.page=page;verify('studio-'+page,studio.frame(0,1).record);}}finally{studio.close();}
 fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({renderer:'0.6.15',source:'54c656a79f08db3385393417a93b5608778fa571',vehicleVerified:false,results},null,2));

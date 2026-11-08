@@ -1,3 +1,10 @@
+## 0.4.148
+
+- New BMW original-style default: mirrored outer speed/RPM dials, silver markings, red needles, and editable side widgets. Includes fuel, range, coolant, oil and clock.
+- Templates → BMW original style switches an existing design; existing saved layouts and slots are preserved. Colors, positions, sizes and individual dial styles remain editable.
+- The native middle stays transparent in this template; side edits stay outside it. The accepted factory gear opening is unchanged. This is custom artwork inspired by the original cluster, not native BMW recoloring.
+- Requires Cluster Studio 0.1.25. Offline rendering and automated verification do not establish on-road assistance compatibility; display activation policies are unchanged.
+
 ## 0.4.147
 
 - Recover from rejected or unanswered tile opens by navigating directly to native Home.

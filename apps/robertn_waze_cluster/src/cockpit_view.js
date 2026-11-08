@@ -66,7 +66,7 @@ function frame(m,page,focus,scale){
    T.slant(r,b.x+b.w-65,b.y,30,b.h,'#687fae',62);
    if(!s.homePage&&i===1){r.polyline([[b.x+152,b.y+45],[b.x+306,b.y+45],[b.x+275,b.y+100],[b.x+199,b.y+100],[b.x+278,b.y+100],[b.x+250,b.y+164],[b.x+112,b.y+164]],18,'#7489ba');car(b.x+30,b.y+72,390);txt('Vehicle, engine and tire readings',b.x+40,b.y+292,20,C.muted,360);}
    else if(!s.homePage&&i===0){
-    r.arc(b.x+208,b.y+143,84,87,145,395,'#89a7eb');r.arc(b.x+208,b.y+143,78,80,145,325,'#4e689e');txt('PERSONAL',b.x+208,b.y+129,16,C.muted,220,true);txt('STUDIO',b.x+208,b.y+166,32,C.text,280,true);txt('103 looks. Your own layout.',b.x+38,b.y+292,20,C.muted,360);
+    r.arc(b.x+208,b.y+143,84,87,145,395,'#89a7eb');r.arc(b.x+208,b.y+143,78,80,145,325,'#4e689e');txt('PERSONAL',b.x+208,b.y+129,16,C.muted,220,true);txt('STUDIO',b.x+208,b.y+166,32,C.text,280,true);txt('104 looks. Your own layout.',b.x+38,b.y+292,20,C.muted,360);
    }else if(!s.homePage){r.strokeRoundRect(b.x+70,b.y+57,300,163,15,2,'#9cb7dd');r.polyline([[b.x+112,b.y+184],[b.x+192,b.y+111],[b.x+297,b.y+111]],5,'#8fbbff');T.icon(r,'hud',b.x+225,b.y+251,C.active,25);txt('Apple Maps, independently.',b.x+40,b.y+292,20,C.muted,360);}
    else{T.icon(r,b.icon,b.x+210,b.y+142,C.active,85);txt(['Air, seats and cabin features','Keep five personal layouts','See what your car supports'][i],b.x+36,b.y+292,20,C.muted,370);}
    txt(b.label,b.x+35,b.y+326,23,C.text,b.w-66);

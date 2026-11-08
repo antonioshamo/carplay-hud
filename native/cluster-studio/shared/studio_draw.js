@@ -2,6 +2,17 @@
 'use strict';
 const M=require('./studio_model.js');
 function draw(r,d,b,data,options){
+ // Draw only the side panels and header for this template. Native content
+ // remains transparent in the middle even if an edited widget crosses it.
+ if(d.template==='bmw-factory'&&!(options&&options.factoryPass)){
+  for(const z of M.FACTORY_REGIONS){
+   const widgets=d.widgets.filter(w=>w.x<z[0]+z[2]&&w.x+w.w>z[0]&&w.y<z[1]+z[3]&&w.y+w.h>z[1]);
+   r.clip(b.x+z[0]*b.w,b.y+z[1]*b.h,z[2]*b.w,z[3]*b.h);
+   draw(r,Object.assign({},d,{widgets}),b,data,Object.assign({},options,{factoryPass:true}));
+   r.noclip();
+  }
+  return;
+ }
  const o=options||{},t=M.THEMES[d.theme],sx=b.w/1920,sy=b.h/720,scale=Math.min(sx,sy);
  const rect=(x,y,w,h,c,rad)=>r.roundRect(b.x+x*sx,b.y+y*sy,w*sx,h*sy,(rad||0)*scale,c);
  // Anchor readouts to their widget center. Measure the actual glyph advances
@@ -22,7 +33,30 @@ function draw(r,d,b,data,options){
  const gauge=(w,val,max,label,unit)=>{
   const mode=!w.gauge||w.gauge==='inherit'?d.gauge:w.gauge,accent=w.color&&w.color!=='theme'?w.color:t[1];
   const x=w.x*1920,y=w.y*720,ww=w.w*1920,hh=w.h*720,n=val==null?'—':String(Math.round(val));
-  if(mode==='id8'||mode==='id8-slim'){
+  if(mode==='bmw'){
+   // Mirrored open dials echo the X4 M's original outer silhouette.
+   const mirror=w.type==='rpm',fraction=val==null?0:M.clamp(val/max,0,1),red='#ee3d49';
+   const p=(u,v)=>[x+(mirror?1-u:u)*ww,y+v*hh];
+   const poly=(pts,width,col)=>r.polyline(pts.map(q=>[b.x+q[0]*sx,b.y+q[1]*sy]),width*scale,col);
+   const quad=(pts,col)=>r.quad(pts.map(q=>[b.x+q[0]*sx,b.y+q[1]*sy]),col);
+   const rail=[p(.76,.94),p(.30,.92),p(.09,.73),p(.025,.48),p(.12,.27),p(.35,.10),p(.73,.035),p(.98,.035)];
+   const edge=[p(.78,.90),p(.35,.88),p(.16,.71),p(.09,.49),p(.18,.30),p(.39,.15),p(.74,.085),p(.98,.085)];
+   for(let i=0;i<rail.length-1;i++)quad([rail[i],rail[i+1],edge[i+1],edge[i]],'#242b35');
+   poly(rail,3,accent);poly(edge,1,'#7b8794');
+   const lengths=[0];for(let i=1;i<rail.length;i++)lengths.push(lengths[i-1]+Math.hypot(rail[i][0]-rail[i-1][0],rail[i][1]-rail[i-1][1]));
+   const total=lengths[lengths.length-1],at=f=>{const dist=f*total;let i=0;while(i<rail.length-2&&dist>lengths[i+1])i++;const k=(dist-lengths[i])/(lengths[i+1]-lengths[i]);return [rail[i][0]+(rail[i+1][0]-rail[i][0])*k,rail[i][1]+(rail[i+1][1]-rail[i][1])*k];};
+   const center=p(.56,.51),steps=mirror?8:10;
+   for(let i=0;i<=steps*2;i++){
+    const q=at(i/(steps*2)),dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy),major=i%2===0;
+    const end=[q[0]+dx/len*(major?18:10),q[1]+dy/len*(major?18:10)];line(q[0],q[1],end[0],end[1],major?2:1.1,accent);
+    if(major){const tick=mirror?i/2:Math.round(max*i/(steps*2));text(tick,q[0]+dx/len*36,q[1]+dy/len*36+8,Math.min(27,hh*.048),accent,ww*.13);}
+   }
+   if(mirror)poly([at(.83),at(.88),at(.94),at(1)],5,red);
+   if(val!=null){const q=at(fraction),dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy);poly([q,[q[0]+dx/len*72,q[1]+dy/len*72]],6,red);}
+   text(label,center[0],y+hh*.43,22,'#adb8c5',ww*.50);
+   text(n,center[0],y+hh*.60,Math.min(100,ww/(Math.max(n.length,3)*.72),hh*.20),accent,ww*.55);
+   text(unit,center[0],y+hh*.68,26,'#c5ced9',ww*.48);
+  }else if(mode==='id8'||mode==='id8-slim'){
    // Open hexagonal rails: each gauge remains an independently movable widget.
    // Geometry is static before the live rail/readout, so the frame cache can reuse it.
    const slim=mode==='id8-slim',mirror=w.type==='rpm',fraction=val==null?0:M.clamp(val/max,0,1);
@@ -102,7 +136,7 @@ function draw(r,d,b,data,options){
  };
  for(const w of d.widgets){if(!w.on)continue;const x=w.x*1920,y=w.y*720,ww=w.w*1920,hh=w.h*720;
   const val=data[w.type],accent=w.color&&w.color!=='theme'?w.color:t[1];
-  if(w.type==='speed')gauge(w,val==null?null:d.units==='mph'?val/1.609344:val,d.units==='mph'?160:260,'SPEED',d.units);
+  if(w.type==='speed')gauge(w,val==null?null:d.units==='mph'?val/1.609344:val,((w.gauge==='bmw'||((!w.gauge||w.gauge==='inherit')&&d.gauge==='bmw'))?(d.units==='mph'?200:320):(d.units==='mph'?160:260)),'SPEED',d.units);
   else if(w.type==='rpm')gauge(w,val,8000,'ENGINE','RPM');
   else if(w.type==='gear'){if(d.borders)rect(x,y,ww,hh,'#1b273a',20);text(val==null?'—':val,x+ww/2,y+hh*.72,hh*.62,accent,ww*.9);}
   else if(w.type==='clock')text(time,x+ww/2,y+hh*.74,hh*.68,accent,ww*.94);
