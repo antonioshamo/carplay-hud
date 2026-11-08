@@ -1,37 +1,39 @@
 # Native assistance window: offline composition study
 
-The owner proposed retaining custom side gauges while making the center
-transparent for BMW's original vehicle, lane and following-distance display.
-The supplied second photo also shows assistance icons left of center, and the
-bottom warning/status strip. Those require clearance as well.
+The owner wants their normal custom layout, with a different composition only
+when BMW's assistance view is active: custom side gauges around the original
+vehicle/lane/following-distance display. The supplied photos also show native
+assistance symbols left of center and a bottom warning/status strip.
 
-`native/cluster-studio/test/assistance-window/composition.js` implements a
-native-resolution RGBA candidate with a fully clear center, a separate clear
-left assistance-icon area and a clear bottom strip. A smooth 48-pixel fade is
-outside the reserved rectangles. It never darkens their fully clear interior.
-The accepted factory-P exclusion is retained. The mask is applied after all
-widgets, so center widgets cannot cover the opening. Source layouts are not
-modified; the separate sample design moves the main dials to the sides.
+The revised study uses matching dial sizes and baselines, a dark backdrop and
+48-pixel outside fades. Fuel, oil and coolant occupy deliberate side positions.
+The preview has separate Normal and Assistance Active controls and two dial
+styles. Its native car, lanes and symbols are original vector illustrations with
+sample readings, explicitly labeled outside the display. They are not a live
+feed or part of the custom overlay sent to the renderer.
 
-These coordinates are conservative photo-derived candidates, not measured or
-accepted vehicle boundaries. The whole native assistance view and every warning
-location have not been established from the photos. Their size can vary by
-assistance mode and alert. No active cruise-state decoding is invented.
+`test/assistance-window/composition.js` has an explicit preview mode selector.
+Normal renders the original saved layout byte-for-byte. Assistance masks the
+center, assistance symbols and bottom status strip after all custom widgets.
+Unknown state yields the whole native display. Repeated mode changes reuse a
+pixel buffer without leaving a cutout or stale graphics in the normal layout,
+and never modify the saved source layout. The accepted factory-P exclusion is
+retained; its published mask and side-only fade have not changed.
 
-This study has no service import, no changes to vehicle display policy, no car
-connection and no installable release. The offline preview uses a labeled
-checkerboard rather than a fake live cruise-control picture. An always-open
-native area is the first candidate for testing; automatic opening on cruise
-activation remains unimplemented until an actual active-state feed is verified.
+Candidate reserved coordinates remain conservative photo-derived rectangles,
+not measured vehicle boundaries. Their interior is completely transparent;
+the smooth fade is outside it and never darkens native content in the opening.
+Native warning locations can vary by assistance mode and alert.
 
-Validation:
+This remains an offline study, excluded from the component manifest and engine.
+There is no automatic cruise-state decoding, live install or Drive activation.
+Available captured assistance preferences are not an active-state signal. A
+verified active-state feed and physical warning-priority checks are still needed
+before making this automatic; a parked preview cannot certify road warnings.
 
-- Every pixel in each reserved region has zero RGBA after arbitrary widgets.
-- Straight-alpha fades are symmetric around the center and outside the opening.
-- The accepted P opening stays clear, with no changes to its published mask.
-- Cached and full drawing match byte-for-byte across all 12 dial styles,
-  changing/missing RPM, widget reorder and theme changes.
-- Unchanged readings produce no additional frame.
+Validation covers all reserved pixels, straight-alpha blending, native gear
+clearance, center widgets, all 12 dial caches, normal/assistance/unknown switches,
+source-layout immutability and absence from the installable component.
 
 Run with Node 8 or later:
 
@@ -39,9 +41,3 @@ Run with Node 8 or later:
 node native/cluster-studio/test/assistance-window/test.js
 node native/cluster-studio/test/assistance-window/preview.js /tmp/assistance-window-preview
 ```
-
-The next vehicle step is a bounded stationary comparison using real BMW
-assistance/status graphics, to measure the required clear regions and verify
-that the renderer retains the native content underneath. Validate relevant
-warning/dialog priority, stale data, release and recovery before enabling any
-driving output. A parked visualization cannot certify active road warnings.

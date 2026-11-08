@@ -47,11 +47,23 @@ class CandidateCache {
  render(design,data){const cv=this.base.render(design,data);if(cv)apply(cv.d,cv.w,cv.h);return cv;}
 }
 function sampleDesign(style){
- const d=M.idrivePreset(2);d.name='BMW assistance window study';d.gauge=style||'id8-slim';d.background='gradient';
+ const d=M.idrivePreset(2);d.name='BMW assistance window study';d.gauge=style||'id8-slim';d.background='black';
  d.widgets.forEach(w=>w.on=false);
  const put=(type,x,y,w,h)=>Object.assign(d.widgets.find(a=>a.type===type),{on:true,x,y,w,h});
- put('speed',.015,.12,.30,.44);put('rpm',.685,.12,.30,.44);
- put('fuel',.06,.015,.20,.10);put('oil',.73,.015,.20,.10);put('coolant',.735,.72,.20,.10);
+ // Equal dial sizes and baselines. The left dial ends before the native
+ // assistance icons; the right one mirrors it instead of hanging lower.
+ put('speed',.025,.09,.27,.49);put('rpm',.705,.09,.27,.49);
+ put('fuel',.008,.70,.09,.12);
+ put('oil',.70,.70,.13,.12);put('coolant',.85,.70,.13,.12);
  return M.validate(d);
 }
-module.exports={WIDTH,HEIGHT,FEATHER,REGIONS,apply,draw,CandidateCache,sampleDesign};
+// Preview-only explicit state. A future verified vehicle signal must select
+// this; a saved preference is not an active assistance indication. Missing
+// state yields to the native display instead of assuming assistance is off.
+function drawMode(cv,normal,assistance,data,mode){
+ cv.d.fill(0);
+ if(mode==='normal')Panel.draw(cv,normal,data);
+ else if(mode==='assistance')draw(cv,assistance,data);
+ return cv;
+}
+module.exports={WIDTH,HEIGHT,FEATHER,REGIONS,apply,draw,drawMode,CandidateCache,sampleDesign};

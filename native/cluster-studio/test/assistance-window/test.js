@@ -26,6 +26,17 @@ assert.throws(()=>C.apply(Buffer.alloc(64),4,4),/native/);
 const d=M.idrivePreset(0),saved=JSON.stringify(d),v={now:new Date(0),speed:0,rpm:736,gear:'P',fuel:32,oil:102,coolant:104};
 const cv=new Canvas(w,h);C.draw(cv,d,v);assert.equal(JSON.stringify(d),saved);
 for(let y=0;y<h;y+=7)for(let x=640;x<1280;x+=7)assert.equal(cv.d[(y*w+x)*4+3],0);
+// The cutout is used only for explicit assistance mode, never carried back
+// into normal. Simulate rapid switches using the SAME reusable pixel buffer.
+const Panel=require('../../panel_composition'),normalExpected=new Canvas(w,h),assistance=C.sampleDesign();
+Panel.draw(normalExpected,d,v);
+for(const mode of ['normal','assistance','normal','unknown','assistance',null,'normal']){
+ C.drawMode(cv,d,assistance,v,mode);
+ if(mode==='normal')assert(Buffer.from(cv.d).equals(Buffer.from(normalExpected.d)),'normal design restored exactly');
+ else if(mode==='assistance')for(let y=0;y<h;y+=7)for(let x=640;x<1280;x+=7)assert.equal(cv.d[(y*w+x)*4+3],0);
+ else assert(cv.d.every(n=>n===0),'unknown state yields the whole native display');
+ assert.equal(JSON.stringify(d),saved,'switching never edits the saved layout');
+}
 // Replay cache must not leave partially transparent old values or lose a fade
 // when the unchanged drawing prefix grows. Each result equals a full redraw.
 for(const style of M.STYLES){
