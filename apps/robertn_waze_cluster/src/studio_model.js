@@ -56,7 +56,7 @@ function reading(type,d,data){
  return {label:meta[1],value:valid?(typeof value==='number'?value.toFixed(digits):value):'—',unit,available:valid,alert:type==='fuelWarning'&&v==='LOW FUEL'};
 }
 const ACCENTS=['theme','#ffffff','#57c5fa','#e64a64','#ffb85c','#83f0ec','#c6a4ff','#89e0b3','#e5d4ae','#c8f760'];
-const STYLES=[['ring','Sport rings'],['digital','Digital cards'],['bar','Horizontal bars'],['ultra','Ultra rings'],['needle','Classic needles'],['segments','Segmented rings'],['sweep','Racing sweep'],['vertical','Vertical rails'],['minimal','Minimal arc'],['dots','Dot matrix dial'],['id8','iDrive 8 angular'],['id8-slim','iDrive 8 minimal']];
+const STYLES=[['bmw','BMW original style'],['ring','Sport rings'],['digital','Digital cards'],['bar','Horizontal bars'],['ultra','Ultra rings'],['needle','Classic needles'],['segments','Segmented rings'],['sweep','Racing sweep'],['vertical','Vertical rails'],['minimal','Minimal arc'],['dots','Dot matrix dial'],['id8','iDrive 8 angular'],['id8-slim','iDrive 8 minimal']];
 const GAUGES=['inherit'].concat(STYLES.map(s=>s[0]));
 const gaugeLabel=id=>id==='inherit'?'Use design style':(STYLES.find(s=>s[0]===id)||[id,id])[1];
 const TITLES=['X4 M COMPETITION','ANTONIO / X4 M','BUILT FOR THE DRIVE','MY COMPETITION','MOTORSPORT'];
@@ -103,7 +103,7 @@ function validate(v){
  if(LEGACY_TYPES.some(type=>!seen.has(type)))throw Error('Missing base widget');
  const out={};['schema','preset','theme','gauge','background','units','clock24','borders','snap','title','intro','introEnabled'].forEach(k=>out[k]=v[k]);
  out.template=v.template===undefined?'standard':v.template;
- if(!['standard'].concat(IDRIVE_TEMPLATES.map(a=>a[0])).includes(out.template))throw Error('Invalid template');
+ if(!['standard','bmw-factory'].concat(IDRIVE_TEMPLATES.map(a=>a[0])).includes(out.template))throw Error('Invalid template');
  out.introDuration=v.introDuration===undefined?3000:v.introDuration;
  if(![3000,4500,5500,7000].includes(out.introDuration))throw Error('Invalid welcome duration');
  out.introShine=v.introShine===undefined?true:v.introShine;if(typeof out.introShine!=='boolean')throw Error('Invalid shine');
@@ -127,13 +127,19 @@ function validate(v){
  const missingFuel=!seen.has('fuel');
  for(const type of TYPES)if(!seen.has(type))out.widgets.push(newWidget(type));
  if(missingFuel)placeFuel(out);
+ out.widgets.forEach(w=>keepInFactorySide(out,w));
  return out;
 }
 function cleanText(v,max){if(typeof v!=='string'||!v.trim()||v.length>max||/[^\x20-\x7e]/.test(v))throw Error('Use 1-'+max+' printable characters');return v.trim();}
-function move(d,type,dx,dy){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const snap=v=>d.snap?Math.round(v*100)/100:v;w.x=clamp(snap(w.x+dx),0,1-w.w);w.y=clamp(snap(w.y+dy),0,1-w.h);}
-function resize(d,type,f){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;w.w=clamp(w.w*f,minimum(type)[0],1-w.x);w.h=clamp(w.h*f,minimum(type)[1],1-w.y);}
-function dimension(d,type,axis,delta){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const index=axis==='w'?0:1;if(!['w','h'].includes(axis))return;w[axis]=clamp(w[axis]+delta,minimum(type)[index],1-w[axis==='w'?'x':'y']);}
-function align(d,type,axis){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;if(axis==='x')w.x=(1-w.w)/2;if(axis==='y')w.y=(1-w.h)/2;}
+function keepInFactorySide(d,w){
+ if(d.template!=='bmw-factory'||w.y+w.h<=.22)return;
+ const right=w.x+w.w/2>=.5;w.w=Math.min(w.w,.365);
+ w.x=clamp(w.x,right?.635:0,right?1-w.w:.365-w.w);
+}
+function move(d,type,dx,dy){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const snap=v=>d.snap?Math.round(v*100)/100:v;w.x=clamp(snap(w.x+dx),0,1-w.w);w.y=clamp(snap(w.y+dy),0,1-w.h);keepInFactorySide(d,w);}
+function resize(d,type,f){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;w.w=clamp(w.w*f,minimum(type)[0],1-w.x);w.h=clamp(w.h*f,minimum(type)[1],1-w.y);keepInFactorySide(d,w);}
+function dimension(d,type,axis,delta){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const index=axis==='w'?0:1;if(!['w','h'].includes(axis))return;w[axis]=clamp(w[axis]+delta,minimum(type)[index],1-w[axis==='w'?'x':'y']);keepInFactorySide(d,w);}
+function align(d,type,axis){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;if(axis==='x')w.x=(1-w.w)/2;if(axis==='y')w.y=(1-w.h)/2;keepInFactorySide(d,w);}
 function acceptedDesign(){
 const config=preset(11);config.temperatureUnit='F';config.introEnabled=false;
 for(const w of config.widgets){
@@ -161,5 +167,22 @@ function idrivePreset(index){
  if(index===2){put('speed',.08,.20,.34,.61);put('rpm',.58,.20,.34,.61);put('badge',.42,.35,.16,.15);put('oil',.58,.85,.13,.10);d.widgets.find(w=>w.type==='coolant').on=false;d.widgets.find(w=>w.type==='accent').on=false;}
  return placeFuel(validate(d));
 }
-function baseDesign(d){const i=IDRIVE_TEMPLATES.findIndex(a=>a[0]===d.template);return i<0?preset(d.preset):idrivePreset(i);}
-module.exports={METRICS,GROUPS,LEGACY_TYPES,reading,placeFuel,newWidget,IDRIVE_TEMPLATES,idrivePreset,baseDesign,STYLES,gaugeLabel,acceptedDesign,ACCENTS,GAUGES,dimension,align,cleanText,THEMES,LAYOUTS,TYPES,LABELS,TITLES,preset,validate,clone,clamp,move,resize};
+// Separate identifier: legacy preset numbers and saved designs remain unchanged.
+// The middle is reserved for native BMW content, including when widgets are moved.
+const FACTORY_REGIONS=Object.freeze([[0,0,.365,1],[.635,0,.365,1],[.365,0,.27,.22]].map(Object.freeze));
+function factoryPreset(){
+ const d=preset(0);d.template='bmw-factory';d.name='BMW original style';d.gauge='bmw';
+ d.background='gradient';d.borders=false;d.temperatureUnit='F';d.widgets.forEach(w=>w.on=false);
+ const put=(type,x,y,w,h)=>Object.assign(d.widgets.find(a=>a.type===type),{x,y,w,h,on:true});
+ put('speed',.015,.06,.35,.80);put('rpm',.635,.06,.35,.80);
+ put('badge',.405,.105,.19,.11);
+ put('fuel',.125,.625,.115,.105);put('range',.245,.625,.115,.105);
+ put('coolant',.64,.625,.115,.105);put('oil',.76,.625,.115,.105);
+ put('clock',.075,.89,.20,.075);put('outside',.815,.88,.14,.095);
+ // Hidden widgets start in a side slot, where adding one can actually show it.
+ d.widgets.filter(w=>!w.on).forEach(w=>Object.assign(w,{x:.205,y:.51,w:.15,h:.13}));
+ return validate(d);
+}
+function defaultDesign(){return factoryPreset();}
+function baseDesign(d){if(d.template==='bmw-factory')return factoryPreset();const i=IDRIVE_TEMPLATES.findIndex(a=>a[0]===d.template);return i<0?preset(d.preset):idrivePreset(i);}
+module.exports={FACTORY_REGIONS,factoryPreset,defaultDesign,METRICS,GROUPS,LEGACY_TYPES,reading,placeFuel,newWidget,IDRIVE_TEMPLATES,idrivePreset,baseDesign,STYLES,gaugeLabel,acceptedDesign,ACCENTS,GAUGES,dimension,align,cleanText,THEMES,LAYOUTS,TYPES,LABELS,TITLES,preset,validate,clone,clamp,move,resize};

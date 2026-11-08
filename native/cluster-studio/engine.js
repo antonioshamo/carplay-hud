@@ -4,7 +4,7 @@ const M=require('./shared/studio_model.js'),I=require('./shared/studio_intro.js'
 const {FrameCache}=require('./frame_cache.js');
 class Engine {
  constructor(cr,telemetry,o){
-  this.cr=cr;this.telemetry=telemetry;this.panelBlock=null;this.output='center';this.now=o&&o.now||Date.now;this.design=M.preset(0);this.enabled=false;this.ref=null;this.target=null;this.panelUntil=0;this.introUntil=0;this.lastDraw=0;this.state='Off';this.condition=null;this.hud='unknown';
+  this.cr=cr;this.telemetry=telemetry;this.panelBlock=null;this.output='center';this.now=o&&o.now||Date.now;this.design=M.defaultDesign();this.enabled=false;this.ref=null;this.target=null;this.panelUntil=0;this.introUntil=0;this.lastDraw=0;this.state='Off';this.condition=null;this.hud='unknown';
   this.targets={};this.layerState=null;this.layerReason='';this.clearRecovery();
   cr.on('target',(target,state,holder,reason)=>{
    const previous=this.targets[target];this.targets[target]={state,holder,reason:reason||''};

@@ -10,7 +10,7 @@ const {ClusterRender}=require('./shared/cluster_render_client.js'),{Telemetry}=r
 function validateStore(v){if(!v||v.schema!==1||typeof v.enabled!=='boolean'||!Array.isArray(v.slots)||v.slots.length!==5)throw Error('Invalid saved studio');if(v.output!==undefined&&!['center','parked-panel'].includes(v.output))throw Error('Invalid saved output');return {schema:1,enabled:v.enabled,output:v.output||'center',design:M.validate(v.design),slots:v.slots.map(d=>d===null?null:M.validate(d))};}
 function save(file,v){const data=validateStore(v);fs.writeFileSync(file+'.tmp',JSON.stringify(data)+'\n',{mode:384});let fd=fs.openSync(file+'.tmp','r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(file+'.tmp',file);fd=fs.openSync(path.dirname(file),'r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return data;}
 class StudioService {
- constructor(o){this.o=o;this.clients=new Set();this.store={schema:1,enabled:false,output:'center',design:M.preset(0),slots:[null,null,null,null,null]};try{this.store=validateStore(JSON.parse(fs.readFileSync(o.file,'utf8')));}catch(e){}o.engine.configure(this.store.design,this.store.enabled,this.store.output);}
+ constructor(o){this.o=o;this.clients=new Set();this.store={schema:1,enabled:false,output:'center',design:M.defaultDesign(),slots:[null,null,null,null,null]};try{this.store=validateStore(JSON.parse(fs.readFileSync(o.file,'utf8')));}catch(e){}o.engine.configure(this.store.design,this.store.enabled,this.store.output);}
  state(){
   const e=this.o.engine,parked=this.o.telemetry.parked(),renderer=!!e.cr.ready;
   const recovery=e.health(),display=e.display();
@@ -19,7 +19,7 @@ class StudioService {
   return {climateSupported:true,climate:this.climate?this.climate.status():null,assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!e.panelBlock,panelClearance:'native-gear-v1',independentPanelHud:renderer&&e.cr.independentPanelHud===true,output:this.store.output,
    features:this.features?{lighting:this.features.lighting,climate:this.features.climate,media:this.features.media,rows:this.features.rows.slice(0,6),scannedAt:this.features.scannedAt}:null,media:this.o.media?this.o.media.state():null,
    panelRemaining:Math.max(0,Math.ceil(((e.panelUntil||0)-e.now())/1000)),canPreview:testReason==='Ready for a parked test',canSelectPanel:panelReady,
-   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.24',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
+   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.25',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
    parked,state:e.state,renderer,data:this.o.telemetry.snapshot(),panel:e.target==='panel',recovery,displayVisible:display.visible,displayTarget:display.target,displayState:display.state,displayReason:display.reason,
    hud:{state:e.hud,holder:e.hudHolder||null,reason:e.hudReason||''}};
  }

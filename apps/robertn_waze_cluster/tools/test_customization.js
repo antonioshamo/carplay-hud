@@ -2,7 +2,7 @@
 'use strict';
 const assert=require('assert'),EventEmitter=require('events'),M=require('../src/studio_model'),V=require('../src/studio_view'),{StudioScreen}=require('../src/studio_screen'),D=require('../src/studio_draw'),{Canvas}=require('../src/kit_canvas');
 const client=new EventEmitter();client.status={design:M.preset(0),slots:[null,null,null,null,null],phoneDesigner:true,parked:true};client.connect=()=>{};client.close=()=>{};
-const s=new StudioScreen(()=>{},{client});
+const s=new StudioScreen(()=>{},{client});client.emit('change'); // Exercise the saved legacy layout, not the new-install default.
 s.press('select');assert.equal(s.page,'widgets');s.press('widget:oil');assert.equal(s.selected,'oil');assert.equal(s.page,'edit');s.press('toggle');assert(s.widget().on);
 s.press('page:properties');const before=M.clone(s.widget());s.press('width-more');assert(s.widget().w>before.w);assert.equal(s.widget().h,before.h);s.press('height-more');assert(s.widget().h>before.h);s.press('align-x');assert.equal(s.widget().x,(1-s.widget().w)/2);s.press('align-y');assert.equal(s.widget().y,(1-s.widget().h)/2);
 s.press('lock');const locked=M.clone(s.widget());s.press('larger');s.press('left');assert.deepEqual(s.widget(),locked);s.press('lock');s.press('front');assert.equal(s.design.widgets[s.design.widgets.length-1].type,'oil');s.press('back');assert.equal(s.design.widgets[0].type,'oil');s.press('undo');assert.equal(s.design.widgets[s.design.widgets.length-1].type,'oil');s.press('redo');assert.equal(s.design.widgets[0].type,'oil');s.press('undo');s.press('widget-color');assert.equal(s.redo.length,0,'a new edit clears redo');assert.equal(s.widget().color,'#ffffff');

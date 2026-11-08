@@ -69,7 +69,8 @@ class Canvas {
     blit(src, x, y) {
         x = Math.round(x); y = Math.round(y);
         const sw = src.w, d = this.d, s = src.d;
-        const x0 = Math.max(0, x), y0 = Math.max(0, y), x1 = Math.min(this.w, x + sw), y1 = Math.min(this.h, y + src.h);
+        const clip=this.clipBox||[0,0,this.w,this.h];
+        const x0 = Math.max(0,clip[0], x), y0 = Math.max(0,clip[1], y), x1 = Math.min(this.w,clip[2], x + sw), y1 = Math.min(this.h,clip[3], y + src.h);
         const px = [0, 0, 0, 255];
         for (let py = y0; py < y1; py++) {
             let si = ((py - y) * sw + (x0 - x)) * 4, di = (py * this.w + x0) * 4;
@@ -94,18 +95,23 @@ class Canvas {
     /** Copy an opaque canvas to (x, y) row by row (no blending: memcpy per row), clipped. */
     copyRows(src, x, y) {
         x = Math.round(x); y = Math.round(y);
-        const x0 = Math.max(0, x), x1 = Math.min(this.w, x + src.w);
+        const clip=this.clipBox||[0,0,this.w,this.h];
+        const x0 = Math.max(0,clip[0], x), x1 = Math.min(this.w,clip[2], x + src.w);
         if (x1 <= x0) return this;
-        for (let py = Math.max(0, y); py < Math.min(this.h, y + src.h); py++) {
+        for (let py = Math.max(0,clip[1], y); py < Math.min(this.h,clip[3], y + src.h); py++) {
             const s = ((py - y) * src.w + (x0 - x)) * 4;
             this.d.set(src.d.subarray(s, s + (x1 - x0) * 4), (py * this.w + x0) * 4);
         }
         return this;
     }
 
+    clip(x,y,w,h) { this.clipBox=[Math.ceil(x-.5),Math.ceil(y-.5),Math.ceil(x+w-.5),Math.ceil(y+h-.5)]; return this; }
+    noclip() { this.clipBox=null; return this; }
+
     /** src-over blend of colour c with coverage cov (0..1) at integer pixel. */
     _blend(x, y, c, cov) {
         if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
+        const clip=this.clipBox;if(clip&&(x<clip[0]||y<clip[1]||x>=clip[2]||y>=clip[3]))return;
         const sa = (c[3] / 255) * cov;
         if (sa <= 0) return;
         const i = (y * this.w + x) * 4, d = this.d;
@@ -121,8 +127,9 @@ class Canvas {
 
     fillRect(x, y, w, h, c) {
         c = rgba(c);
-        const x0 = Math.max(0, Math.floor(x)), y0 = Math.max(0, Math.floor(y));
-        const x1 = Math.min(this.w, Math.ceil(x + w)), y1 = Math.min(this.h, Math.ceil(y + h));
+        const clip=this.clipBox||[0,0,this.w,this.h];
+        const x0 = Math.max(0,clip[0], Math.floor(x)), y0 = Math.max(0,clip[1], Math.floor(y));
+        const x1 = Math.min(this.w,clip[2], Math.ceil(x + w)), y1 = Math.min(this.h,clip[3], Math.ceil(y + h));
         if (x1 <= x0 || y1 <= y0 || c[3] === 0) return this;
         const d = this.d, W4 = this.w * 4, r = c[0], g = c[1], b = c[2], ca = c[3] / 255;
         // the pixel loop is inlined (no call per pixel); edge pixels get fractional coverage
@@ -162,8 +169,9 @@ class Canvas {
     roundRect(x, y, w, h, r, c) {
         c = rgba(c);
         r = Math.min(r, w / 2, h / 2);
-        const x0 = Math.max(0, Math.floor(x)), y0 = Math.max(0, Math.floor(y));
-        const x1 = Math.min(this.w, Math.ceil(x + w)), y1 = Math.min(this.h, Math.ceil(y + h));
+        const clip=this.clipBox||[0,0,this.w,this.h];
+        const x0 = Math.max(0,clip[0], Math.floor(x)), y0 = Math.max(0,clip[1], Math.floor(y));
+        const x1 = Math.min(this.w,clip[2], Math.ceil(x + w)), y1 = Math.min(this.h,clip[3], Math.ceil(y + h));
         for (let py = y0; py < y1; py++) {
             for (let px = x0; px < x1; px++) {
                 const cx = px + 0.5, cy = py + 0.5;
@@ -183,8 +191,9 @@ class Canvas {
         const s = src.data || src.d, sw = src.w, sh = src.h, al = alpha == null ? 1 : alpha;
         if (!(w > 0 && h > 0) || !s || al <= 0) return this;
         r = Math.min(r || 0, w / 2, h / 2);
-        const x0 = Math.max(0, Math.floor(x)), y0 = Math.max(0, Math.floor(y));
-        const x1 = Math.min(this.w, Math.ceil(x + w)), y1 = Math.min(this.h, Math.ceil(y + h));
+        const clip=this.clipBox||[0,0,this.w,this.h];
+        const x0 = Math.max(0,clip[0], Math.floor(x)), y0 = Math.max(0,clip[1], Math.floor(y));
+        const x1 = Math.min(this.w,clip[2], Math.ceil(x + w)), y1 = Math.min(this.h,clip[3], Math.ceil(y + h));
         const px = [0, 0, 0, 0], kx = sw / w, ky = sh / h;
         for (let py = y0; py < y1; py++) {
             const v = Math.min(sh - 1, Math.max(0, (py + 0.5 - y) * ky - 0.5)), vy = Math.floor(v), fy = v - vy, vy1 = Math.min(sh - 1, vy + 1);
@@ -262,8 +271,9 @@ class Canvas {
         if (w <= 0 || h <= 0) return this;
         r = Math.min(r, w / 2, h / 2);
         const sx = spanX == null ? x : spanX, sw = Math.max(1, spanW == null ? w : spanW);
-        const x0 = Math.max(0, Math.floor(x)), y0 = Math.max(0, Math.floor(y));
-        const x1 = Math.min(this.w, Math.ceil(x + w)), y1 = Math.min(this.h, Math.ceil(y + h));
+        const clip=this.clipBox||[0,0,this.w,this.h];
+        const x0 = Math.max(0,clip[0], Math.floor(x)), y0 = Math.max(0,clip[1], Math.floor(y));
+        const x1 = Math.min(this.w,clip[2], Math.ceil(x + w)), y1 = Math.min(this.h,clip[3], Math.ceil(y + h));
         const col = [];
         for (let px = x0; px < x1; px++) col.push(ramp(stops, (px + 0.5 - sx) / sw));
         for (let py = y0; py < y1; py++) {
