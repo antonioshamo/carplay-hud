@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-menu-0147.bundle ]; then
-            echo '2eea09b13145dda35264853e6b8fca199d15132ad712f5bd2f0fc80ccf09fc31  bmw-menu-0147.bundle' | sha256sum -c -
-            git bundle verify bmw-menu-0147.bundle
-            git fetch ./bmw-menu-0147.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = 'dbafaa3095d8f980fb122a365904ada5dc206d79'
+          if [ -f bmw-menu-0148.bundle ]; then
+            echo 'b9293c6a327ae57654d0a84b6d40488fae767a378edccb56b8ebe6bba3556d25  bmw-menu-0148.bundle' | sha256sum -c -
+            git bundle verify bmw-menu-0148.bundle
+            git fetch ./bmw-menu-0148.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = '3c5dd15f4125faf9560f40b9cd553a3bde8406a1'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-menu-0147.bundle
+            git rm bmw-menu-0148.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor dbafaa3095d8f980fb122a365904ada5dc206d79 HEAD
+          git merge-base --is-ancestor 3c5dd15f4125faf9560f40b9cd553a3bde8406a1 HEAD
       - name: Replay menu with installed Renderer 0.6.15
         run: |
           set -eu
@@ -67,11 +67,11 @@ jobs:
           sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
           node native/hud-startup-diagnostics/test.js
           node release/test/release_test.js
-      - name: Verify reproducible app artifact
-        run: node release/release.js check robertn_waze_cluster
-      - name: Publish CarPlay HUD 0.4.147 launch and graphics recovery
+      - name: Verify reproducible app and helper artifacts
+        run: node release/release.js check cluster-studio robertn_waze_cluster
+      - name: Publish BMW default gauges 0.4.148 and helper 0.1.25
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish robertn_waze_cluster
+        run: node release/release.js publish cluster-studio robertn_waze_cluster
