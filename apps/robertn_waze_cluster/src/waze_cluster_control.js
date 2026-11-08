@@ -177,9 +177,12 @@ class LineSocket extends EventEmitter {
     }
 
     _onData(chunk) {
+        const socket = this._socket;
         this._buf += chunk;
         let nl;
-        while ((nl = this._buf.indexOf('\n')) >= 0) {
+        // A status callback may close or replace the connection. Remaining
+        // messages in that packet belong to the old screen/session.
+        while (this._socket === socket && (nl = this._buf.indexOf('\n')) >= 0) {
             const line = this._buf.slice(0, nl).trim();
             this._buf = this._buf.slice(nl + 1);
             if (!line) {

@@ -1,3 +1,13 @@
+## 0.4.143
+
+- Prevent map target changes and enable/disable actions from overlapping a
+  pending startup or display save, including direct control calls.
+- Ignore stale Cluster Studio status/reply messages from closed connections.
+  Stop parsing coalesced helper messages when settings close or reconnect.
+- Add deterministic regressions for session replacement and competing saves,
+  including the head unit's Node 8 runtime checks. Tested offline; this is not
+  physical-car confirmation of the intermittent HUD map flicker or startup.
+
 ## 0.4.142
 
 - Serialize driver-profile loading with manual HUD edits, startup changes and
