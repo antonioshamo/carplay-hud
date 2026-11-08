@@ -1,4 +1,4 @@
-name: Import and publish widgets and gauge refresh
+name: Verify and publish HUD reconnect recovery
 on:
   workflow_dispatch:
 permissions:
@@ -18,42 +18,38 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.12.0
-      - name: Import tested widget and refresh source
+      - name: Import tested recovery source
         run: |
           set -eu
-          if [ -f widgets-import.bundle ]; then
-            echo 'b177ab2f2fdbbc4f8226f50703160b0988759747456781eed7dbb6ba856d7c37  widgets-import.bundle' | sha256sum -c -
-            git bundle verify widgets-import.bundle
-            git fetch ./widgets-import.bundle refs/heads/shamo/widgets-refresh:refs/remotes/import/release
-            test "$(git rev-parse refs/remotes/import/release)" = '99fb998dd2a5c64e4da6180879942f8435315f3b'
+          if [ -f hud-recovery.bundle ]; then
+            echo '0311d163e5da7c6a93485607e989543ff5d2f2beb81ae11cf31d9a762f4a16a6  hud-recovery.bundle' | sha256sum -c -
+            git bundle verify hud-recovery.bundle
+            git fetch ./hud-recovery.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = 'f191a22f7de79b0169a8307c855ce23d4824bdff'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git merge --no-ff --no-edit refs/remotes/import/release
-            git rm widgets-import.bundle
-            git commit -m 'Remove tested widget source transport bundle'
+            git merge --no-ff --no-edit refs/remotes/import/recovery
+            git rm hud-recovery.bundle
+            git commit -m 'Remove tested HUD recovery source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 99fb998dd2a5c64e4da6180879942f8435315f3b HEAD
-      - name: Test renderer and queued image updates
+          git merge-base --is-ancestor f191a22f7de79b0169a8307c855ce23d4824bdff HEAD
+      - name: Verify renderer host integration
         run: make -C native/cluster-render test
-      - name: Test app controls and saved gauge behavior
+      - name: Test helper and assistance-only preview
         run: |
           set -eu
-          for test in apps/robertn_waze_cluster/tools/test_*.js; do
-            node "$test"
-          done
           for test in test test_telemetry test_stability test_recovery test_startup_recovery test_polling test_widget_library test_renderer_integration test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_phone_media test_features; do
             node "native/cluster-studio/test/$test.js"
           done
+          node native/cluster-studio/test/assistance-window/test.js
       - name: Verify car Node 8 runtime compatibility
         run: sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
-      - name: Test release packaging
-        run: node release/test/release_test.js
-      - name: Verify reproducible app and helper artifacts
-        run: node release/release.js check cluster-studio robertn_waze_cluster
-      - name: Publish renderer 0.3.105, helper 0.1.20 and app 0.4.141
+      - name: Verify reproducible helper artifact
+        run: node release/release.js check cluster-studio
+      - name: Publish Cluster Studio 0.1.21
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish cluster-render cluster-studio robertn_waze_cluster
+        run: node release/release.js publish cluster-studio
