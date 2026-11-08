@@ -18,7 +18,7 @@ class StudioService {
   return {assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!e.panelBlock,panelClearance:'native-gear-v1',independentPanelHud:renderer&&e.cr.independentPanelHud===true,output:this.store.output,
    features:this.features?{lighting:this.features.lighting,media:this.features.media,rows:this.features.rows.slice(0,6),scannedAt:this.features.scannedAt}:null,media:this.o.media?this.o.media.state():null,
    panelRemaining:Math.max(0,Math.ceil(((e.panelUntil||0)-e.now())/1000)),canPreview:testReason==='Ready for a parked test',canSelectPanel:panelReady,
-   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.20',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
+   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:'0.1.21',phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
    parked,state:e.state,renderer,data:this.o.telemetry.snapshot(),panel:e.target==='panel',recovery,displayVisible:display.visible,displayTarget:display.target,displayState:display.state,displayReason:display.reason,
    hud:{state:e.hud,holder:e.hudHolder||null,reason:e.hudReason||''}};
  }
@@ -82,7 +82,7 @@ async function main(){
  const media=new ParkedMedia({engine,telemetry,cr});media.stop();
  const service=new StudioService({file,engine,telemetry,media,assistance});media.o.designRead=()=>({design:service.store.design,slots:service.store.slots});media.o.designSave=m=>service.command(m);await service.listen(socket);cr.connect();telemetry.start();assistance.start();
  const startupRecovery=new StartupRecovery();
- const timer=setInterval(()=>{engine.tick();media.tick();startupRecovery.tick({ready:cr.ready,independent:cr.independentPanelHud,state:engine.hud,holder:engine.hudHolder,reason:engine.hudReason});},34);
+ const timer=setInterval(()=>{engine.tick();media.tick();startupRecovery.tick({ready:cr.ready,independent:cr.independentPanelHud,parked:telemetry.parked(),state:engine.hud,holder:engine.hudHolder,reason:engine.hudReason});},34);
  const close=()=>{clearInterval(timer);service.close();media.stop();assistance.close();telemetry.close();engine.close();process.exit(0);};process.on('SIGTERM',close);process.on('SIGINT',close);
 }
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exit(1);});

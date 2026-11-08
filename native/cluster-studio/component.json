@@ -1,7 +1,7 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
   "description": "37 movable cluster widgets, fuel in every template, saved full-cluster layouts in Park, and live vehicle readings.",
