@@ -1,18 +1,20 @@
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-CarPlay HUD **0.4.143** fixes overlapping startup/display saves and stale helper
-messages after settings close or reconnect. It includes the 0.4.142 profile
-coordination repairs. These changes are tested offline; reliable route-free
-startup and the reported HUD map flicker still need physical-car verification.
+CarPlay HUD **0.4.144** adds a simpler cockpit home, larger widget cards,
+clear page titles, fixed Back/Live changes/Apply controls and two-way widget
+paging. It fixes a reconnect timer found during repeated menu navigation.
+Starter templates now avoid overlapping labels and the reserved gear opening.
+Existing custom layouts are preserved. These changes are tested offline;
+reliable route-free startup and HUD flicker still need physical-car verification.
 
-Cluster Studio **0.1.21** provides 37 movable widgets, fuel by default, saved
+Cluster Studio **0.1.22** provides 37 movable widgets, fuel by default, saved
 layouts, optional welcome animations and Restore BMW defaults. Full-panel output
 currently requires fresh Park data. The factory-preserving side-widget design
 is a prototype, not a released replacement for BMW's menus or assistance display.
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps).
-Current component versions: app **0.4.143**, Waze on cluster **0.7.117**,
-Cluster Studio **0.1.21**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
+Current component versions: app **0.4.144**, Waze on cluster **0.7.117**,
+Cluster Studio **0.1.22**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
 comes from the official MGU Store source and draws the settings app; it is
 separate from cluster-render.
 

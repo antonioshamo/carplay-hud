@@ -80,10 +80,10 @@ class HudScreen extends EventEmitter {
   const fresh=(this.page==='studio'?require('./studio_view.js').items(this.studio):view.layout(view.model(this.host.control),this.page,this.logPage)).find(b=>b.id===id);
   if(!fresh||!fresh.enabled)return false;
   const now=Date.now();if(now-(this.last[id]||0)<300)return false;this.last[id]=now;
-  if(this.page==='studio'){const before=this.studio.page;const handled=this.studio.press(id);if(id==='exit'||(id==='navigate-back'&&!handled)){this.page='overview';this.studio.drag=null;this.focus=0;}else if(before!==this.studio.page)this.focus=0;this.render();return true;}
+  if(this.page==='studio'){const before=this.studio.page;const handled=this.studio.press(id);if(id==='exit'||(id==='navigate-back'&&!handled)){this.page='overview';this.studio.drag=null;this.focus=0;}else if(before!==this.studio.page)this.focus=Math.max(0,require('./studio_view.js').items(this.studio).findIndex(b=>b.x<250&&b.selected));this.render();return true;}
   if(id==='navigate-back'){if(this.navigation.length)this.page=this.navigation.pop();else if(this.page!=='overview')this.page='overview';else if(this.host.exit)this.host.exit();this.focus=0;this.render();return true;}
-  if(id==='open-studio'||id.indexOf('studio:')===0){this.page='studio';this.studio.page=id==='open-studio'?'gallery':id.slice(7);this.studio.nav=[];this.studio.open();this.focus=0;this.render();return true;}
-  if(id.indexOf('nav:')===0){if(this.page!==id.slice(4))this.navigation.push(this.page);if(this.navigation.length>20)this.navigation.shift();this.page=id.slice(4);this.logPage=0;this.focus=Math.max(0,view.tabs.findIndex(t=>t[0]===this.page));this.touch=null;this.ccu=null;this.render();return true;}
+  if(id==='open-studio'||id.indexOf('studio:')===0){this.page='studio';this.studio.page=id==='open-studio'?'gallery':id.slice(7);this.studio.entryPage=this.studio.page;this.studio.nav=[];this.studio.open();this.focus=Math.max(0,require('./studio_view.js').items(this.studio).findIndex(b=>b.x<250&&b.selected));this.render();return true;}
+  if(id.indexOf('nav:')===0||id.indexOf('go:')===0){const next=id.slice(id.indexOf(':')+1);if(this.page!==next)this.navigation.push(this.page);if(this.navigation.length>20)this.navigation.shift();this.page=next;this.logPage=0;this.focus=Math.max(0,view.tabs.findIndex(t=>t[0]===this.page));this.touch=null;this.ccu=null;this.render();return true;}
   const c=this.host.control;
   switch(id){
    case 'apply-current':c.applyCurrent();break;

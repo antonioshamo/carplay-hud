@@ -78,6 +78,17 @@ function preset(n){
  if(l===7){ws.forEach(a=>a.on=['speed','rpm','gear','clock','accent'].includes(a.type));p('speed',.10,.28,.32,.43);p('rpm',.58,.28,.32,.43);p('gear',.44,.57,.12,.20);}
  if(l===8){p('speed',.05,.19,.30,.59);p('rpm',.65,.19,.30,.59);p('gear',.44,.46,.12,.23);p('badge',.33,.27,.34,.14);p('flag',.44,.76,.12,.13);p('date',.37,.90,.26,.08);}
  if(l===9){p('rpm',.05,.18,.56,.58);p('speed',.67,.18,.27,.52);p('gear',.68,.70,.12,.20);p('badge',.05,.04,.46,.12);p('clock',.69,.03,.25,.11);p('oil',.43,.81,.20,.13,true);p('coolant',.18,.81,.20,.13,true);p('date',.70,.91,.25,.075,false);p('flag',.81,.77,.12,.13);}
+ // Keep starter layouts readable at native size. These positions only affect
+ // newly chosen templates; validation leaves the owner's custom moves intact.
+ if(l===0)p('clock',.055,.02,.27,.075);
+ if(l===1){p('rpm',.59,.12,.36,.65);p('gear',.415,.65,.13,.22);p('badge',.06,.06,.28,.13);p('oil',.81,.82,.17,.13);}
+ if(l===2){p('speed',.055,.22,.28,.56);p('rpm',.665,.22,.28,.56);p('badge',.355,.32,.29,.16);p('clock',.075,.045,.25,.11);p('coolant',.34,.77,.15,.12);p('oil',.51,.77,.15,.12);p('date',.37,.90,.26,.045);p('accent',.36,.965,.28,.02);}
+ if(l===4){p('clock',.055,.045,.27,.11);p('badge',.35,.20,.30,.16);}
+ if(l===5){p('speed',.06,.14,.38,.70);p('rpm',.58,.19,.34,.58);p('gear',.655,.79,.13,.11);p('badge',.46,.22,.12,.15);p('clock',.06,.02,.28,.10);p('flag',.46,.44,.10,.12);}
+ if(l===6){p('badge',.05,.04,.28,.12);p('clock',.67,.835,.26,.075);}
+ if(l===7)p('clock',.055,.06,.27,.12);
+ if(l===8){p('clock',.055,.045,.27,.11);p('badge',.35,.27,.30,.14);p('date',.37,.90,.26,.045);p('accent',.36,.965,.28,.02);}
+ if(l===9)p('badge',.05,.04,.28,.12);
  return placeFuel(validate({schema:1,preset:n,theme:Math.floor(n/10),gauge:l===0?'ultra':l===6||l===9?'bar':l===3||l===7?'digital':'ring',background:l===7?'black':'gradient',units:'mph',clock24:false,borders:true,snap:true,title:0,intro:'slide',introEnabled:false,introDuration:3000,introShine:true,introLight:'white',widgets:ws}));
 }
 function validate(v){

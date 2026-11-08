@@ -1,3 +1,23 @@
+# CarPlay HUD 0.4.144
+
+Update **CarPlay HUD (App) to 0.4.144** and **Cluster Studio (Tool) to 0.1.22**.
+Keep Waze on cluster 0.7.117, cluster-render 0.3.105 and MGU Renderer 0.6.11.
+
+My cockpit has six shortcuts for gauges, HUD layout, startup, welcome, saved
+layouts and help. Arrange widgets has a prominent Add widget action, full names,
+four categories and Previous/Next controls. Back follows your actual path;
+Live changes and Apply stay in the same place. Widget details has larger controls.
+
+All 100 starter designs and three iDrive 8 templates are rendered for review.
+New starter layouts avoid clock/badge overlap and the native gear opening.
+Existing saved custom positions are kept. Choose a template again to use its
+corrected default positions. Offline tests do not establish live HUD reliability.
+
+Render the review gallery: `node tools/preview_all.js /tmp/bmw-menu-review`.
+Run menu checks: `node tools/test_menu_navigation.js` and `node tools/test_design.js`.
+
+## Previous releases
+
 # CarPlay HUD 0.4.137
 
 Update **cluster-render (Tool) to 0.3.103**, **Cluster Studio (Tool) to 0.1.14**, then **CarPlay HUD (App) to 0.4.137** in MGU Store. Keep **Waze on cluster (Tool) 0.7.115**.

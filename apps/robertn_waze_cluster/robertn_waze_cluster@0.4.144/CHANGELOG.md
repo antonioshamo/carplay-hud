@@ -1,3 +1,18 @@
+## 0.4.144
+
+- Add a six-card cockpit home, clear page titles, consistent navigation, and
+  larger Add widget/Details controls. Keep Back, live changes and Apply fixed.
+- Show full widget names and Add/In layout badges in two columns, with separate
+  Previous and Next buttons. Direct home shortcuts return to the cockpit.
+- Fix a stale retry timer when Studio is reopened before the helper reconnects.
+- Start the sliding welcome fully off-screen in software and native GPU output.
+- Correct starter-template overlaps and keep their content outside the native
+  gear opening; preserve saved custom positions. Cluster Studio 0.1.22 shares
+  the same corrected template model.
+- Render every menu, all 103 templates, 37 widgets and all dial styles for review.
+  Add real-input, repeated navigation, paging, label-fit and layout regressions.
+  Offline verification only; physical HUD startup/flicker is not claimed fixed.
+
 ## 0.4.143
 
 - Prevent map target changes and enable/disable actions from overlapping a
