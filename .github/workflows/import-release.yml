@@ -1,4 +1,4 @@
-name: Verify and publish HUD reconnect recovery
+name: Verify and publish HUD blank-frame repair
 on:
   workflow_dispatch:
 permissions:
@@ -21,38 +21,40 @@ jobs:
       - name: Import tested recovery source
         run: |
           set -eu
-          if [ -f hud-recovery.bundle ]; then
-            echo '0311d163e5da7c6a93485607e989543ff5d2f2beb81ae11cf31d9a762f4a16a6  hud-recovery.bundle' | sha256sum -c -
-            git bundle verify hud-recovery.bundle
-            git fetch ./hud-recovery.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = 'f191a22f7de79b0169a8307c855ce23d4824bdff'
+          if [ -f bmw-map-flicker-0117.bundle ]; then
+            echo '4fdd262ea4eed50ec97c3666dbc0d71290d30833a3cc76f57b1226d624154709  bmw-map-flicker-0117.bundle' | sha256sum -c -
+            git bundle verify bmw-map-flicker-0117.bundle
+            git fetch ./bmw-map-flicker-0117.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = 'bcee21242142929e37ce51cbfb8376669751f951'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm hud-recovery.bundle
+            git rm bmw-map-flicker-0117.bundle
             git commit -m 'Remove tested HUD recovery source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor f191a22f7de79b0169a8307c855ce23d4824bdff HEAD
+          git merge-base --is-ancestor bcee21242142929e37ce51cbfb8376669751f951 HEAD
       - name: Verify renderer host integration
         run: make -C native/cluster-render test
-      - name: Test helper and assistance-only preview
+      - name: Verify map tool and vehicle binary
+        run: |
+          make -C native/waze-on-cluster test
+          make -C native/waze-on-cluster test-x86 target
+      - name: Verify app, helper and factory preview
         run: |
           set -eu
-          for test in test test_telemetry test_stability test_recovery test_startup_recovery test_polling test_widget_library test_renderer_integration test_frame_cache test_refresh test_panel_composition test_image_delta test_assistance live_values_test test_phone_design test_phone_media test_features; do
-            node "native/cluster-studio/test/$test.js"
+          for test in native/cluster-studio/test/*.js apps/robertn_waze_cluster/tools/test_*.js; do
+            node "$test"
           done
+          node native/cluster-studio/test/factory-personal/test.js
           node native/cluster-studio/test/assistance-window/test.js
-      - name: Verify car Node 8 runtime compatibility
-        run: |
-          echo '"$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_startup_recovery.js' >> apps/robertn_waze_cluster/tools/test_startup_node8.sh
           sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
-          git restore -- apps/robertn_waze_cluster/tools/test_startup_node8.sh
-      - name: Verify reproducible helper artifact
-        run: node release/release.js check cluster-studio
-      - name: Publish Cluster Studio 0.1.21
+          node release/test/release_test.js
+      - name: Verify reproducible map-tool artifact
+        run: node release/release.js check waze-on-cluster
+      - name: Publish Waze on cluster 0.7.117
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
           MGU_PUBLISH_VISIBILITY: any
-        run: node release/release.js publish cluster-studio
+        run: node release/release.js publish waze-on-cluster
