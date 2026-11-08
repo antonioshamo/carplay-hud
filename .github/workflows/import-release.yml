@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-menu-0144.bundle ]; then
-            echo '637325ee6185d79e6d978875c312e91b5f993755fcb724fad7466248ccbabac9  bmw-menu-0144.bundle' | sha256sum -c -
-            git bundle verify bmw-menu-0144.bundle
-            git fetch ./bmw-menu-0144.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = '1bb08fb5dbd4b16300cb63fe869e7eaf816c1187'
+          if [ -f bmw-menu-0145.bundle ]; then
+            echo '0b2e1d253dde60d3d578f24f0c7ea2abc15c4405f0071a901826e7ab62f0d98e  bmw-menu-0145.bundle' | sha256sum -c -
+            git bundle verify bmw-menu-0145.bundle
+            git fetch ./bmw-menu-0145.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = '17308c3bff271c948801fd3d540957b2bc8e13e7'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-menu-0144.bundle
+            git rm bmw-menu-0145.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 1bb08fb5dbd4b16300cb63fe869e7eaf816c1187 HEAD
+          git merge-base --is-ancestor 17308c3bff271c948801fd3d540957b2bc8e13e7 HEAD
       - name: Verify renderer host integration
         run: make -C native/cluster-render test
       - name: Verify map tool integration
@@ -51,7 +51,7 @@ jobs:
           node release/test/release_test.js
       - name: Verify reproducible app artifact
         run: node release/release.js check robertn_waze_cluster cluster-studio
-      - name: Publish CarPlay HUD 0.4.144 and Cluster Studio 0.1.22
+      - name: Publish CarPlay HUD 0.4.145 and Cluster Studio 0.1.23
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
