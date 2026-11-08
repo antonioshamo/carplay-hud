@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-menu-0148.bundle ]; then
-            echo 'b9293c6a327ae57654d0a84b6d40488fae767a378edccb56b8ebe6bba3556d25  bmw-menu-0148.bundle' | sha256sum -c -
-            git bundle verify bmw-menu-0148.bundle
-            git fetch ./bmw-menu-0148.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = '3c5dd15f4125faf9560f40b9cd553a3bde8406a1'
+          if [ -f bmw-menu-0149.bundle ]; then
+            echo '23847ac81c7682b857c974020e21abf7fc7686897371674f86222da4caf9b51f  bmw-menu-0149.bundle' | sha256sum -c -
+            git bundle verify bmw-menu-0149.bundle
+            git fetch ./bmw-menu-0149.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = 'd51ef80433477f1726d366fcf46a7fc64c33d865'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-menu-0148.bundle
+            git rm bmw-menu-0149.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 3c5dd15f4125faf9560f40b9cd553a3bde8406a1 HEAD
+          git merge-base --is-ancestor d51ef80433477f1726d366fcf46a7fc64c33d865 HEAD
       - name: Replay menu with installed Renderer 0.6.15
         run: |
           set -eu
@@ -69,7 +69,7 @@ jobs:
           node release/test/release_test.js
       - name: Verify reproducible app and helper artifacts
         run: node release/release.js check cluster-studio robertn_waze_cluster
-      - name: Publish BMW default gauges 0.4.148 and helper 0.1.25
+      - name: Publish rounded BMW gauges 0.4.149 and helper 0.1.26
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
