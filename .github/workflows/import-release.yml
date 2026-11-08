@@ -47,6 +47,7 @@ jobs:
         run: |
           echo '"$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_startup_recovery.js' >> apps/robertn_waze_cluster/tools/test_startup_node8.sh
           sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
+          git restore -- apps/robertn_waze_cluster/tools/test_startup_node8.sh
       - name: Verify reproducible helper artifact
         run: node release/release.js check cluster-studio
       - name: Publish Cluster Studio 0.1.21
