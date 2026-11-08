@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
 const fs=require('fs'),cp=require('child_process');
-// A reproduced boot-only RAMSES subscription failure. This restarts our
-// renderer once, never the head unit, CarPlay, or BMW's display services.
+// A reproduced RAMSES subscription failure. This restarts our renderer once
+// per boot, never the head unit, CarPlay, or BMW's display services. A phone
+// may reconnect long after boot, so uptime is not the recovery deadline.
 class StartupRecovery {
  constructor(o){
   o=o||{};this.now=o.now||(()=>{const t=process.hrtime();return t[0]*1000+t[1]/1e6;});this.uptime=o.uptime||(()=>Number(fs.readFileSync('/proc/uptime','utf8').split(' ')[0])*1000);
@@ -20,16 +21,17 @@ class StartupRecovery {
   const now=this.now();if(this.lastCheck!==null&&now<this.lastCheck){this.badAt=null;this.shownAt=null;this.lastCheck=now;return;}
   if(this.lastCheck!==null&&now-this.lastCheck<1000)return;this.lastCheck=now;
   let uptime;try{uptime=this.uptime();}catch(e){return;}
-  // Only during initial boot, and only on an explicitly separated mapping.
-  // Gear does not gate the HUD. The existing full-panel safety lease remains.
-  if(!Number.isFinite(uptime)||uptime<0||uptime>180000||s.ready!==true||s.independent!==true){this.badAt=null;this.shownAt=null;return;}
+  // This repair briefly restarts BOTH custom outputs, so perform it only
+  // with fresh stationary/Park telemetry. That restricts a repair operation,
+  // not ordinary HUD map display. Keep the exclusive once-per-boot marker.
+  if(!Number.isFinite(uptime)||uptime<0||s.ready!==true||s.independent!==true||s.parked!==true){this.badAt=null;this.shownAt=null;return;}
   const bad=s.state==='waiting'&&s.holder==='none'&&s.reason==='not rendered: the renderer is not subscribed';
   if(bad){
    this.shownAt=null;if(this.badAt===null)this.badAt=now;
    if(now-this.badAt<15000)return;
    this.attempted=true;
    try{this.mark();}catch(e){this.log('HUD startup renderer recovery withheld: '+e.message);return;}
-   this.log('HUD startup: one custom-renderer restart for repeated missing subscription');this.restart();return;
+   this.log('HUD recovery: one parked custom-renderer restart for repeated missing subscription; uptime '+Math.floor(uptime/1000)+'s');this.restart();return;
   }
   if(s.state==='shown'&&s.holder==='us'){
    if(this.shownAt===null)this.shownAt=now;
