@@ -90,6 +90,7 @@ class WazeClusterApp extends OnlineApp {
         this._uiChange = Promise.resolve();
         this._startupReady = false;
         this._pendingEntryUuid = null;
+        this._entryOpen = null;
         this._resources = {};
         this._optionalStarted = false;
         this._nativeDetailsReady = false;
@@ -192,17 +193,44 @@ class WazeClusterApp extends OnlineApp {
         this._render();
     }
 
+    // BMW can reject a stale tile UUID or leave an HMI request unanswered.
+    // Bound each request so neither launch nor the serialized screen queue can
+    // get stuck forever. The SDK has no cancellation API; late settlements
+    // cannot resume our timed-out promise chain.
+    _rhmiRequest(label, request) {
+        return new Promise((resolve,reject) => {
+            const timer=setTimeout(()=>reject(new Error(label+' timed out')),4000);
+            Promise.resolve().then(request).then(value=>{
+                clearTimeout(timer);resolve(value);
+            },err=>{clearTimeout(timer);reject(err);});
+        });
+    }
+
     _ensureResources(name) {
         if (this._resources[name]) return this._resources[name];
         const state = this.rhmiApplication.getByName(name);
         if (!state) return Promise.reject(new Error('Missing screen '+name));
-        this._resources[name] = new Promise((resolve,reject) => {
-            const timer = setTimeout(() => reject(new Error('Screen resources timed out: '+name)),4000);
-            Promise.resolve().then(()=>state.updateResources()).then(value=>{
-                clearTimeout(timer);resolve(value);
-            },err=>{clearTimeout(timer);reject(err);});
-        }).catch(err=>{delete this._resources[name];throw err;});
+        this._resources[name] = this._rhmiRequest('Screen resources',()=>state.updateResources())
+            .catch(err=>{delete this._resources[name];throw err;});
         return this._resources[name];
+    }
+
+    _openState(name) {
+        if (this._shutdownPromise || !this._visible) return Promise.resolve();
+        return this._rhmiRequest('Open screen '+name,()=>this.rhmiApplication.openState(name));
+    }
+
+    _restoreNativeHome() {
+        this._modern=false;
+        this._design.hostVisible(false);
+        this._render();
+        // A failed tile mapping must not prevent direct navigation to the
+        // already registered home. Never retry the rejected entry UUID here.
+        return this._rhmiRequest('Restore home mapping',()=>this.rhmiApplication.mapEntryState(this._entryUuid,this._state))
+            .catch(err=>{trace.error('home-map-failed',err);logger.warn('Home mapping: '+err.message);})
+            .then(()=>this._ensureResources(STATE_NAME))
+            .then(()=>this._openState(STATE_NAME))
+            .catch(err=>{trace.error('home-restore-failed',err);logger.warn('Classic settings restore: '+err.message);});
     }
 
     _startedForeground() {
@@ -319,22 +347,18 @@ class WazeClusterApp extends OnlineApp {
         trace.record('graphics-mode-request', 'wanted='+wanted+'; ready='+this._design.ready+'; visible='+this._visible);
         if(!this._entryUuid)return Promise.resolve();
         this._uiChange=this._uiChange.catch(()=>{}).then(()=>{
-            if(this._modern===on)return this._visible?this.rhmiApplication.openState(on?HOST:STATE_NAME):undefined;
+            if(this._modern===on)return this._openState(on?HOST:STATE_NAME);
             this._design.hostVisible(false);
             // Map the tile for future launches, but navigate within this running
             // app by state. Reopening its entry UUID here is rejected by the
             // affected ID7 unit after remapping (INVALID_UUID).
             const state=this.rhmiApplication.getByName(on?HOST:STATE_NAME);
             return this._ensureResources(on?HOST:STATE_NAME)
-                .then(()=>{this._modern=on;this._design.proxyKey=null;return this.rhmiApplication.mapEntryState(this._entryUuid,state);})
-                .then(()=>{this._render();return this._visible?this.rhmiApplication.openState(on?HOST:STATE_NAME):undefined;});
+                .then(()=>{this._modern=on;this._design.proxyKey=null;return this._rhmiRequest('Map settings entry',()=>this.rhmiApplication.mapEntryState(this._entryUuid,state));})
+                .then(()=>{this._render();return this._openState(on?HOST:STATE_NAME);});
         }).catch(err=>{
             trace.error('graphics-mode-failed',err);logger.warn(`modern settings: ${err&&err.message}`);
-            this._modern=false;this._design.hostVisible(false);
-            this._render();
-            return Promise.resolve(this.rhmiApplication.mapEntryState(this._entryUuid,this._state))
-                .then(()=>this._visible?this.rhmiApplication.openState(STATE_NAME):undefined)
-                .catch(e=>logger.warn('Classic settings restore: '+e.message));
+            return this._restoreNativeHome();
         });
         this._render();return this._uiChange;
     }
@@ -344,7 +368,7 @@ class WazeClusterApp extends OnlineApp {
         return this._ensureResources(name).then(() => {
             this._nativeDetailsReady = true;
             this._written={};this._render();this._renderLists();
-            return this.rhmiApplication.openState(name);
+            return this._openState(name);
         })
             .catch(err => {
                 logger.warn(`open page ${name}: ${err && err.message}`);
@@ -395,10 +419,14 @@ class WazeClusterApp extends OnlineApp {
         this._entryUuid=description.uuid;
         // The manager already registered the tile's label/icon from application.json.
         // Redecorating it here can wait forever on older firmware.
-        return ours.init()
-            .then(() => this.rhmiApplication.mapEntryState(description.uuid, this._state))
-            .then(() => ours.setAvailability('ENABLED'))
-            .then(() => logger.info(`entry point ${description.name} ENABLED`));
+        const attempt=(label,request)=>this._rhmiRequest(label,request).catch(err=>{
+            trace.error('entry-registration-degraded',err);
+            logger.warn(label+': '+err.message);
+        });
+        return attempt('Initialize settings entry',()=>ours.init())
+            .then(()=>attempt('Map settings home',()=>this.rhmiApplication.mapEntryState(description.uuid,this._state)))
+            .then(()=>attempt('Enable settings entry',()=>ours.setAvailability('ENABLED')))
+            .then(()=>logger.info(`entry point ${description.name} registration attempted`));
     }
 
     _onEntryPointExecute(uuid) {
@@ -410,14 +438,23 @@ class WazeClusterApp extends OnlineApp {
             this._pendingEntryUuid = uuid;
             return Promise.resolve();
         }
+        // Some units send the same launch event twice. Share the in-flight
+        // request instead of queuing another timeout for every tap/event.
+        if (this._entryOpen) return this._entryOpen;
         this._sawForeground = true;
         this._setVisible(true);
-        return Promise.resolve().then(()=>this._design.ready ?
-            this._useModern(true) : this.rhmiApplication.openEntryState(uuid))
+        this._entryOpen = Promise.resolve().then(()=>this._design.ready ?
+            this._useModern(true) : this._rhmiRequest('Open settings entry',()=>this.rhmiApplication.openEntryState(uuid)))
             .catch((err) => {
                 trace.error('open-entry-failed', err);
                 logger.warn(`openEntryState failed: ${err && err.message}`);
+                return this._restoreNativeHome();
+            }).then(()=>{this._entryOpen=null;},err=>{
+                this._entryOpen=null;
+                trace.error('entry-recovery-failed',err);
+                logger.warn('Settings entry recovery: '+err.message);
             });
+        return this._entryOpen;
     }
 
     /* ---- visibility ---- */
