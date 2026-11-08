@@ -1,8 +1,11 @@
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-CarPlay HUD **0.4.146** adds reference-inspired home cards, an app grid, a live
-vehicle page, shared navigation and a dedicated climate section. Existing
-custom layouts are preserved. [Reference review and verification limits](docs/cockpit-0145-review.md).
+CarPlay HUD **0.4.146** reduces startup work and shows usable menu controls before
+uploading detailed car artwork. It retains the reference-inspired home cards,
+app grid, live vehicle page, shared navigation and dedicated climate section.
+Existing custom layouts are preserved. [Startup and regression review](docs/cockpit-0146-review.md)
+and [reference review](docs/cockpit-0145-review.md) distinguish offline checks from
+the remaining in-car verification.
 
 Cluster Studio **0.1.24** provides 37 movable widgets, fuel by default, saved
 layouts, optional welcomes and Restore BMW defaults. Its new eight-action climate
