@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-menu-0145.bundle ]; then
-            echo '0b2e1d253dde60d3d578f24f0c7ea2abc15c4405f0071a901826e7ab62f0d98e  bmw-menu-0145.bundle' | sha256sum -c -
-            git bundle verify bmw-menu-0145.bundle
-            git fetch ./bmw-menu-0145.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = '17308c3bff271c948801fd3d540957b2bc8e13e7'
+          if [ -f bmw-menu-0146.bundle ]; then
+            echo 'ef3017f2905239327d08b0e68519ce6d7fc4ed1148d0eb9ed1df6c24c013a379  bmw-menu-0146.bundle' | sha256sum -c -
+            git bundle verify bmw-menu-0146.bundle
+            git fetch ./bmw-menu-0146.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = '6f3275548dcf5bc26dd264fa23c698a97c512389'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-menu-0145.bundle
+            git rm bmw-menu-0146.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 17308c3bff271c948801fd3d540957b2bc8e13e7 HEAD
+          git merge-base --is-ancestor 6f3275548dcf5bc26dd264fa23c698a97c512389 HEAD
       - name: Verify renderer host integration
         run: make -C native/cluster-render test
       - name: Verify map tool integration
@@ -48,10 +48,11 @@ jobs:
           node native/cluster-studio/test/factory-personal/test.js
           node native/cluster-studio/test/assistance-window/test.js
           sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
+          node native/hud-startup-diagnostics/test.js
           node release/test/release_test.js
       - name: Verify reproducible app artifact
         run: node release/release.js check robertn_waze_cluster cluster-studio
-      - name: Publish CarPlay HUD 0.4.145 and Cluster Studio 0.1.23
+      - name: Publish CarPlay HUD 0.4.146 and Cluster Studio 0.1.24
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
