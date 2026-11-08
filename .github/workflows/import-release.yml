@@ -22,10 +22,10 @@ jobs:
         run: |
           set -eu
           if [ -f bmw-menu-0147.bundle ]; then
-            echo '420e4a2d1425c88b73e860e3434cee37318974d959cb27e373140024c71fd347  bmw-menu-0147.bundle' | sha256sum -c -
+            echo '2eea09b13145dda35264853e6b8fca199d15132ad712f5bd2f0fc80ccf09fc31  bmw-menu-0147.bundle' | sha256sum -c -
             git bundle verify bmw-menu-0147.bundle
             git fetch ./bmw-menu-0147.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = '342ebca4f7e2a4f2e962d1fde07e9e699aa299b5'
+            test "$(git rev-parse refs/remotes/import/recovery)" = 'dbafaa3095d8f980fb122a365904ada5dc206d79'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
@@ -33,7 +33,24 @@ jobs:
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 342ebca4f7e2a4f2e962d1fde07e9e699aa299b5 HEAD
+          git merge-base --is-ancestor dbafaa3095d8f980fb122a365904ada5dc206d79 HEAD
+      - name: Replay menu with installed Renderer 0.6.15
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri
+          git clone --depth 1 --branch mgu-render@0.6.15 https://github.com/robertnisipeanu/mgu-store.git "$RUNNER_TEMP/menu-renderer"
+          test "$(git -C "$RUNNER_TEMP/menu-renderer" rev-parse HEAD)" = '54c656a79f08db3385393417a93b5608778fa571'
+          make -C "$RUNNER_TEMP/menu-renderer/native/mgu-render" in-build OUT=host
+          node apps/robertn_waze_cluster/tools/verify_renderer_replay.js "$RUNNER_TEMP/menu-renderer/native/mgu-render/build/host/mgu-render" "$RUNNER_TEMP/menu-replay"
+      - name: Save actual Renderer menu previews
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: menu-renderer-0615
+          path: ${{ runner.temp }}/menu-replay/*.png
+          retention-days: 14
+          if-no-files-found: warn
       - name: Verify renderer host integration
         run: make -C native/cluster-render test
       - name: Verify map tool integration
@@ -52,7 +69,7 @@ jobs:
           node release/test/release_test.js
       - name: Verify reproducible app artifact
         run: node release/release.js check robertn_waze_cluster
-      - name: Publish CarPlay HUD 0.4.147 launch recovery
+      - name: Publish CarPlay HUD 0.4.147 launch and graphics recovery
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
