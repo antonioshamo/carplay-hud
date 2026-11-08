@@ -7,10 +7,11 @@ function message(type,payload){
 }
 function words(type,values){return message(type,Buffer.from(new Uint32Array(values).buffer));}
 class FakeGraphics {
- constructor(path,caps=7){this.path=path;this.caps=caps;this.clients=new Set();this.received=[];this.ack=true;}
+ constructor(path,caps=7){this.path=path;this.caps=caps;this.clients=new Set();this.received=[];this.ack=true;this.onScreen=true;this.front=true;}
  listen(){
   this.server=net.createServer(s=>{
-   this.clients.add(s);let input=Buffer.alloc(0);s.on('error',()=>{});s.on('close',()=>this.clients.delete(s));
+   this.clients.add(s);let input=Buffer.alloc(0),shown=false,hasFrame=false;
+   const state=()=>s.write(words(0x4d520102,[1,shown&&hasFrame&&this.onScreen?1:0,this.front?1:0]));s.on('error',()=>{});s.on('close',()=>this.clients.delete(s));
    s.on('data',data=>{
     input=Buffer.concat([input,data]);
     while(input.length>=8&&input.length>=8+input.readUInt32LE(4)){
@@ -18,9 +19,10 @@ class FakeGraphics {
      this.received.push({type,payload:p});
      if(type===1){
       s.write(words(0x4d520101,[1,1,this.caps,0,0,0,0,160,100,1600,580,2048,60000]));
-      s.write(words(101,[1,1920,720]));
+      s.write(words(101,[1,1920,720]));state();
      }
-     if(type===7&&this.ack)s.write(words(102,[1,16]));
+     if(type===3){shown=!!p.readUInt32LE(0);state();}
+     if(type===7){hasFrame=true;state();if(this.ack)s.write(words(102,[1,16]));}
     }
    });
   });return new Promise((resolve,reject)=>{this.server.on('error',reject);this.server.listen(this.path,resolve);});

@@ -524,7 +524,7 @@ class WazeClusterApp extends OnlineApp {
         if(this._design)this._design.render();
         if(this._modern)return;
         this._setEnabled('wocModern',this._design.ready);
-        this._write('wocModern',this._design.ready?'Open modern settings':'Modern settings: MGU Renderer unavailable');
+        this._write('wocModern',this._design.failureReason?'Retry graphical menu':this._design.ready?'Open modern settings':'Modern settings: MGU Renderer unavailable');
         Object.keys(PAGES).forEach(name => this._setEnabled(name, true));
         this._setEnabled('wocMissingCapture', true);
         const c = this._control;
@@ -546,7 +546,7 @@ class WazeClusterApp extends OnlineApp {
         const concise = c.patchStatus && c.patchStatus.state === 'patched' && !c.pending() ?
             rs && rs.state === 'showing' ? `Map active on ${target === 'hud' ? 'HUD' : 'cluster'}` :
                 rs && rs.state === 'frozen' ? 'Map paused — reconnect CarPlay' : 'Waiting for a CarPlay map' : c.statusText();
-        this._write(STATUS_NAME, c._busy() ? c.settingsNotice() : c._startupPending ? c.startupResult() :
+        this._write(STATUS_NAME, this._design.failureReason ? 'Graphical menu unavailable. Select Retry graphical menu.' : c._busy() ? c.settingsNotice() : c._startupPending ? c.startupResult() :
             startupOn && rs && rs.state === 'idle' ? c.startupResult() : concise);
         this._write('supportStatus', c.statusText());
         this._write('setupStatus', c.statusText());

@@ -277,6 +277,21 @@ async function main() {
         assert(!instance._design.active);
         byName.wocModern.emit('action');
         await until('modern restored',()=>instance._modern&&instance._design.active);
+        graphics.onScreen=false;graphics.front=false;
+        instance._design.render(true);
+        await until('graphics reports hidden',()=>instance._design.presentation&&!instance._design.presentation.onScreen);
+        const attempts=graphics.count(1);
+        instance._design._checkPresentation(instance._design.presentationSince+2501);
+        await until('one presentation reconnect',()=>graphics.count(1)===attempts+1&&instance._modern&&instance._design.active&&instance._design.lastAck);
+        instance._design._checkPresentation(instance._design.presentationSince+2501);
+        await until('proxy list replaced by functional native home',()=>!instance._modern&&mappedState===byName.ST_OnlineApps_WazeCluster&&instance._design.presentationFailed);
+        assert.equal(byName.wocModern.text,'Retry graphical menu');
+        assert(byName.wocModern.enabled&&byName.wocSizePage.enabled);
+        graphics.onScreen=true;graphics.front=true;
+        await sleep(410); // manual watchdog acceleration must not hit press deduplication
+        byName.wocModern.emit('action');
+        await until('manual presentation retry',()=>instance._modern&&instance._design.active&&instance._design.presentation&&instance._design.presentation.onScreen&&!instance._design.presentationFailed);
+        console.log('ok   hidden graphics fall back to usable native settings; explicit retry restores the modern page');
         await graphics.close();
         await until('renderer loss returns to classic',()=>!instance._modern&&mappedState===byName.ST_OnlineApps_WazeCluster);
         assert(!instance._design.active);
