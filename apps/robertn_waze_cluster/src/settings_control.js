@@ -50,8 +50,10 @@ class SettingsControl extends WazeClusterControl {
             this.on('change',done);done();
         });
     }
-    canEnable() { return !this._profileSync && !this._restoring && super.canEnable(); }
-    canDisable() { return !this._profileSync && !this._restoring && super.canDisable(); }
+    canEnable() { return !this._profileSync && !this._restoring && !this._busy() && !this._startupPending && super.canEnable(); }
+    canDisable() { return !this._profileSync && !this._restoring && !this._busy() && !this._startupPending && super.canDisable(); }
+    enableMap() { if(!this.canEnable())return false;super.enableMap();return true; }
+    disableMap() { if(!this.canDisable())return false;super.disableMap();return true; }
     canChangeStartup() {
         return this.connectedPatch() && this.patchStatus && this.patchStatus.startup_trial === true &&
             !this._profileSync && !this._restoring && !this._busy() && !this._startupPending && !this.pending() && this.patchStatus.state !== 'busy' && !this.restartRequested();
@@ -96,7 +98,7 @@ class SettingsControl extends WazeClusterControl {
         // Both sockets can connect before either helper sends its first status.
         // Do not render enabled settings against an unknown patch capability.
         return this.connectedRender() && this.connectedPatch() && !!this.renderStatus && !!this.patchStatus && !this.patchStatus.bmw_defaults &&
-            !this._profileSync && !this._restoring && !this.restartRequested() && !this.pending() &&
+            !this._profileSync && !this._restoring && !this._startupPending && !this.restartRequested() && !this.pending() &&
             !(this.patchStatus && this.patchStatus.state === 'busy') && !this._busy();
     }
     _busy() { return !!(this._changes && Object.keys(this._changes).length); }

@@ -1,56 +1,55 @@
-**CarPlay HUD 0.4.131 targets the modern-settings transition failure observed on the car; vehicle retest is pending.** The 0.4.130 trace showed a healthy graphics connection followed by BMW rejecting `openEntryState` with `INVALID_UUID`. This build opens the already-running app's screen by RHMI state, keeps the tile mapped for future launches, and retains bounded redraw recovery. A regression reproduces the rejection and exercises initial entry plus three reopenings. The car was disconnected before this build could be tested there.
-
-**Independent Apple Maps startup without navigation remains unresolved.** A primary-screen Dashboard mirror is not a second map and does not meet that requirement. The live mirroring trial was stopped. Full factory-gauge replacement and lighting-control writes have not been verified.
-
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-**CarPlay HUD + Cluster Studio 0.1.3.** Open Overview → Cluster Studio for a full-cluster designer, 100 preset combinations, Ultra-inspired styling, movable widgets, saved designs, X4 M / Apple / personal welcome animations, and a single Restore BMW defaults action. Full-screen output is a guarded 10/30/60-second parked test, not a road-ready factory-gauge replacement. [Guide and previews](docs/cluster-studio/README.md). New experimental parked phone clips, full-screen app movie view and read-only lighting/media capability scan: [test instructions and limitations](docs/cluster-studio/EXPERIMENTS.md).
+CarPlay HUD **0.4.143** fixes overlapping startup/display saves and stale helper
+messages after settings close or reconnect. It includes the 0.4.142 profile
+coordination repairs. These changes are tested offline; reliable route-free
+startup and the reported HUD map flicker still need physical-car verification.
 
-Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps),
-with BMW-inspired graphical settings and an **optional experimental Dashboard startup mode**.
+Cluster Studio **0.1.21** provides 37 movable widgets, fuel by default, saved
+layouts, optional welcome animations and Restore BMW defaults. Full-panel output
+currently requires fresh Park data. The factory-preserving side-widget design
+is a prototype, not a released replacement for BMW's menus or assistance display.
 
-Release candidate: app **0.4.131**, map tool **0.7.114**, and **MGU Renderer 0.6.11**.
-MGU Renderer comes from the official MGU Store source; it draws the settings app
-and is separate from the existing cluster-render tool.
+Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps).
+Current component versions: app **0.4.143**, Waze on cluster **0.7.117**,
+Cluster Studio **0.1.21**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
+comes from the official MGU Store source and draws the settings app; it is
+separate from cluster-render.
 
-[See the new settings screens](docs/hud-research/DESIGN.md). A source commit alone is not
-an installable release. Use the [Releases](https://github.com/antonioshamo/carplay-hud/releases)
-page to confirm that the `catalog` release and the versioned artifacts exist.
+A source commit alone is not an installable release. Check the
+[Releases](https://github.com/antonioshamo/carplay-hud/releases) page for the
+versioned artifact and Store catalog. [Designer guide](docs/cluster-studio/README.md)
+and [experimental media limitations](docs/cluster-studio/EXPERIMENTS.md) describe
+features with their own validation limits.
 
 ## Install and test
 
-In MGU Store add the public GitHub source:
+In MGU Store add the public source:
 
 ```text
 https://github.com/antonioshamo/carplay-hud
 ```
 
-If Waze on cluster is already installed from another source, Store will block
-this fork from replacing it. For a source migration, note your settings, remove
-**Waze on cluster (App)** and then **Waze on cluster (Tool)** from Installed.
-Leave the working **cluster-render** installed: it satisfies this fork's renderer
-dependency. Install Waze on cluster from **antonioshamo/carplay-hud**, then verify
-Installed shows App 0.4.131 and Tool 0.7.114. Follow any restart notice from Store.
-Removing a source alone does not transfer ownership of its installed packages.
+Already using this source? Refresh Store and update the app and tools in place;
+no removal is needed. Verify the installed versions above and follow Store's
+restart notice. If another source owns Waze on cluster, note your settings
+before migrating: remove its app and Waze tool, leave cluster-render installed,
+then install this source's app and dependencies. Removing a source alone does
+not transfer ownership of installed packages.
 
-Already using this repository? Refresh Store and update the App and Tool in place; no removal is needed.
+For the separate Apple Maps feed, open **Startup → Apple Maps on HUD**. This
+selects HUD and keeps Dashboard mirroring off. While parked, reconnect CarPlay
+without starting a route and check the HUD. Switch the main CarPlay screen to
+Music to check that the HUD map remains independent. Successful settings saves
+alone do not prove that the phone is delivering the secondary map stream.
 
-Open the app and choose **Overview → Windshield HUD**. This saves the target for
-the next head-unit start. For the route-free trial, while parked:
+Simultaneous full-panel gauges and HUD maps require distinct renderer scenes
+and slots. The helper detects this capability; an older shared-resource
+configuration can defer full-panel output. An app update does not automatically
+migrate that vehicle configuration.
 
-1. Press **Overview → Enable CarPlay auto-start**. It confirms the live and saved HUD target before enabling the trial.
-2. Reconnect CarPlay, leaving its **Dashboard map visible on the center screen**.
-3. Do not start a navigation route. Check whether a fresh map appears on the HUD.
-4. To stop the trial, press **Overview → Auto-start with CarPlay: ON**.
-
-The helper now listens for CarPlay from boot, even before you opt in. Capture stays
-off until enabled. A foreground event received before opt-in is retained, so opening
-the app to enable the trial no longer discards it. A connection that predates the
-helper still requires reopening or reconnecting CarPlay. The app can be closed. It yields to the normal secondary map feed and hides when
-CarPlay is covered by BMW menus or frames stop. Size and position follow the app's
-settings. Dashboard trial frames use original colors and square corners.
-
-**The vehicle trial showed primary-screen CarPlay content, not an independent second map.** The owner rejected this behavior, and Dashboard mirroring is off on the test car. The instructions above describe the existing optional experiment, not the requested map-only startup feature. Do not enable it expecting an independent map. No automatic navigation route is used.
+The older optional Dashboard capture experiment mirrors the main CarPlay screen;
+it is not the separate-map setup. No automatic navigation route is started.
 
 ## Settings and missing streets
 
