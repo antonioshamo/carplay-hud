@@ -14,8 +14,17 @@ class SettingsControl extends WazeClusterControl {
         this.moveStep = 10;
         this._startupPending = null;
         this._startupNote = '';
+        this._profileSync = null;
     }
-    canRestoreDefaults() { return this.connectedPatch() && this.patchStatus && this.patchStatus.restore_defaults === true && !this._restoring && !this._busy() && !this._startupPending && !this.pending() && this.patchStatus.state !== 'busy'; }
+    beginProfileSync() {
+        if(this._profileSync || this._restoring || this._busy() || this._startupPending || this.pending() || this.restartRequested() || (this.patchStatus && this.patchStatus.state === 'busy'))return null;
+        const token={};this._profileSync=token;this.emit('change');return token;
+    }
+    endProfileSync(token) {
+        if(this._profileSync!==token)return;
+        this._profileSync=null;this.emit('change');
+    }
+    canRestoreDefaults() { return this.connectedPatch() && this.patchStatus && this.patchStatus.restore_defaults === true && !this._profileSync && !this._restoring && !this._busy() && !this._startupPending && !this.pending() && this.patchStatus.state !== 'busy'; }
     async restoreDefaults(studio) {
         if(!this.canRestoreDefaults())return false;
         this._restoring=true;this._notice='Restoring HUD, cluster and startup effects...';this.emit('change');
@@ -41,11 +50,11 @@ class SettingsControl extends WazeClusterControl {
             this.on('change',done);done();
         });
     }
-    canEnable() { return !this._restoring && super.canEnable(); }
-    canDisable() { return !this._restoring && super.canDisable(); }
+    canEnable() { return !this._profileSync && !this._restoring && super.canEnable(); }
+    canDisable() { return !this._profileSync && !this._restoring && super.canDisable(); }
     canChangeStartup() {
         return this.connectedPatch() && this.patchStatus && this.patchStatus.startup_trial === true &&
-            !this._restoring && !this._startupPending && !this.restartRequested();
+            !this._profileSync && !this._restoring && !this._busy() && !this._startupPending && !this.pending() && this.patchStatus.state !== 'busy' && !this.restartRequested();
     }
     setStartup(mode) {
         if(!this.canChangeStartup() || !['off','dashboard'].includes(mode))return false;
@@ -87,7 +96,7 @@ class SettingsControl extends WazeClusterControl {
         // Both sockets can connect before either helper sends its first status.
         // Do not render enabled settings against an unknown patch capability.
         return this.connectedRender() && this.connectedPatch() && !!this.renderStatus && !!this.patchStatus && !this.patchStatus.bmw_defaults &&
-            !this._restoring && !this.restartRequested() && !this.pending() &&
+            !this._profileSync && !this._restoring && !this.restartRequested() && !this.pending() &&
             !(this.patchStatus && this.patchStatus.state === 'busy') && !this._busy();
     }
     _busy() { return !!(this._changes && Object.keys(this._changes).length); }
@@ -159,6 +168,7 @@ class SettingsControl extends WazeClusterControl {
     }
     settingsNotice() {
         if (this._restoring) return 'Restoring HUD, cluster and startup effects...';
+        if (this._profileSync) return 'Loading driver display preferences...';
         if (this._busy()) return 'Applying and saving...';
         return this._notice || 'Changes are saved for the next start';
     }

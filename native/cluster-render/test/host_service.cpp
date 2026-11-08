@@ -26,8 +26,8 @@ using namespace crs;
 
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        std::fprintf(stderr, "usage: host_service SOCKET\n");
+    if (argc < 2 || argc > 3 || (argc == 3 && std::string(argv[2]) != "--independent-panel-hud")) {
+        std::fprintf(stderr, "usage: host_service SOCKET [--independent-panel-hud]\n");
         return 2;
     }
     signal(SIGPIPE, SIG_IGN);
@@ -40,6 +40,8 @@ int main(int argc, char **argv)
     m.take_over_stock = true;
     p.name = "panel"; p.slot = 0x203; p.scene_id = 0x01000400; p.width = 1920; p.height = 720; p.linger_ms = 3000;
     h.name = "hud"; h.slot = 0x323; h.scene_id = 0x01000400; h.width = 800; h.height = 480; h.linger_ms = 3000;
+    // Model both deployed configurations without changing the vehicle default.
+    if (argc == 3) h.scene_id = 0x010004f0;
     sc.targets = {m, p, h};
     sc.socket_path = argv[1];
     sc.backend = "host";
