@@ -1,3 +1,15 @@
+## 0.4.142
+
+- Serialize driver-profile loading with manual HUD edits, startup changes and
+  restoring BMW defaults, so they cannot overwrite each other in flight.
+- Cancel delayed profile getters, replies and temporary renderer connections
+  when stopped or timed out; prevent an old session from restarting polling.
+- Add real-socket tests for background handoff and cancellation, and renderer
+  integration tests for simultaneous separate HUD/cluster resources, native
+  interruptions, saved design edits and reconnection.
+- Require Waze on cluster 0.7.117, containing the bounded blank-frame repair.
+  Tested offline; this does not establish physical-car startup or flicker fixes.
+
 ## 0.4.141
 
 - Expand the library from 12 to 37 widgets with categories and paging: fuel,

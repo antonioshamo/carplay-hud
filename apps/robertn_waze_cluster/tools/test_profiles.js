@@ -14,7 +14,7 @@ const assert = require('assert');
 const fs = require('fs');
 const net = require('net');
 const { ProfileSync } = require('../src/profile_sync.js');
-const { WazeClusterControl } = require('../src/waze_cluster_control.js');
+const { SettingsControl } = require('../src/settings_control.js');
 const { FakeRender } = require('./fakes.js');
 
 const RSOCK = `/tmp/woc-pr-${process.pid}.sock`;
@@ -91,7 +91,7 @@ async function main() {
         await until('appearance restored', () => render.blackBackground === false && render.roundCorners === false);
         assert(render.received.some(m => m.cmd === 'hud-style' && m.setting === 'hud_black_background' && m.value === '0'));
     });
-    const c = new WazeClusterControl({ renderPath: RSOCK, patchPath: `/tmp/woc-none-${process.pid}.sock`, retryMs: 50 });
+    const c = new SettingsControl({ renderPath: RSOCK, patchPath: `/tmp/woc-none-${process.pid}.sock`, retryMs: 50 });
     await until('short connection gone', () => true);
     await new Promise((r) => setTimeout(r, 900));
     c.open();
@@ -110,10 +110,35 @@ async function main() {
     });
     sync2.stop();
     c.close();
+    await check('hidden-page handoff holds the settings transaction until its socket closes', async () => {
+        const hidden = new ProfileSync({ control: c, readProfile: () => 'driverA', patchPath: PSOCK, renderPath: RSOCK, retryMs: 50 });
+        hidden.start();
+        await until('hidden profile applied', () => render.target === 'hud');
+        assert(c._profileSync, 'settings stay locked during the temporary socket handoff');
+        await until('handoff completed', () => !c._profileSync);
+        assert.equal(hidden._transient.size, 0);
+        hidden.stop();
+    });
+    for (const stop of [true, false]) {
+        await check((stop ? 'stopped' : 'timed-out') + ' background connection cannot send late commands', async () => {
+            const latePath = `/tmp/woc-late-${process.pid}.sock`;
+            const hidden = new ProfileSync({ control: c, readProfile: () => 'driverA', patchPath: PSOCK, renderPath: latePath, retryMs: 20, profileMs: 150 });
+            hidden.start();
+            await until('temporary socket attempt', () => hidden._transient.size === 1);
+            if (stop) hidden.stop();
+            else await until('profile deadline released', () => !c._profileSync);
+            assert.equal(hidden._transient.size, 0);
+            const late = new FakeRender(latePath);await late.listen();
+            await new Promise(r => setTimeout(r, 200));
+            assert.equal(late.received.length, 0, 'cancelled profile cannot overwrite settings when render returns');
+            hidden.stop();await late.close();
+            try { fs.unlinkSync(latePath); } catch (e) { /* gone */ }
+        });
+    }
     await render.close();
     patch.server.close();
     [RSOCK, PSOCK].forEach((p) => { try { fs.unlinkSync(p); } catch (e) { /* gone */ } });
-    console.log(`${ok}/5 passed`);
+    console.log(`${ok}/8 passed`);
     process.exit(0);
 }
 

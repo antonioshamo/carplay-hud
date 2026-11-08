@@ -126,6 +126,13 @@ class ProfileSync extends EventEmitter {
         this.profile = null;
         this._timer = null;
         this._reading = false;
+        this._running = false;
+        this._epoch = 0;
+        this._wanted = false;
+        this._pendingProfile = null;
+        this._profileMs = o.profileMs || 4000;
+        this._transient = new Set();
+        this._controlChanged = () => this._tryProfile();
         this.patch = new LineSocket({
             path: o.patchPath || PATCH_PATH,
             retryMs: o.retryMs,
@@ -134,40 +141,97 @@ class ProfileSync extends EventEmitter {
         });
         /* a restarted daemon has forgotten the profile: tell it again */
         this.patch.on('connect', () => {
-            if (this.profile) this.patch.send({ cmd: 'profile', id: this.profile });
+            if (this._running && this.profile) { this._wanted = true; this._tryProfile(); }
+        });
+        this.patch.on('close', () => {
+            this._finishProfile();
+            if (this._running && this.profile) this._wanted = true;
         });
     }
 
     start() {
+        if (this._running) return;
+        this._running = true;
+        this._epoch++;
+        this._reading = false;
+        if (this._control) this._control.on('change', this._controlChanged);
         this.patch.open();
         this._poll();
     }
 
     stop() {
+        this._running = false;
+        this._epoch++;
+        this._reading = false;
+        this._wanted = false;
         clearTimeout(this._timer);
         this._timer = null;
+        if (this._control) this._control.removeListener('change', this._controlChanged);
+        this._finishProfile();
+        this._transient.forEach(close => close());
         this.patch.close();
     }
 
     _poll() {
-        if (this._reading) return;
+        if (!this._running || this._reading) return;
+        clearTimeout(this._timer);
+        this._timer = null;
+        const epoch = this._epoch;
         this._reading = true;
         Promise.resolve().then(() => this._read()).catch(() => null).then((id) => {
+            // A getter may settle after stop(), including after a new start().
+            if (!this._running || epoch !== this._epoch) return;
             this._reading = false;
             if (id && id !== this.profile) {
                 this._log.info(`driver profile now ${id}`);
                 this.profile = id;
-                this.patch.send({ cmd: 'profile', id });
+                this._wanted = true;
                 this.emit('profile', id);
             }
+            this._tryProfile();
             this._timer = setTimeout(() => this._poll(), this._pollMs);
         });
     }
 
+    _tryProfile() {
+        if (!this._running || this._trying || !this._wanted || !this.profile || this._pendingProfile || !this.patch.connected()) return;
+        // Profile changes and page edits both write the same saved/live values.
+        // Wait for manual edits or restoration, then hold the page until done.
+        this._trying = true;
+        const c = this._control, lease = c && c.beginProfileSync ? c.beginProfileSync() : null;
+        this._trying = false;
+        if (c && c.beginProfileSync && !lease) return;
+        const pending = { id: this.profile, epoch: this._epoch, lease };
+        this._wanted = false;
+        this._pendingProfile = pending;
+        pending.timer = setTimeout(() => {
+            if (this._pendingProfile !== pending) return;
+            this._log.warn('Driver display preferences timed out; late replies will be ignored');
+            this._finishProfile();
+            this._tryProfile();
+        }, this._profileMs);
+        this.patch.send({ cmd: 'profile', id: pending.id });
+    }
+
+    _finishProfile() {
+        const p = this._pendingProfile;
+        if (!p) return;
+        this._pendingProfile = null;
+        clearTimeout(p.timer);
+        if (p.close) p.close();
+        if (p.lease && this._control) this._control.endProfileSync(p.lease);
+    }
+
     _onPatch(msg) {
-        if (!msg || msg.ev !== 'profile-reply' || !msg.ok || msg.id !== this.profile) return;
+        const pending = this._pendingProfile;
+        if (!this._running || !pending || pending.applying || pending.epoch !== this._epoch || !msg || msg.ev !== 'profile-reply' || msg.id !== pending.id) return;
+        if (!msg.ok || msg.id !== this.profile || !msg.known) {
+            this._finishProfile();
+            this._tryProfile();
+            return;
+        }
+        pending.applying = true;
         /* the profile's choice, now; a first-seen profile's is what is set */
-        if (!msg.known) return;
         const cmds = [{ cmd: 'start', target: msg.target },
             { cmd: 'hud', hud_width_pct: String(msg.hud_width_pct || 0), hud_x: String(msg.hud_x || 0), hud_y: String(msg.hud_y || 0) }];
         ['hud_black_background', 'hud_round_corners'].forEach(setting => {
@@ -176,17 +240,44 @@ class ProfileSync extends EventEmitter {
         const c = this._control;
         if (c && c.render && c.render.connected()) {
             cmds.forEach((m) => c.render.send(m));
+            this.emit('applied', msg);
+            this._finishProfile();
+            this._tryProfile();
         } else {
             const s = new LineSocket({ path: this._renderPath, retryMs: this._retryMs, log: this._log });
+            const epoch = this._epoch, id = this.profile;
+            let hold, deadline;
+            const close = () => {
+                clearTimeout(hold);
+                clearTimeout(deadline);
+                s.close();
+                this._transient.delete(close);
+            };
+            pending.close = close;
+            this._transient.add(close);
             s.on('connect', () => {
+                if (!this._running || epoch !== this._epoch || id !== this.profile || this._pendingProfile !== pending) {
+                    close();
+                    if (this._pendingProfile === pending) this._finishProfile();
+                    this._tryProfile();
+                    return;
+                }
                 cmds.forEach((m) => s.send(m));
-                setTimeout(() => s.close(), RENDER_HOLD_MS);
+                hold = setTimeout(() => {
+                    if (this._pendingProfile !== pending) { close(); return; }
+                    this.emit('applied', msg);
+                    this._finishProfile();
+                    this._tryProfile();
+                }, RENDER_HOLD_MS);
             });
             s.open();
             /* the render down: its next start reads the saved choice anyway */
-            setTimeout(() => s.close(), RENDER_HOLD_MS * 5);
+            deadline = setTimeout(() => {
+                close();
+                if (this._pendingProfile === pending) this._finishProfile();
+                this._tryProfile();
+            }, RENDER_HOLD_MS * 5);
         }
-        this.emit('applied', msg);
     }
 }
 
