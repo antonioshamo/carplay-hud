@@ -1,10 +1,10 @@
 {
   "id": "waze-on-cluster",
   "kind": "tool",
-  "version": "0.7.116",
+  "version": "0.7.117",
   "license": "GPL-3.0-or-later",
   "title": "Waze on cluster",
-  "description": "CarPlay maps with saved HUD size and position. Blank phone frames no longer take the shared display scene or report a visible map. Route-free startup remains under investigation.",
+  "description": "CarPlay maps with saved HUD size and position. Brief blank-frame transitions keep the existing map for up to 250 ms without hiding it repeatedly. Sustained blank video and disconnects still clear it. Additional stream diagnostics included.",
   "requires": {
     "mgu-deploy": "0.7.0",
     "cluster-render": "0.3.101"
