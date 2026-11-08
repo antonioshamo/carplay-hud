@@ -3,7 +3,7 @@
   "requires": {
     "waze-on-cluster": "0.7.117",
     "mgu-render": "0.6.11",
-    "cluster-studio": "0.1.25"
+    "cluster-studio": "0.1.26"
   },
   "uninstallable": true,
   "mguHmi": [

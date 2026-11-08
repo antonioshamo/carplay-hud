@@ -2,13 +2,28 @@
 'use strict';
 const M=require('./studio_model.js');
 function draw(r,d,b,data,options){
- // Draw only the side panels and header for this template. Native content
- // remains transparent in the middle even if an edited widget crosses it.
+ // A permanent native center, including BMW's own badge. Feather only
+ // the background into that center; never fade the live numbers or warnings.
  if(d.template==='bmw-factory'&&!(options&&options.factoryPass)){
+  if(d.background!=='transparent'){
+   const feather=128*b.w/1920,side=.365*b.w;
+   const colors=d.background==='black'?[[3,5,7],[3,5,7],[3,5,7]]:[[29,36,48],[24,30,40],[21,27,37]];
+   // Quantize adjacent boundaries together: fractional rectangles otherwise
+   // blend twice at shared edge pixels and create visible vertical seams.
+   const paint=(x,w,alpha)=>r.gradientRect(Math.round(x),b.y,Math.round(x+w)-Math.round(x),b.h,[0,.7,1].map((t,i)=>[t,colors[i].concat(alpha)]));
+   for(const right of [false,true]){
+    const edge=b.x+(right?.635:.365)*b.w;
+    paint(right?edge+feather:b.x,side-feather,255);
+    for(let i=0;i<48;i++){
+     const t=(i+.5)/48,alpha=Math.round(255*t*t*(3-2*t));
+     paint(right?edge+i*feather/48:edge-(i+1)*feather/48,feather/48,alpha);
+    }
+   }
+  }
   for(const z of M.FACTORY_REGIONS){
    const widgets=d.widgets.filter(w=>w.x<z[0]+z[2]&&w.x+w.w>z[0]&&w.y<z[1]+z[3]&&w.y+w.h>z[1]);
    r.clip(b.x+z[0]*b.w,b.y+z[1]*b.h,z[2]*b.w,z[3]*b.h);
-   draw(r,Object.assign({},d,{widgets}),b,data,Object.assign({},options,{factoryPass:true}));
+   draw(r,Object.assign({},d,{widgets,background:'transparent'}),b,data,Object.assign({},options,{factoryPass:true}));
    r.noclip();
   }
   return;
@@ -39,22 +54,30 @@ function draw(r,d,b,data,options){
    const p=(u,v)=>[x+(mirror?1-u:u)*ww,y+v*hh];
    const poly=(pts,width,col)=>r.polyline(pts.map(q=>[b.x+q[0]*sx,b.y+q[1]*sy]),width*scale,col);
    const quad=(pts,col)=>r.quad(pts.map(q=>[b.x+q[0]*sx,b.y+q[1]*sy]),col);
-   const rail=[p(.76,.94),p(.30,.92),p(.09,.73),p(.025,.48),p(.12,.27),p(.35,.10),p(.73,.035),p(.98,.035)];
-   const edge=[p(.78,.90),p(.35,.88),p(.16,.71),p(.09,.49),p(.18,.30),p(.39,.15),p(.74,.085),p(.98,.085)];
-   for(let i=0;i<rail.length-1;i++)quad([rail[i],rail[i+1],edge[i+1],edge[i]],'#242b35');
-   poly(rail,3,accent);poly(edge,1,'#7b8794');
+   // Cubic curves follow the rounded, open factory dials. Sample the same
+   // curve for face, ticks and needle so no corner or speed discontinuity exists.
+   const curves=[[[.76,.94],[.42,.96],[.16,.89],[.07,.72]],[[.07,.72],[.005,.60],[.005,.44],[.075,.32]],[[.075,.32],[.18,.12],[.50,.04],[.76,.035]],[[.76,.035],[.84,.032],[.92,.035],[.98,.035]]];
+   const rail=[];
+   for(const c of curves)for(let j=0;j<16;j++){
+    const t=j/16,u=1-t;
+    rail.push(p(u*u*u*c[0][0]+3*u*u*t*c[1][0]+3*u*t*t*c[2][0]+t*t*t*c[3][0],u*u*u*c[0][1]+3*u*u*t*c[1][1]+3*u*t*t*c[2][1]+t*t*t*c[3][1]));
+   }
+   rail.push(p(.98,.035));
+   const center=p(.56,.51),edge=rail.map(q=>{const dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy),inset=Math.min(ww,hh)*.048;return [q[0]+dx/len*inset,q[1]+dy/len*inset];});
+   for(let i=0;i<rail.length-1;i++)quad([rail[i],rail[i+1],edge[i+1],edge[i]],'#202731');
+   poly(rail,2.5,accent);poly(edge,1,'#67717d');
    const lengths=[0];for(let i=1;i<rail.length;i++)lengths.push(lengths[i-1]+Math.hypot(rail[i][0]-rail[i-1][0],rail[i][1]-rail[i-1][1]));
    const total=lengths[lengths.length-1],at=f=>{const dist=f*total;let i=0;while(i<rail.length-2&&dist>lengths[i+1])i++;const k=(dist-lengths[i])/(lengths[i+1]-lengths[i]);return [rail[i][0]+(rail[i+1][0]-rail[i][0])*k,rail[i][1]+(rail[i+1][1]-rail[i][1])*k];};
-   const center=p(.56,.51),steps=mirror?8:10;
+   const steps=mirror?8:10;
    for(let i=0;i<=steps*2;i++){
     const q=at(i/(steps*2)),dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy),major=i%2===0;
     const end=[q[0]+dx/len*(major?18:10),q[1]+dy/len*(major?18:10)];line(q[0],q[1],end[0],end[1],major?2:1.1,accent);
-    if(major){const tick=mirror?i/2:Math.round(max*i/(steps*2));text(tick,q[0]+dx/len*36,q[1]+dy/len*36+8,Math.min(27,hh*.048),accent,ww*.13);}
+    if(major){const tick=mirror?i/2:Math.round(max*i/(steps*2));text(tick,q[0]+dx/len*39,q[1]+dy/len*39+8,Math.min(26,hh*.048),'#dce3eb',ww*.13);}
    }
    if(mirror)poly([at(.83),at(.88),at(.94),at(1)],5,red);
    if(val!=null){const q=at(fraction),dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy);poly([q,[q[0]+dx/len*72,q[1]+dy/len*72]],6,red);}
    text(label,center[0],y+hh*.43,22,'#adb8c5',ww*.50);
-   text(n,center[0],y+hh*.60,Math.min(100,ww/(Math.max(n.length,3)*.72),hh*.20),accent,ww*.55);
+   text(n,center[0],y+hh*.60,Math.min(100,ww/(Math.max(n.length,3)*.72),hh*.20),w.color&&w.color!=='theme'?w.color:'#f3f5f8',ww*.55);
    text(unit,center[0],y+hh*.68,26,'#c5ced9',ww*.48);
   }else if(mode==='id8'||mode==='id8-slim'){
    // Open hexagonal rails: each gauge remains an independently movable widget.

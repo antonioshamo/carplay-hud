@@ -19,7 +19,7 @@ for(const panel of [false,true]){
   if(panel)Panel.draw(expected,design,data);else D.draw(expected,design,{x:0,y:0,w,h},data);
   assert.deepEqual(cv?cv.d:cache.frames[1-cache.index].d,expected.d,'cache and full draw match after values, edits and unavailable data');
   assert.equal(cache.render(design,data),null,'no redraw when values did not change');
-  for(let y=Math.ceil(h*.22);y<h;y++)for(let x=Math.ceil(w*.365);x<Math.floor(w*.635);x++)assert.equal(expected.d[(y*w+x)*4+3],0,'native middle stays transparent');
+  for(let y=0;y<h;y++)for(let x=Math.ceil(w*.365);x<Math.floor(w*.635);x++)assert.equal(expected.d[(y*w+x)*4+3],0,'native middle stays transparent');
   if(panel)for(let y=660;y<720;y++)for(let x=1380;x<1520;x++)assert.equal(expected.d[(y*w+x)*4+3],0,'accepted P clearance preserved');
  }
 }
@@ -27,7 +27,21 @@ const cv=new Canvas(1920,720),strings=[],text=cv.text.bind(cv);cv.text=(s,x,y,si
 D.draw(cv,d,{x:0,y:0,w:1920,h:720},values);
 for(const s of ['62','3211','8.5 US gal','193 mi','190 °F','198 °F'])assert(strings.some(a=>a.s===s),'actual converted reading '+s);
 for(const type of ['oil','coolant','fuel']){const w=d.widgets.find(a=>a.type===type),cx=(w.x+w.w/2)*1920;assert(strings.some(a=>Math.abs(a.x-cx)<.0001&&a.o.align==='center'));}
-for(const type of M.TYPES){const a=M.clone(d);M.move(a,type,.4,.4);M.resize(a,type,3);M.dimension(a,type,'w',.2);M.align(a,type,'x');M.validate(a);const w=a.widgets.find(w=>w.type===type);assert(w.y+w.h<=.220001||w.x+w.w<=.365001||w.x>=.634999,'widgets remain visible outside the native middle');}
+for(const type of M.TYPES){const a=M.clone(d);M.move(a,type,.4,.4);M.resize(a,type,3);M.dimension(a,type,'w',.2);M.align(a,type,'x');M.validate(a);const w=a.widgets.find(w=>w.type===type);assert(w.x+w.w<=.365001||w.x>=.634999,'widgets remain visible outside the native middle');}
+// Rounded rails and gradual native-center blending survive CPU/GPU recording.
+const rails=[],probe=new Canvas(1920,720),polyline=probe.polyline.bind(probe);
+probe.polyline=(p,w,c)=>{if(p.length===65)rails.push(p);return polyline(p,w,c);};
+D.draw(probe,d,{x:0,y:0,w:1920,h:720},values);
+assert(rails.length>=4,'both dials use sampled curves');
+for(const rail of rails)for(let i=1;i<rail.length-1;i++){
+ const a=[rail[i][0]-rail[i-1][0],rail[i][1]-rail[i-1][1]],b=[rail[i+1][0]-rail[i][0],rail[i+1][1]-rail[i][1]];
+ const angle=Math.acos(Math.min(1,Math.max(-1,(a[0]*b[0]+a[1]*b[1])/(Math.hypot(...a)*Math.hypot(...b)))));
+ assert(angle<.17,'no sharp polygon joins');
+}
+const background=new Canvas(1920,720);D.draw(background,Object.assign({},d,{widgets:[]}),{x:0,y:0,w:1920,h:720},values);
+let previous=255,partial=0;for(let x=570;x<=702;x++){const alpha=background.d[(360*1920+x)*4+3];assert(alpha<=previous,'fade approaches native center monotonically');assert(previous-alpha<=9,'no hard alpha edge');if(alpha>0&&alpha<255)partial++;previous=alpha;}assert(partial>100);
+const old=M.clone(d),badge=old.widgets.find(w=>w.type==='badge');Object.assign(badge,{x:.405,y:.105,w:.19,h:.11,on:true});assert(!M.validate(old).widgets.find(w=>w.type==='badge').on,'old duplicate badge retired');
+badge.x=.12;badge.y=.2;assert(M.validate(old).widgets.find(w=>w.type==='badge').on,'user-positioned badge retained');
 const rec=new kit.Recorder(960,360);D.draw(rec,d,{x:0,y:0,w:960,h:360},values);const soft=new Canvas(960,360);kit.play(rec.words(),soft);assert.equal(soft.d[(200*960+480)*4+3],0,'recorded preview also leaves the middle clear');
 const client=new EventEmitter();client.status=null;client.close=()=>{};const screen=new StudioScreen(()=>{},{client});assert.equal(screen.design.template,'bmw-factory');
 screen.design=M.idrivePreset(2);screen.design.units='km/h';screen.design.introEnabled=true;screen.press('pick-factory');assert.equal(screen.design.template,'bmw-factory');assert.equal(screen.design.units,'km/h');assert(screen.design.introEnabled);screen.press('undo');assert.equal(screen.design.template,'id8-minimal');screen.press('redo');assert.equal(screen.design.template,'bmw-factory');
