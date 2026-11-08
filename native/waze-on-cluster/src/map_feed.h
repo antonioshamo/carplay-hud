@@ -12,7 +12,8 @@
  * frame clock, newest frame only) within the budget all its clients share,
  * and maps the slot from the first non-blank picture. The layer is visible while
  * CarPlay's cluster stream is live, not frozen, and has a non-blank picture
- * (set_stream/set_picture): hidden, the
+ * (set_stream/set_picture), with PictureGate in main allowing at most 250 ms
+ * for a brief blank transition after a real picture: hidden, the
  * renderer lets the slot go and the stock map comes back. stall_ms, which
  * releases the slot once the frames stop that long, is only a backstop,
  * since how often a static map sends a frame depends on the phone (one about

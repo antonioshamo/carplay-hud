@@ -74,7 +74,7 @@ test: test-cpp
 test-cpp: $(BUILD)/host/nal_reader_test $(BUILD)/host/rtp_h264_test $(BUILD)/host/udp_probe_test \
 		$(BUILD)/host/map_feed_test $(BUILD)/host/keyframe_wait_test $(BUILD)/host/freeze_watch_test \
 		$(BUILD)/host/alt_screen_test $(BUILD)/host/packet_queue_test $(BUILD)/host/stream_health_test \
-		$(BUILD)/host/atlas_scale_test
+		$(BUILD)/host/atlas_scale_test $(BUILD)/host/picture_gate_test
 	$(BUILD)/host/nal_reader_test
 	$(BUILD)/host/rtp_h264_test test/data/stream15_start.rtp
 	$(BUILD)/host/udp_probe_test
@@ -85,6 +85,7 @@ test-cpp: $(BUILD)/host/nal_reader_test $(BUILD)/host/rtp_h264_test $(BUILD)/hos
 	$(BUILD)/host/packet_queue_test
 	$(BUILD)/host/stream_health_test
 	$(BUILD)/host/atlas_scale_test
+	$(BUILD)/host/picture_gate_test
 	$(MAKE) -C $(CR) test-kit BUILD=$(abspath $(BUILD))/kit
 
 test-x86:
@@ -115,12 +116,16 @@ $(BUILD)/host/udp_probe_test: test/udp_probe_test.cpp src/udp_source.cpp src/udp
 CR_CORE = $(filter-out $(addprefix $(CR)/src/,main.cpp graph_ramses19.cpp dcsm2_link.cpp config.cpp log.cpp \
                          unit_idrive7.cpp unit_idrive8.cpp graph_ramses27.cpp launch.cpp generation.cpp), \
           $(wildcard $(CR)/src/*.cpp)) $(wildcard $(KIT)/*.cpp)
-$(BUILD)/host/map_feed_test: test/map_feed_test.cpp src/map_feed.cpp src/map_feed.h src/map_feeds.cpp src/map_feeds.h src/atlas_scale.cpp src/atlas_scale.h $(CR_CORE) $(CR_SRC) \
+$(BUILD)/host/map_feed_test: test/map_feed_test.cpp src/picture_gate.h src/map_feed.cpp src/map_feed.h src/map_feeds.cpp src/map_feeds.h src/atlas_scale.cpp src/atlas_scale.h $(CR_CORE) $(CR_SRC) \
 		$(CR)/src/log.cpp $(wildcard $(CR)/src/*.h $(CR)/include/cluster_render/*.h $(CR)/test/*.h)
 	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -Isrc -I$(KIT) -I$(CR)/include -I$(CR) -I$(CR)/src -isystem $(CR)/dcsm/third_party/vsomeip/interface \
 		-o $@ test/map_feed_test.cpp src/map_feed.cpp src/map_feeds.cpp src/atlas_scale.cpp $(filter-out $(CR)/client/protocol.cpp,$(CR_CORE)) $(CR_SRC) \
 		$(CR)/src/log.cpp -lpthread
+
+$(BUILD)/host/picture_gate_test: test/picture_gate_test.cpp src/picture_gate.h
+	mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -Isrc -o $@ test/picture_gate_test.cpp
 
 $(BUILD)/host/keyframe_wait_test: test/keyframe_wait_test.cpp src/keyframe_wait.h
 	mkdir -p $(@D)
@@ -175,7 +180,7 @@ $(T)/stub/libias-media_transport-avb_ufipc_bridge.so.1: abi/libias_avb.symbols
 STUBS = $(T)/stub/libmfxhw64.so $(T)/stub/libva.so.1 $(T)/stub/libva-drm.so.1 \
         $(T)/stub/libias-media_transport-avb_ufipc_bridge.so.1
 
-$(T)/waze-on-cluster: $(SRC) $(STUBS) component.json
+$(T)/waze-on-cluster: $(SRC) src/picture_gate.h $(STUBS) component.json
 	g++ $(CXXFLAGS) $(CPPFLAGS) -DWOC_VERSION='"$(VERSION)"' -Wl,--dynamic-linker=/lib/ld-linux-x86-64.so.2 -pthread \
 		-o $@ $(SRC) $(STUBS)
 	$(PYTHON) $(CR)/dcsm/tools/abi.py check $@ $(CR)/dcsm/abi/libvsomeip3.so.3.symbols   # loader, glibc/libstdc++ limits

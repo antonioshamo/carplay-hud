@@ -1,4 +1,5 @@
 #include "defaults_mode.h"
+#include "picture_gate.h"
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Robert Nisipeanu
 /* waze-on-cluster: decode the captured CarPlay 2nd-screen H.264 (the Waze/Maps
@@ -309,7 +310,7 @@ int serve(const Config &cfg)
     std::string last_detail;
     AltScreen::State alt_state = AltScreen::Unknown;
     int64_t alt_read_ms = 0;
-    bool picture_ready = false;
+    PictureGate picture;
     for (;;) {
         std::vector<pollfd> p = {{sig_fd, POLLIN, 0}, {control.listen_fd(), POLLIN, 0}, {control.owner_fd(), POLLIN, 0},
                                  {producer.ready_fd(), POLLIN, 0}};
@@ -318,7 +319,7 @@ int serve(const Config &cfg)
          * renderer's socket; four times a second otherwise, so the client
          * retries its connection, a source that is down is retried and the
          * status files stay current. */
-        int n = poll(p.data(), p.size(), 250);
+        int n = poll(p.data(), p.size(), picture.poll_ms(now_ms()));
         if (n < 0 && errno != EINTR)
             break;
         if (p[0].revents & POLLIN)
@@ -340,20 +341,18 @@ int serve(const Config &cfg)
             alt_read_ms = now;
         }
         const bool live = liveness.live(alt_state, producer.last_frame_ms(), now);
-        if (have_frame)
-            picture_ready = !blank;
-        if (!live)
-            picture_ready = false;
+        const bool defaults = bmw_defaults_active(cfg.str("defaults_marker").c_str());
+        producer.set_live(live);
+        const bool frozen = producer.frozen(now);
+        const bool picture_ready = picture.update(live && !defaults, frozen, have_frame, blank, now);
         // A connected phone can send only blank frames, then stop. Freeze
         // detection expires when their rate falls, but that is not a map.
         // Keep the decoder warm; never acquire the shared scene for blank
         // content or redisplay a previous session's picture on reconnect.
-        if (have_frame && live && !blank)
+        if (have_frame && live && !defaults && !frozen && !blank)
             feed.offer(&frame, id, now);
         feed.set_picture(picture_ready);
-        producer.set_live(live);
-        const bool defaults = bmw_defaults_active(cfg.str("defaults_marker").c_str());
-        feed.set_stream(live && !defaults, producer.frozen(now));
+        feed.set_stream(live && !defaults, frozen);
         feed.poll(now);
         producer.retry_sources(now);
         const FeedStatus fs = feed.status(producer.decode_status(), producer.stream_reason(resync));
@@ -396,7 +395,10 @@ int serve(const Config &cfg)
             feed.request_report();
             /* For patchd's stream resync (PATCH.md "Stream resync"). */
             write_sibling_file(cfg.str("fifo_path"), "stream.json",
-                               "{\"keyframe_wait_ms\":" + std::to_string(producer.keyframe_wait_ms(now)) + "}");
+                               "{\"keyframe_wait_ms\":" + std::to_string(producer.keyframe_wait_ms(now)) +
+                               ",\"picture_state\":\"" + picture.state() +
+                               "\",\"brief_blanks_bridged\":" + std::to_string(picture.bridged()) +
+                               ",\"blank_expiries\":" + std::to_string(picture.expired()) + "}");
             last_status_write = now;
         }
     }

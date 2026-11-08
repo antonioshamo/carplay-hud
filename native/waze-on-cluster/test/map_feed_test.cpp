@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include "picture_gate.h"
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -298,6 +299,42 @@ int main()
     empty.feed->set_picture(true);
     empty.pump(1200, &f1);
     ok("fresh map recovers after reconnect", empty.st().state == "showing");
+
+    // Exercise the same gate-to-feed path as main, using a real renderer
+    // service over its socket. Blank frames are never uploaded to the GPU.
+    Rig blinking(true);
+    blinking.feed->set_target("hud");
+    PictureGate picture;
+    blinking.feed->set_picture(picture.update(true, false, true, false, blinking.now));
+    blinking.pump(1200, &f1);
+    const int blink_requests = blinking.port.requests, blink_releases = blinking.port.releases;
+    bool stayed_visible = true;
+    for (int i = 0; i < 20; ++i) {
+        blinking.feed->set_picture(picture.update(true, false, true, true, blinking.now));
+        blinking.pump(100);
+        stayed_visible = stayed_visible && blinking.map_layer()->params.visible;
+        blinking.feed->set_picture(picture.update(true, false, true, false, blinking.now));
+        blinking.pump(100, &f1);
+    }
+    ok("HUD: 20 brief blank transitions keep the map visible without remapping",
+       stayed_visible && blinking.port.requests == blink_requests && blinking.port.releases == blink_releases &&
+       picture.bridged() == 20);
+    blinking.feed->set_picture(picture.update(true, false, true, true, blinking.now));
+    blinking.pump(250);
+    blinking.feed->set_picture(picture.update(true, false, false, true, blinking.now));
+    blinking.pump(50);
+    ok("HUD: a sustained blank still hides the map after the bounded grace",
+       !blinking.map_layer()->params.visible && picture.expired() == 1);
+    blinking.feed->set_picture(picture.update(true, false, true, false, blinking.now));
+    blinking.pump(1200, &f1);
+    blinking.feed->set_picture(picture.update(false, false, false, false, blinking.now));
+    blinking.feed->set_stream(false, false);
+    blinking.pump(50);
+    blinking.feed->set_picture(picture.update(true, false, false, false, blinking.now));
+    blinking.feed->set_stream(true, false);
+    blinking.pump(50);
+    ok("HUD: reconnect cannot show the prior session's picture",
+       !blinking.map_layer()->params.visible);
 
     Rig h;
     h.feed->set_stream(false, false);
