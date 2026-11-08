@@ -1,4 +1,4 @@
-name: Verify and publish HUD profile coordination
+name: Verify and publish HUD session coordination
 on:
   workflow_dispatch:
 permissions:
@@ -21,19 +21,19 @@ jobs:
       - name: Import tested recovery source
         run: |
           set -eu
-          if [ -f bmw-conflict-0142.bundle ]; then
-            echo '63d7103314bcd24412ee0e9b2ae13ad57edc225a6067f5055086fd9a66806f78  bmw-conflict-0142.bundle' | sha256sum -c -
-            git bundle verify bmw-conflict-0142.bundle
-            git fetch ./bmw-conflict-0142.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = '4667c8dbc96823f0fd8bbcdc89fbd3c784ce2fab'
+          if [ -f bmw-session-0143.bundle ]; then
+            echo '756e12267e85262186ef00819e777c126997b39f8a028caaaa00deef9e597b92  bmw-session-0143.bundle' | sha256sum -c -
+            git bundle verify bmw-session-0143.bundle
+            git fetch ./bmw-session-0143.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = '538e25d08ada2c02e6bd893f3fb7c74f5112b360'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-conflict-0142.bundle
-            git commit -m 'Remove tested profile coordination source transport bundle'
+            git rm bmw-session-0143.bundle
+            git commit -m 'Remove tested session coordination source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 4667c8dbc96823f0fd8bbcdc89fbd3c784ce2fab HEAD
+          git merge-base --is-ancestor 538e25d08ada2c02e6bd893f3fb7c74f5112b360 HEAD
       - name: Verify renderer host integration
         run: make -C native/cluster-render test
       - name: Verify map tool integration
@@ -51,7 +51,7 @@ jobs:
           node release/test/release_test.js
       - name: Verify reproducible app artifact
         run: node release/release.js check robertn_waze_cluster
-      - name: Publish CarPlay HUD 0.4.142
+      - name: Publish CarPlay HUD 0.4.143
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
