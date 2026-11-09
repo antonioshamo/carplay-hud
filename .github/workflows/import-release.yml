@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-gauges-0151b.bundle ]; then
-            echo '1ab3828c4fea199efb7d7b552be3fe32ebd541a7aaeeafdcb8c484d872360f9f  bmw-gauges-0151b.bundle' | sha256sum -c -
-            git bundle verify bmw-gauges-0151b.bundle
-            git fetch ./bmw-gauges-0151b.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = 'f1b11848f24622be3ba67a649da42f4803bb7fd2'
+          if [ -f bmw-gauges-0151c.bundle ]; then
+            echo '761022448513ac09ec26bdd39cd56869b200ee6f2cb3ae72f4dd399c76fa7825  bmw-gauges-0151c.bundle' | sha256sum -c -
+            git bundle verify bmw-gauges-0151c.bundle
+            git fetch ./bmw-gauges-0151c.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = '59f2bde84dba3af2daace5707dbb26160c8f3f94'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-gauges-0151b.bundle
+            git rm bmw-gauges-0151c.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor f1b11848f24622be3ba67a649da42f4803bb7fd2 HEAD
+          git merge-base --is-ancestor 59f2bde84dba3af2daace5707dbb26160c8f3f94 HEAD
       - name: Replay menu with installed Renderer 0.6.15
         run: |
           set -eu
