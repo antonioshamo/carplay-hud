@@ -98,7 +98,11 @@ function draw(r,d,b,data,options){
    const readout=p(.76,.50),size=Math.min(mirror?91:121,ww/(Math.max(n.length,1)*.95),hh*.19),unitSize=mirror?21:28;
    const measure=(s,size,font)=>r.textWidth?r.textWidth(s,size*scale,{font})/scale:String(s).length*size*.62;
    const numberWidth=measure(n,size,'instrument'),unitWidth=measure(unit,unitSize,'bold'),gap=12;
-   const start=readout[0]-(numberWidth+gap+unitWidth)/2;
+   const totalWidth=numberWidth+gap+unitWidth;
+   let start=readout[0]-totalWidth/2;
+   // Wide values such as 3200/8000 RPM must stay wholly in the opaque side.
+   // Clamp the complete number-and-unit group, not just its center point.
+   if(d.template==='bmw-factory')start=M.clamp(start,(mirror?.60*1920:0)+14,(mirror?1920:.40*1920)-totalWidth-14);
    if(visible(start,readout[1]-size,numberWidth+gap+unitWidth,size*1.25)){
     text(n,start+numberWidth/2,readout[1],size,w.color&&w.color!=='theme'?w.color:'#f3f5f8',ww*.45,'instrument');
     text(unit,start+numberWidth+gap+unitWidth/2,readout[1],unitSize,'#e1e2e3',ww*.15);
