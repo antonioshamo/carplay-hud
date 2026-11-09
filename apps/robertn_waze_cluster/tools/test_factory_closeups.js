@@ -14,7 +14,8 @@ for(const theme of [0,6])for(const fuel of [0,27,65,null]){
  const cv=new Canvas(1920,720),d=M.defaultDesign(),labels=[],needles=[],text=cv.text.bind(cv),line=cv.line.bind(cv);d.theme=theme;
  cv.text=(s,x,y,size,c,o)=>{const f=fonts.get(o.font,size),width=fonts.measure(f,String(s))*size/f.size;labels.push({s:String(s),x,y,size,left:x-width/2,right:x+width/2,top:y-size*.73});return text(s,x,y,size,c,o);};
  cv.line=(x,y,xx,yy,n,c)=>{if(c==='#f51b35')needles.push({x,y,xx,yy,n});return line(x,y,xx,yy,n,c);};
- D.draw(cv,d,{x:0,y:0,w:1920,h:720},{speed:100,rpm:3211,fuel,range:310,oil:92,coolant:88,now:new Date(2026,10,9,9,20)});
+ D.draw(cv,d,{x:0,y:0,w:1920,h:720},{speed:321.8688,rpm:8000,fuel,range:310,oil:92,coolant:88,now:new Date(2026,10,9,9,20)});
+ for(const t of labels.filter(t=>t.size>80||t.s==='mph'||t.s==='RPM'))assert((t.left>=14&&t.right<=1920*.40-14)||(t.left>=1920*.60+14&&t.right<=1906),'complete wide readout and unit stay clear of the native middle: '+t.s);
  const ticks=labels.filter(t=>t.size===41),unique=Array.from(new Map(ticks.map(t=>[t.s+':'+t.x+':'+t.y,t])).values());
  assert(unique.length===20,'11 speed and 9 RPM scale labels');
  for(let i=0;i<unique.length;i++)for(const b of unique.slice(i+1)){const a=unique[i];assert(!(a.left<b.right+5&&a.right+5>b.left&&a.top<b.y&&a.y>b.top),'scale numerals have room between them: '+a.s+'/'+b.s);}
