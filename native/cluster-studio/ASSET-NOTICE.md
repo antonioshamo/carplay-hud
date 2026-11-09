@@ -23,3 +23,8 @@ VINs or authentication data are bundled.
 Source SHA-256: `bc0abcc660bd8b7ad3000ecb2898a27c58a29a50f7ec81652fa12e75148d09df`.
 SIL Open Font License 1.1; see `LICENSE-RussoOne.txt`.
 This is an open font, not BMW firmware artwork.
+
+`font_cluster_square.js` is the renamed **Cluster Square** derivative under
+the same SIL Open Font License 1.1. Its square numerals are original polygon
+drawings; its non-digit glyphs are unchanged Russo One. Regenerate it with
+`node tools/bake_cluster_square.js`. It contains no extracted BMW fonts.

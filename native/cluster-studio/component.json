@@ -1,7 +1,7 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
   "description": "37 movable cluster widgets, fuel in every template, saved full-cluster layouts in Park, and live vehicle readings.",
@@ -154,6 +154,10 @@
       "mode": "0644"
     },
     {
+      "path": "shared/font_cluster_square.js",
+      "mode": "0644"
+    },
+    {
       "path": "LICENSE-RussoOne.txt",
       "mode": "0644"
     }
@@ -175,5 +179,8 @@
   ],
   "restart": [
     "cluster-studio.service"
+  ],
+  "versionFiles": [
+    "service.js"
   ]
 }

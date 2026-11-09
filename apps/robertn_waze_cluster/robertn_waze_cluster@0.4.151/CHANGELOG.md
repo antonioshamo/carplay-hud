@@ -1,3 +1,11 @@
+## 0.4.151
+
+- Refine recreated BMW dials from the supplied close-up photos: darker faces, longer scale spokes, square numerals, and a shallow foot with red mesh.
+- Replace the round fuel/oil surrounds with tapered auxiliary shapes, retaining fuel percentage and customizable colors.
+- Let widgets at a screen edge grow inward when enlarged. Preserve saved positions, hidden/locked widgets and colors; migrate only unchanged auxiliary defaults.
+- Package the same reproducible numeral atlas in both the editor and Cluster Studio 0.1.28.
+- Visual update only. Native center/P clearance and display activation policy are unchanged. In-car appearance is unverified. The requested external X4 M 3D file remains unavailable and is not included.
+
 ## 0.4.150
 
 - Open the graphical dashboard directly. Remove all old native menu pages and the Classic settings link.

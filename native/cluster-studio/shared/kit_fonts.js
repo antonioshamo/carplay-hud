@@ -3,10 +3,10 @@
 // See LICENSE-kit.txt and LICENSE-Inter.txt. English UI; no firmware fonts.
 'use strict';
 const zlib=require('zlib');
-const faces={regular:require('./font_regular.js'),semibold:require('./font_semibold.js'),cluster:require('./font_cluster.js')};
+const faces={regular:require('./font_regular.js'),semibold:require('./font_semibold.js'),cluster:require('./font_cluster.js'),instrument:require('./font_cluster_square.js')};
 const cache={};
 function get(name,size) {
- const key=name==='cluster'?'cluster':['bold','num','gear'].indexOf(name)>=0?'semibold':'regular';
+ const key=name==='instrument'?'instrument':name==='cluster'?'cluster':['bold','num','gear'].indexOf(name)>=0?'semibold':'regular';
  if(!cache[key])cache[key]=faces[key].sizes.map(s=>{
   const f=Object.assign({},s);let pixels;
   Object.defineProperty(f,'alpha',{get:()=>pixels||(pixels=zlib.inflateSync(Buffer.from(s.alpha,'base64')))});
