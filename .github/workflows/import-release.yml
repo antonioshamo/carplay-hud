@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-menu-0149.bundle ]; then
-            echo '23847ac81c7682b857c974020e21abf7fc7686897371674f86222da4caf9b51f  bmw-menu-0149.bundle' | sha256sum -c -
-            git bundle verify bmw-menu-0149.bundle
-            git fetch ./bmw-menu-0149.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = 'd51ef80433477f1726d366fcf46a7fc64c33d865'
+          if [ -f bmw-menu-0150.bundle ]; then
+            echo '606242c8cf9b5b7542ba7859c1f1b7b5ff3755c8863428f76e18a96e629dea17  bmw-menu-0150.bundle' | sha256sum -c -
+            git bundle verify bmw-menu-0150.bundle
+            git fetch ./bmw-menu-0150.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = 'be4d682e8fee860884f73b4c0b50a07abd625f1f'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-menu-0149.bundle
+            git rm bmw-menu-0150.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor d51ef80433477f1726d366fcf46a7fc64c33d865 HEAD
+          git merge-base --is-ancestor be4d682e8fee860884f73b4c0b50a07abd625f1f HEAD
       - name: Replay menu with installed Renderer 0.6.15
         run: |
           set -eu
@@ -64,12 +64,13 @@ jobs:
           done
           node native/cluster-studio/test/factory-personal/test.js
           node native/cluster-studio/test/assistance-window/test.js
+          node native/cluster-studio/test/assistance-window/bmw_transition.js
           sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
           node native/hud-startup-diagnostics/test.js
           node release/test/release_test.js
       - name: Verify reproducible app and helper artifacts
         run: node release/release.js check cluster-studio robertn_waze_cluster
-      - name: Publish rounded BMW gauges 0.4.149 and helper 0.1.26
+      - name: Publish direct dashboard 0.4.150 and black BMW gauges 0.1.27
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
