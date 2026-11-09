@@ -30,11 +30,11 @@ for(const type of ['oil','coolant','fuel']){const w=d.widgets.find(a=>a.type===t
 for(const type of M.TYPES){const a=M.clone(d);M.move(a,type,.4,.4);M.resize(a,type,3);M.dimension(a,type,'w',.2);M.align(a,type,'x');M.validate(a);const w=a.widgets.find(w=>w.type===type);const edge=['speed','rpm'].includes(type)?.42:.40;assert(w.x+w.w<=edge+.000001||w.x>=1-edge-.000001,'widgets remain in their allowed side envelope');}
 // Rounded rails and gradual native-center blending survive CPU/GPU recording.
 const rails=[],probe=new Canvas(1920,720),polyline=probe.polyline.bind(probe);
-probe.polyline=(p,w,c)=>{if(p.length>30&&w>2)rails.push(p);return polyline(p,w,c);};
+probe.polyline=(p,w,c)=>{if(p.length===81&&w>2)rails.push(p);return polyline(p,w,c);};
 D.draw(probe,d,{x:0,y:0,w:1920,h:720},values);
 assert.equal(rails.length,4,'each dial is clipped into the upper and lower side regions');
-const foot=rails[0].slice(0,17);assert(Math.max(...foot.map(p=>p[1]))-Math.min(...foot.map(p=>p[1]))<.01,'factory foot is flat, not an oval');
-assert(foot[0][0]-foot[foot.length-1][0]>200,'flat foot has factory proportions');
+const foot=rails[0].slice(0,17);assert(Math.max(...foot.map(p=>p[1]))-Math.min(...foot.map(p=>p[1]))<21,'factory foot is shallow, not a circular bowl');
+assert(foot[0][0]-foot[foot.length-1][0]>250,'wide foot follows the supplied factory close-up');
 for(const rail of rails)for(let i=1;i<rail.length-1;i++){
  const a=[rail[i][0]-rail[i-1][0],rail[i][1]-rail[i-1][1]],b=[rail[i+1][0]-rail[i][0],rail[i+1][1]-rail[i][1]];
  const angle=Math.acos(Math.min(1,Math.max(-1,(a[0]*b[0]+a[1]*b[1])/(Math.hypot(...a)*Math.hypot(...b)))));

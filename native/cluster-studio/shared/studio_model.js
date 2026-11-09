@@ -135,8 +135,8 @@ function validate(v){
  if(out.template==='bmw-factory'){const w=out.widgets.find(a=>a.type==='badge');if(w&&w.x===.405&&w.y===.105&&w.w===.19&&w.h===.11){w.on=false;w.x=.205;w.y=.51;w.w=.15;w.h=.13;}}
  if(out.template==='bmw-factory')out.background=out.background==='transparent'?'transparent':'black';
  if(out.template==='bmw-factory')for(const type of Object.keys(FACTORY_LAYOUT)){
-  const w=out.widgets.find(a=>a.type===type),old=FACTORY_PREVIOUS[type];
-  if(w&&old&&['x','y','w','h'].every((k,i)=>w[k]===old[i]))['x','y','w','h'].forEach((k,i)=>w[k]=FACTORY_LAYOUT[type][i]);
+  const w=out.widgets.find(a=>a.type===type),old=[FACTORY_PREVIOUS[type],FACTORY_RELEASED[type]].filter(Boolean);
+  if(w&&old.some(bounds=>['x','y','w','h'].every((k,i)=>w[k]===bounds[i])))['x','y','w','h'].forEach((k,i)=>w[k]=FACTORY_LAYOUT[type][i]);
  }
  out.widgets.forEach(w=>keepInFactorySide(out,w));
  return out;
@@ -151,8 +151,8 @@ function keepInFactorySide(d,w){
  w.x=clamp(w.x,right?1-edge:0,right?1-w.w:edge-w.w);
 }
 function move(d,type,dx,dy){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const snap=v=>d.snap?Math.round(v*100)/100:v;w.x=clamp(snap(w.x+dx),0,1-w.w);w.y=clamp(snap(w.y+dy),0,1-w.h);keepInFactorySide(d,w);}
-function resize(d,type,f){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;w.w=clamp(w.w*f,minimum(type)[0],1-w.x);w.h=clamp(w.h*f,minimum(type)[1],1-w.y);keepInFactorySide(d,w);}
-function dimension(d,type,axis,delta){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const index=axis==='w'?0:1;if(!['w','h'].includes(axis))return;w[axis]=clamp(w[axis]+delta,minimum(type)[index],1-w[axis==='w'?'x':'y']);keepInFactorySide(d,w);}
+function resize(d,type,f){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;w.w=clamp(w.w*f,minimum(type)[0],1);w.h=clamp(w.h*f,minimum(type)[1],1);w.x=Math.min(w.x,1-w.w);w.y=Math.min(w.y,1-w.h);keepInFactorySide(d,w);}
+function dimension(d,type,axis,delta){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const index=axis==='w'?0:1;if(!['w','h'].includes(axis))return;w[axis]=clamp(w[axis]+delta,minimum(type)[index],1);const position=axis==='w'?'x':'y';w[position]=Math.min(w[position],1-w[axis]);keepInFactorySide(d,w);}
 function align(d,type,axis){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;if(axis==='x')w.x=(1-w.w)/2;if(axis==='y')w.y=(1-w.h)/2;keepInFactorySide(d,w);}
 function acceptedDesign(){
 const config=preset(11);config.temperatureUnit='F';config.introEnabled=false;
@@ -186,7 +186,8 @@ function idrivePreset(index){
 // Paint the large side faces first, followed by only their small upper tips.
 // A changing needle in a tip must not invalidate the cached lower dial faces.
 const FACTORY_REGIONS=Object.freeze([[0,0,.40,1],[.60,0,.40,1],[.40,0,.02,.24],[.58,0,.02,.24]].map(Object.freeze));
-const FACTORY_LAYOUT={speed:[.035,.02,.37,.90],rpm:[.595,.02,.37,.90],fuel:[.01,.63,.075,.24],range:[.085,.90,.145,.07],coolant:[.655,.55,.18,.105],oil:[.915,.63,.075,.24],clock:[.235,.90,.13,.07],outside:[.84,.90,.15,.075]};
+const FACTORY_LAYOUT={speed:[.035,.02,.37,.90],rpm:[.595,.02,.37,.90],fuel:[0,.575,.095,.31],range:[.085,.90,.145,.07],coolant:[.655,.55,.18,.105],oil:[.905,.575,.095,.31],clock:[.235,.90,.13,.07],outside:[.84,.90,.15,.075]};
+const FACTORY_RELEASED={fuel:[.01,.63,.075,.24],oil:[.915,.63,.075,.24]};
 const FACTORY_PREVIOUS={speed:[.015,.06,.35,.80],rpm:[.635,.06,.35,.80],fuel:[.125,.625,.115,.105],range:[.245,.625,.115,.105],coolant:[.64,.625,.115,.105],oil:[.76,.625,.115,.105],clock:[.075,.89,.20,.075],outside:[.815,.88,.14,.095]};
 function factoryPreset(){
  const d=preset(0);d.template='bmw-factory';d.name='BMW original style';d.gauge='bmw';

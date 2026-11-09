@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "robertn_waze_cluster",
-  "version": "0.4.150",
-  "tree": "robertn_waze_cluster@0.4.150",
+  "version": "0.4.151",
+  "tree": "robertn_waze_cluster@0.4.151",
   "modules": [
     "src/startup.js",
     "src/robertn_waze_cluster.js",
@@ -19,6 +19,7 @@
     "src/font_regular.js",
     "src/font_semibold.js",
     "src/font_cluster.js",
+    "src/font_cluster_square.js",
     "src/studio_model.js",
     "src/studio_draw.js",
     "src/studio_view.js",
