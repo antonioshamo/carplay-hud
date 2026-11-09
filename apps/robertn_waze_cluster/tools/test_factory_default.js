@@ -19,27 +19,35 @@ for(const panel of [false,true]){
   if(panel)Panel.draw(expected,design,data);else D.draw(expected,design,{x:0,y:0,w,h},data);
   assert.deepEqual(cv?cv.d:cache.frames[1-cache.index].d,expected.d,'cache and full draw match after values, edits and unavailable data');
   assert.equal(cache.render(design,data),null,'no redraw when values did not change');
-  for(let y=0;y<h;y++)for(let x=Math.ceil(w*.365);x<Math.floor(w*.635);x++)assert.equal(expected.d[(y*w+x)*4+3],0,'native middle stays transparent');
+  for(let y=0;y<h;y++)for(let x=Math.ceil(w*(y<h*.24?.42:.40));x<Math.floor(w*(y<h*.24?.58:.60));x++)assert.equal(expected.d[(y*w+x)*4+3],0,'native middle stays transparent');
   if(panel)for(let y=660;y<720;y++)for(let x=1380;x<1520;x++)assert.equal(expected.d[(y*w+x)*4+3],0,'accepted P clearance preserved');
  }
 }
 const cv=new Canvas(1920,720),strings=[],text=cv.text.bind(cv);cv.text=(s,x,y,size,c,o)=>{strings.push({s:String(s),x,y,c,o});return text(s,x,y,size,c,o);};
 D.draw(cv,d,{x:0,y:0,w:1920,h:720},values);
-for(const s of ['62','3211','8.5 US gal','193 mi','190 °F','198 °F'])assert(strings.some(a=>a.s===s),'actual converted reading '+s);
+for(const s of ['62','3211','49%','193 mi','190 °F','198°F'])assert(strings.some(a=>a.s===s),'actual converted reading '+s);
 for(const type of ['oil','coolant','fuel']){const w=d.widgets.find(a=>a.type===type),cx=(w.x+w.w/2)*1920;assert(strings.some(a=>Math.abs(a.x-cx)<.0001&&a.o.align==='center'));}
-for(const type of M.TYPES){const a=M.clone(d);M.move(a,type,.4,.4);M.resize(a,type,3);M.dimension(a,type,'w',.2);M.align(a,type,'x');M.validate(a);const w=a.widgets.find(w=>w.type===type);assert(w.x+w.w<=.365001||w.x>=.634999,'widgets remain visible outside the native middle');}
+for(const type of M.TYPES){const a=M.clone(d);M.move(a,type,.4,.4);M.resize(a,type,3);M.dimension(a,type,'w',.2);M.align(a,type,'x');M.validate(a);const w=a.widgets.find(w=>w.type===type);const edge=['speed','rpm'].includes(type)?.42:.40;assert(w.x+w.w<=edge+.000001||w.x>=1-edge-.000001,'widgets remain in their allowed side envelope');}
 // Rounded rails and gradual native-center blending survive CPU/GPU recording.
 const rails=[],probe=new Canvas(1920,720),polyline=probe.polyline.bind(probe);
-probe.polyline=(p,w,c)=>{if(p.length===65)rails.push(p);return polyline(p,w,c);};
+probe.polyline=(p,w,c)=>{if(p.length>30&&w>2)rails.push(p);return polyline(p,w,c);};
 D.draw(probe,d,{x:0,y:0,w:1920,h:720},values);
-assert(rails.length>=4,'both dials use sampled curves');
+assert.equal(rails.length,4,'each dial is clipped into the upper and lower side regions');
+const foot=rails[0].slice(0,17);assert(Math.max(...foot.map(p=>p[1]))-Math.min(...foot.map(p=>p[1]))<.01,'factory foot is flat, not an oval');
+assert(foot[0][0]-foot[foot.length-1][0]>200,'flat foot has factory proportions');
 for(const rail of rails)for(let i=1;i<rail.length-1;i++){
  const a=[rail[i][0]-rail[i-1][0],rail[i][1]-rail[i-1][1]],b=[rail[i+1][0]-rail[i][0],rail[i+1][1]-rail[i][1]];
  const angle=Math.acos(Math.min(1,Math.max(-1,(a[0]*b[0]+a[1]*b[1])/(Math.hypot(...a)*Math.hypot(...b)))));
  assert(angle<.17,'no sharp polygon joins');
 }
 const background=new Canvas(1920,720);D.draw(background,Object.assign({},d,{widgets:[]}),{x:0,y:0,w:1920,h:720},values);
-let previous=255,partial=0;for(let x=570;x<=702;x++){const alpha=background.d[(360*1920+x)*4+3];assert(alpha<=previous,'fade approaches native center monotonically');assert(previous-alpha<=9,'no hard alpha edge');if(alpha>0&&alpha<255)partial++;previous=alpha;}assert(partial>100);
+// The old photo showed native numerals through partially transparent sides.
+// Every pixel outside the native center must be opaque, including old readouts.
+for(let y=0;y<720;y++)for(let x=0;x<1920;x++){
+ const expected=M.FACTORY_REGIONS.some(z=>x>=Math.round(z[0]*1920)&&x<Math.round((z[0]+z[2])*1920)&&y>=Math.round(z[1]*720)&&y<Math.round((z[1]+z[3])*720))?255:0;
+ const i=(y*1920+x)*4;assert.equal(background.d[i+3],expected,'opaque sides with no native-number bleed');
+ assert.equal(background.d[i]+background.d[i+1]+background.d[i+2],0,'pure black background');
+}
 const old=M.clone(d),badge=old.widgets.find(w=>w.type==='badge');Object.assign(badge,{x:.405,y:.105,w:.19,h:.11,on:true});assert(!M.validate(old).widgets.find(w=>w.type==='badge').on,'old duplicate badge retired');
 badge.x=.12;badge.y=.2;assert(M.validate(old).widgets.find(w=>w.type==='badge').on,'user-positioned badge retained');
 const rec=new kit.Recorder(960,360);D.draw(rec,d,{x:0,y:0,w:960,h:360},values);const soft=new Canvas(960,360);kit.play(rec.words(),soft);assert.equal(soft.d[(200*960+480)*4+3],0,'recorded preview also leaves the middle clear');

@@ -62,7 +62,6 @@ function layout(m,page,logPage) {
   add('capture',m.captureButton,718,144,418,98,m.canCapture,false,'Record the map connection','record');
   add('nav:details','Connection details',1154,144,406,98,true,false,'Read the latest tool messages','info');
   add('restore-defaults','Restore BMW defaults',1154,362,406,86,m.canRestore,false,'HUD, cluster and startup effects','power');
-  add('classic','Classic settings',310,362,390,86,true,false,'Use the standard BMW list controls','layout');
   if(m.canRestart)add('restart','Restart head unit',718,362,418,86,true,false,'Required to apply pending setup','power');
  } else if(page==='details') {
   add('logs-prev','Previous',310,450,210,66,logPage>0);

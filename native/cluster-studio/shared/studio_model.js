@@ -12,7 +12,7 @@ const IDRIVE_TEMPLATES=[['id8-sport','iDrive 8 Sport','Angular rails / M colors'
 const LEGACY_TYPES=['speed','rpm','gear','clock','date','badge','flag','coolant','oil','accent','signature','connection'];
 const LABELS={speed:'Speed',rpm:'Engine RPM',gear:'Gear',clock:'Clock',date:'Date',badge:'X4 M badge',flag:'Racing flag',coolant:'Coolant',oil:'Oil temperature',accent:'M stripes',signature:'Signature',connection:'Data status'};
 const METRICS={
- fuel:['Gas / fuel remaining','FUEL','fuel'],range:['Fuel range','RANGE','distance'],fuelWarning:['Fuel reserve','FUEL RESERVE','text'],odometer:['Odometer','ODOMETER','distance'],tripTime:['Driving time','DRIVING TIME','duration'],
+ fuel:['Gas / fuel percentage','FUEL','fuel'],range:['Fuel range','RANGE','distance'],fuelWarning:['Fuel reserve','FUEL RESERVE','text'],odometer:['Odometer','ODOMETER','distance'],tripTime:['Driving time','DRIVING TIME','duration'],
  outside:['Outside temperature','OUTSIDE','temperature'],battery:['12V battery charge','BATTERY CHARGE','percent'],torque:['Engine torque','ENGINE TORQUE','torque'],power:['Calculated engine power','POWER / CALCULATED','power'],engineState:['Engine status','ENGINE','text'],driveMode:['Driving mode','DRIVING MODE','text'],powerPercent:['Sport power level','SPORT POWER','percent'],torquePercent:['Sport torque level','SPORT TORQUE','percent']
 };
 for(const pair of [['FL','Front left'],['FR','Front right'],['RL','Rear left'],['RR','Rear right']]){
@@ -45,7 +45,9 @@ function reading(type,d,data){
  const meta=METRICS[type],v=data[type],imperial=d.units==='mph';if(!meta)return null;
  let value=v,unit='',digits=0;
  if(meta[2]==='temperature'){unit='°'+(d.temperatureUnit||'C');if(v!=null&&d.temperatureUnit==='F')value=v*1.8+32;}
- if(meta[2]==='fuel'){unit=imperial?'US gal':'L';value=v==null?null:imperial?v/3.785411784:v;digits=1;}
+ // X4 M's nominal tank is 65 L (BMW technical data). Capacity is saved in
+ // the design and editable for a different car. Stale/missing fuel stays unknown.
+ if(meta[2]==='fuel'){unit='%';const capacity=d.fuelCapacityLitres;value=Number.isFinite(v)&&v>=0&&v<255&&Number.isFinite(capacity)&&capacity>=10&&capacity<=150?clamp(v/capacity*100,0,100):null;}
  if(meta[2]==='distance'){unit=imperial?'mi':'km';value=v==null?null:imperial?v/1.609344:v;}
  if(meta[2]==='pressure'){unit=imperial?'psi':'bar';value=v==null?null:imperial?v*14.5037738:v;digits=1;}
  if(meta[2]==='percent')unit='%';
@@ -113,6 +115,8 @@ function validate(v){
  out.signature=cleanText(v.signature===undefined?TITLES[v.title]:v.signature,36);
  out.temperatureUnit=v.temperatureUnit===undefined?'C':v.temperatureUnit;
  if(!['C','F'].includes(out.temperatureUnit))throw Error('Invalid temperature unit');
+ out.fuelCapacityLitres=v.fuelCapacityLitres===undefined?65:v.fuelCapacityLitres;
+ if(!Number.isFinite(out.fuelCapacityLitres)||out.fuelCapacityLitres<10||out.fuelCapacityLitres>150)throw Error('Tank capacity must be 10 to 150 litres');
  out.widgets=v.widgets.map(w=>{
   const locked=w.locked===undefined?false:w.locked,color=w.color===undefined?'theme':w.color,gauge=w.gauge===undefined?'inherit':w.gauge;
   if(typeof locked!=='boolean'||!(color==='theme'||/^#[0-9a-fA-F]{6}$/.test(color))||!GAUGES.includes(gauge))throw Error('Invalid widget style');
@@ -129,14 +133,22 @@ function validate(v){
  if(missingFuel)placeFuel(out);
  // Retire only the previous default badge that duplicated BMW's native logo.
  if(out.template==='bmw-factory'){const w=out.widgets.find(a=>a.type==='badge');if(w&&w.x===.405&&w.y===.105&&w.w===.19&&w.h===.11){w.on=false;w.x=.205;w.y=.51;w.w=.15;w.h=.13;}}
+ if(out.template==='bmw-factory')out.background=out.background==='transparent'?'transparent':'black';
+ if(out.template==='bmw-factory')for(const type of Object.keys(FACTORY_LAYOUT)){
+  const w=out.widgets.find(a=>a.type===type),old=FACTORY_PREVIOUS[type];
+  if(w&&old&&['x','y','w','h'].every((k,i)=>w[k]===old[i]))['x','y','w','h'].forEach((k,i)=>w[k]=FACTORY_LAYOUT[type][i]);
+ }
  out.widgets.forEach(w=>keepInFactorySide(out,w));
  return out;
 }
 function cleanText(v,max){if(typeof v!=='string'||!v.trim()||v.length>max||/[^\x20-\x7e]/.test(v))throw Error('Use 1-'+max+' printable characters');return v.trim();}
 function keepInFactorySide(d,w){
+ // Centered custom badges sit below the physical top-center housing.
+ if(w.type==='badge'&&w.on&&w.x+w.w/2>.40&&w.x+w.w/2<.60&&w.y<.22){w.y=.22;w.h=Math.min(w.h,.78);}
  if(d.template!=='bmw-factory')return;
- const right=w.x+w.w/2>=.5;w.w=Math.min(w.w,.365);
- w.x=clamp(w.x,right?.635:0,right?1-w.w:.365-w.w);
+ const dial=['speed','rpm'].includes(w.type),edge=dial?.42:.40;
+ const right=w.x+w.w/2>=.5;w.w=Math.min(w.w,edge);
+ w.x=clamp(w.x,right?1-edge:0,right?1-w.w:edge-w.w);
 }
 function move(d,type,dx,dy){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;const snap=v=>d.snap?Math.round(v*100)/100:v;w.x=clamp(snap(w.x+dx),0,1-w.w);w.y=clamp(snap(w.y+dy),0,1-w.h);keepInFactorySide(d,w);}
 function resize(d,type,f){const w=d.widgets.find(a=>a.type===type);if(!w||w.locked)return;w.w=clamp(w.w*f,minimum(type)[0],1-w.x);w.h=clamp(w.h*f,minimum(type)[1],1-w.y);keepInFactorySide(d,w);}
@@ -171,16 +183,16 @@ function idrivePreset(index){
 }
 // Separate identifier: legacy preset numbers and saved designs remain unchanged.
 // The middle is reserved for native BMW content, including when widgets are moved.
-const FACTORY_REGIONS=Object.freeze([[0,0,.365,1],[.635,0,.365,1]].map(Object.freeze));
+// Paint the large side faces first, followed by only their small upper tips.
+// A changing needle in a tip must not invalidate the cached lower dial faces.
+const FACTORY_REGIONS=Object.freeze([[0,0,.40,1],[.60,0,.40,1],[.40,0,.02,.24],[.58,0,.02,.24]].map(Object.freeze));
+const FACTORY_LAYOUT={speed:[.035,.02,.37,.90],rpm:[.595,.02,.37,.90],fuel:[.01,.63,.075,.24],range:[.085,.90,.145,.07],coolant:[.655,.55,.18,.105],oil:[.915,.63,.075,.24],clock:[.235,.90,.13,.07],outside:[.84,.90,.15,.075]};
+const FACTORY_PREVIOUS={speed:[.015,.06,.35,.80],rpm:[.635,.06,.35,.80],fuel:[.125,.625,.115,.105],range:[.245,.625,.115,.105],coolant:[.64,.625,.115,.105],oil:[.76,.625,.115,.105],clock:[.075,.89,.20,.075],outside:[.815,.88,.14,.095]};
 function factoryPreset(){
  const d=preset(0);d.template='bmw-factory';d.name='BMW original style';d.gauge='bmw';
- d.background='gradient';d.borders=false;d.temperatureUnit='F';d.widgets.forEach(w=>w.on=false);
+ d.background='black';d.borders=false;d.temperatureUnit='F';d.widgets.forEach(w=>w.on=false);
  const put=(type,x,y,w,h)=>Object.assign(d.widgets.find(a=>a.type===type),{x,y,w,h,on:true});
- put('speed',.015,.06,.35,.80);put('rpm',.635,.06,.35,.80);
- // The original BMW badge remains visible through the native center.
- put('fuel',.125,.625,.115,.105);put('range',.245,.625,.115,.105);
- put('coolant',.64,.625,.115,.105);put('oil',.76,.625,.115,.105);
- put('clock',.075,.89,.20,.075);put('outside',.815,.88,.14,.095);
+ for(const type of Object.keys(FACTORY_LAYOUT))put(type,...FACTORY_LAYOUT[type]);
  // Hidden widgets start in a side slot, where adding one can actually show it.
  d.widgets.filter(w=>!w.on).forEach(w=>Object.assign(w,{x:.205,y:.51,w:.15,h:.13}));
  return validate(d);

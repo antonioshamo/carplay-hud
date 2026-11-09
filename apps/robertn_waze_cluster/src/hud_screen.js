@@ -14,7 +14,7 @@ class HudScreen extends EventEmitter {
   this.active=false;this.info=null;this.scale=1;this.closed=false;this.touch=null;this.ccu=null;this.last={};this.dirty=false;this.suspended=false;
   this.studio=new StudioScreen(()=>{this.dirty=true;});
   this.sentAt=0;this.reshowTimer=null;
-  this.presentation=null;this.lastAck=0;this.presentationSince=0;this.recoveryAttempts=0;this.presentationFailed=false;this.failureReason=null;
+  this.presentation=null;this.lastAck=0;this.presentationSince=0;this.recoveryAttempts=0;this.presentationFailed=false;this.failureReason=null;this.presented=false;this.retryAt=0;this.autoRetries=0;
   this.artworkReady=false;this.firstFrameSent=false;this.openedAt=Date.now();
   this.gpu.fps(60);
   this.gpu.on('ready',(screen,info)=>this._ready(info));
@@ -30,7 +30,7 @@ class HudScreen extends EventEmitter {
   this.gpu.on('touch',(p,x,y)=>this._touch(p,x,y));
   this.gpu.on('ccu',e=>this._ccu(e));
   this.gpu.on('tick',()=>{this.lastAck=Date.now();this._checkPresentation();if(this.active&&this.firstFrameSent&&!this.artworkReady){this.artworkReady=true;this.dirty=true;trace.record('settings-frame-ack','after '+(Date.now()-this.openedAt)+' ms; artwork follows');}if(this.dirty||Date.now()-this.motionAt<220||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
-  this.timer=setInterval(()=>{if(this.active){this._checkPresentation();if(this.active){this.observeClimate();this.render();}}},1000);
+  this.timer=setInterval(()=>{if(this.presentationFailed&&this.visible&&this.focused&&this.autoRetries<3&&Date.now()>=this.retryAt){this.autoRetries++;this.retry(false);}if(this.active){this._checkPresentation();if(this.active){this.observeClimate();this.render();}}},1000);
   if(this.timer.unref)this.timer.unref();
  }
  connect(){this.gpu.connect();this.studio.open();}
@@ -43,7 +43,7 @@ class HudScreen extends EventEmitter {
   // A legacy renderer without a foreground gate must never cover BMW screens.
   const b=info&&info.appArea;
   this.ready=!!(info&&info.frontGate&&Array.isArray(info.modes)&&info.modes.indexOf('layer')>=0&&b&&b.w>=800&&b.h>=300);
-  if(!this.ready){this.hide();this.emit('mode',false);return;}
+  if(!this.ready){this.failureReason='Compatible MGU Renderer required';this.hide();this.emit('mode',false);return;}
   this.scale=Math.min(b.w/view.W,b.h/view.H);
   this.gpu.mode('layer');
   this.gpu.place({x:b.x,y:b.y,w:b.w,h:b.h,scale:this.scale,ox:(b.w-view.W*this.scale)/2,oy:(b.h-view.H*this.scale)/2});
@@ -62,7 +62,11 @@ class HudScreen extends EventEmitter {
   now=now||Date.now();
   if(!this.active||!this.visible||!this.focused||this.suspended||this.closed)return;
   const shown=!!(this.presentation&&this.presentation.onScreen);
-  if(shown&&this.lastAck&&now-this.lastAck<2000){this.presentationSince=now;this.recoveryAttempts=0;return;}
+  if(shown&&this.lastAck&&now-this.lastAck<2000){this.presentationSince=now;this.recoveryAttempts=0;this.autoRetries=0;this.failureReason=null;this._presented(true);return;}
+  this._presented(false);
+  // BMW can temporarily own the screen (call, popup, delayed foreground).
+  // A socket reconnect cannot fix that gate. Keep this host and wait.
+  if(this.presentation&&!this.presentation.front){this.presentationSince=now;return;}
   if(now-this.presentationSince<2500)return;
   const reason=this.presentation&&!this.presentation.onScreen?
    (this.presentation.front?'Graphics surface is not visible':'Waiting for BMW screen ownership'):'Graphics frames are not being presented';
@@ -73,11 +77,13 @@ class HudScreen extends EventEmitter {
   this._presentationFailed(reason);
  }
  _presentationFailed(reason){
-  this.failureReason=reason;this.presentationFailed=true;
+  this.failureReason=reason;this.presentationFailed=true;this.retryAt=Date.now()+10000;
   trace.record('graphics-presentation-failed',reason);this.host.log.warn(reason);
   this.hide();this.emit('mode',false);
  }
- hide(){this.active=false;this.presentationSince=0;if(this.studio)this.studio.drag=null;this.touch=null;this.ccu=null;this.gpu.claim([]);this.gpu.grab(false);this.gpu.show(false);}
+ _presented(on){if(this.presented===on)return;this.presented=on;this.emit('presentation',on);}
+ retry(manual){if(this.closed)return;if(manual!==false)this.autoRetries=0;this.presentationFailed=false;this.failureReason=null;this.recoveryAttempts=0;this.suspended=false;if(!this.ready&&typeof this.gpu.reconnect==='function')this.gpu.reconnect();this.updateShow();}
+ hide(){this._presented(false);this.active=false;this.presentationSince=0;if(this.studio)this.studio.drag=null;this.touch=null;this.ccu=null;this.gpu.claim([]);this.gpu.grab(false);this.gpu.show(false);}
  render(force){
   if(!this.active||!this.ready||this.closed)return;
   // A hidden compositor surface may never acknowledge its previous frame.
@@ -145,7 +151,6 @@ class HudScreen extends EventEmitter {
    case 'restore-defaults':this.studio.pauseLive();this.studio.open();c.restoreDefaults(this.studio.client);break;
    case 'capture':c.capture();break;
    case 'restart':c.requestRestart();break;
-   case 'classic':this.host.classic();return true;
    case 'logs-prev':this.logPage=Math.max(0,this.logPage-1);break;
    case 'logs-next':this.logPage++;break;
    default:if(/^size:(40|60|75)$/.test(id))c.setHudSize(Number(id.split(':')[1]));else return false;

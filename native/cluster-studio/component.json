@@ -1,7 +1,7 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
   "description": "37 movable cluster widgets, fuel in every template, saved full-cluster layouts in Park, and live vehicle readings.",
@@ -147,6 +147,14 @@
     },
     {
       "path": "climate_controls.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/font_cluster.js",
+      "mode": "0644"
+    },
+    {
+      "path": "LICENSE-RussoOne.txt",
       "mode": "0644"
     }
   ],

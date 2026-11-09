@@ -171,198 +171,38 @@ function runSource() {
 
 /* ---- scenario ----------------------------------------------------------------- */
 
-async function main() {
-    const checkRhmi=require('./check_rhmi.js').check;
-    checkRhmi(XML,UI);
-    assert.throws(()=>checkRhmi(XML.replace('<property id="2"','<property id="1" value="1"/><property id="2"'),UI),/Enabled/);
-    const invalidUi=JSON.parse(JSON.stringify(UI));
-    const firstButton=Object.values(invalidUi.containers['1'].components).find(c=>c.type==='button');
-    firstButton.properties.Enabled={value:1,type:'UInt'};
-    assert.throws(()=>checkRhmi(XML,invalidUi),/startup properties/);
-    console.log('ok   RHMI startup contract rejects the removed static Enabled declarations');
-    const components = Object.assign({}, ...Object.values(UI.containers).map(c => c.components));
-    const buttons = Object.entries(components).filter(([, d]) => d.type === 'button');
-    const xmlButtons = [...XML.matchAll(/<component id="(\d+)" type="button"/g)].map(m => m[1]).sort();
-    assert.deepStrictEqual(buttons.map(([id]) => id).sort(), xmlButtons);
-    assert.equal(Object.keys(UI.containers).length, 15);
-    assert.equal(Object.keys(UI.containers['1'].components).length, 9, 'classic home has eight rows plus title');
-    assert(!Object.values(UI.containers['1'].components).some(c => /wocRow|wocEnable|wocDisable/.test(c.name)), 'technical rows stay off home');
-    assert.equal(APP_JSON.application.version, MANIFEST.version);
-    for (const [id, state] of Object.entries(UI.containers)) {
-        if (id === '1' || id === '20') continue;
-        const parent = state.properties.ParentState.value;
-        assert(UI.containers[parent]);
-        const xmlState = XML.split('<container id="' + id + '"')[1].split('</container>')[0];
-        assert(xmlState.includes('<property id="9" value="' + parent + '"/>'));
-        const seen = new Set([id]);let at = String(parent);
-        while(at !== '1') {assert(!seen.has(at));seen.add(at);at=String(UI.containers[at].properties.ParentState.value);}
-    }
-    console.log('ok   fourteen classic pages plus graphical host; XML and JSON agree');
-
-    const render = new FakeRender(RSOCK);
-    let patch = new FakePatch(PSOCK);
-    await render.listen();
-    await patch.listen();
-    patch.res = SIZE;
-    patch.safe = SAFE;
-    patch.announce('patched', 'high', null);
-    render.stream(true);
-    await until('fake showing', () => render.state === 'showing');
-
-    try {
-        process.exit = (code) => { throw new Error(`process.exit(${code})`); };
-        runSource();
-        const status = byName.wocStatus;
-        await until('page shows the map', () => status.text === 'Map active on cluster');
-        assert(!logs.some((l) => /^error/.test(l)), logs.filter((l) => /^error/.test(l)).join('\n'));
-        const bound = logs.filter((l) => l.startsWith('info: BIND OK: ')).map((l) => l.split(' ')[3]).sort();
-        assert.deepStrictEqual(bound, buttons.map(([, d]) => d.name).sort(), 'every native button is bound');
-        assert.strictEqual(byName.wocRestart.visible, false, 'restart button hidden while the map shows');
-        console.log('ok   a page opened while the map is up shows it');
-        byName.wocSizePage.emit('action');
-        await until('size page opens', () => openedPages.includes('ST_WOC_Size'));
-        byName.ST_OnlineApps_WazeCluster.emit('visible', {visible: false});
-        byName.ST_WOC_Size.emit('visible', {visible: true});
-        assert.equal(render._clients.size, 1, 'moving to a settings page keeps the socket open');
-        assert.equal(byName.wocHudSize.enabled, false, 'HUD adjustments disabled in cluster mode');
-        console.log('ok   native page navigation retains controls; cluster mode disables HUD adjustments');
-        for (const [button, state] of [['wocStartupPage','ST_WOC_Startup'], ['wocDisplayPage','ST_WOC_Display'], ['wocPresetsPage','ST_WOC_Presets'],
-            ['wocAppearancePage','ST_WOC_Appearance'], ['wocHorizontalPage','ST_WOC_Horizontal'],
-            ['wocVerticalPage','ST_WOC_Vertical'], ['wocTroubleshootPage','ST_WOC_Troubleshoot']]) {
-            assert.equal(byName[button].enabled,true,'navigation explicitly enabled');
-            byName[button].emit('action');
-            await until(state, () => openedPages.includes(state));
-        }
-        assert.equal(byName.wocOriginalColors.enabled, false);
-        assert.equal(byName.wocCorners.enabled, false);
-        console.log('ok   customization pages open; unsupported appearance controls are disabled');
-
-        // Primary recovery controls MUST work even if openState is absent.
-        const openState = rhmi.openState;
-        delete rhmi.openState;
-        const acknowledgeTarget = m => {
-            if (m.cmd === 'target') patch._broadcast({ev:'target-reply',ok:true,target:m.target});
-        };
-        patch.on('command', acknowledgeTarget);
-        byName.wocDisplay.emit('action');
-        await until('direct HUD applied and saved', () => instance._control.displayTarget() === 'hud' && !instance._control._busy());
-        assert.match(byName.wocDisplay.text,/HUD selected/);
-        assert(render.received.some(m => m.cmd === 'start' && m.target === 'hud'));
-        rhmi.emit('userEvent',{eventType:'ACTION',sourceId:byName.wocDisplay.getId()});
-        await sleep(20);
-        assert.equal(render.received.filter(m=>m.cmd==='start').length,1,'duplicate component/raw press applies once');
-        await sleep(410);
-        rhmi.emit('userEvent',{eventType:'ACTION',sourceId:byName.wocDisplay.getId()});
-        await until('direct cluster applied and saved', () => instance._control.displayTarget() === 'map' && !instance._control._busy());
-        // A failed page change is reported, rather than silently doing nothing.
-        await instance._openPage('ST_WOC_Size');
-        assert.match(status.text,/Page could not open/);
-        rhmi.openState = openState;
-        patch.removeListener('command',acknowledgeTarget);
-        render.received.length=0;
-        console.log('ok   direct HUD works without page API; raw/normal press dedupes; navigation errors visible');
-
-        await graphics.listen();
-        await until('modern host selected',()=>instance._modern && instance._design.active);
-        assert.equal(mappedState,byName.ST_WOC_Design);
-        await until('actual graphic frame',()=>graphics.count(7)>0);
-        byName.ST_WOC_Design.emit('focus',{focus:false});
-        assert.equal(instance._design.active,false,'real state focus field hides the overlay');
-        byName.ST_WOC_Design.emit('focus',{focus:true});
-        assert(instance._design.active);
-        instance._design.page='support';instance._design.render();
-        await until('classic control ready',()=>instance._design.items.some(b=>b.id==='classic'));
-        instance._design.press(instance._design.items.findIndex(b=>b.id==='classic'));
-        await until('classic restored',()=>!instance._modern&&mappedState===byName.ST_OnlineApps_WazeCluster);
-        assert(!instance._design.active);
-        byName.wocModern.emit('action');
-        await until('modern restored',()=>instance._modern&&instance._design.active);
-        graphics.onScreen=false;graphics.front=false;
-        instance._design.render(true);
-        await until('graphics reports hidden',()=>instance._design.presentation&&!instance._design.presentation.onScreen);
-        const attempts=graphics.count(1);
-        instance._design._checkPresentation(instance._design.presentationSince+2501);
-        await until('one presentation reconnect',()=>graphics.count(1)===attempts+1&&instance._modern&&instance._design.active&&instance._design.lastAck);
-        instance._design._checkPresentation(instance._design.presentationSince+2501);
-        await until('proxy list replaced by functional native home',()=>!instance._modern&&mappedState===byName.ST_OnlineApps_WazeCluster&&instance._design.presentationFailed);
-        assert.equal(byName.wocModern.text,'Retry graphical menu');
-        assert(byName.wocModern.enabled&&byName.wocSizePage.enabled);
-        graphics.onScreen=true;graphics.front=true;
-        await sleep(410); // manual watchdog acceleration must not hit press deduplication
-        byName.wocModern.emit('action');
-        await until('manual presentation retry',()=>instance._modern&&instance._design.active&&instance._design.presentation&&instance._design.presentation.onScreen&&!instance._design.presentationFailed);
-        console.log('ok   hidden graphics fall back to usable native settings; explicit retry restores the modern page');
-        await graphics.close();
-        await until('renderer loss returns to classic',()=>!instance._modern&&mappedState===byName.ST_OnlineApps_WazeCluster);
-        assert(!instance._design.active);
-        console.log('ok   graphical entry, actual focus event, Classic button, return to modern and disconnect fallback');
-
-
-        await until('patched: Disable map only', () => byName.wocDisable.visible === true && byName.wocDisable.enabled === true &&
-            byName.wocEnable.visible === false && byName.wocEnable.enabled === false);
-        byName.wocDisable.emit('action');
-        await until('reverted', () => patch.count('revert') === 1 && !patch.busy && patch.state === 'original');
-        await until('original: Enable map only', () => byName.wocEnable.visible === true && byName.wocEnable.enabled === true &&
-            byName.wocDisable.visible === false);
-        ['wocEnable', 'wocCapture'].forEach((name) => byName[name].emit('action'));
-        await until('apply and capture sent', () => patch.count('apply') === 1 && patch.count('capture-start') === 1 && !patch.busy);
-        assert.deepStrictEqual(render.received, [], 'no command to the render');
-        console.log('ok   Disable map while patched, Enable map while not; presses go to the patch daemon, none to the render');
-
-        instance.emit('changeVisibility', { visible: false });
-        /* the page's own; the driver-profile link to patchd stays (profile_sync.js) */
-        await until('sockets closed', () => render._clients.size === 0 && patch._clients.size === 1);
-        console.log('ok   hiding the page closes both sockets');
-
-        render.stream(false);
-        patch.announce('patched', 'high', null);
-        byName.ST_OnlineApps_WazeCluster.emit('visible', { visible: true });
-        await until('page reads the current state', () => status.text === 'Waiting for a CarPlay map');
-        console.log('ok   a page opened again reads the render\'s current state');
-
-        /* The patch the install wrote, from the daemon: its line, no Enable
-         * or Disable, the restart offered. */
-        patch.pending = 'apply';
-        patch.announce('unknown', 'high', 'patch written; takes effect at the next head-unit start', 'deferred');
-        await until('pending on screen', () => status.text === 'Patch pending — reboot to activate' &&
-            byName.wocEnable.visible === false && byName.wocDisable.visible === false &&
-            byName.wocRestart.visible === true && byName.wocRestart.enabled === true);
-        console.log('ok   a pending patch from the daemon: its line, no Enable or Disable, the restart offered');
-
-        /* Before the head-unit start that starts the daemon: from the marker. */
-        instance.emit('changeVisibility', { visible: false });
-        await until('closed', () => patch._clients.size === 1);
-        await patch.close();
-        fs.writeFileSync(PENDING, JSON.stringify({ action: 'apply' }) + '\n');
-        byName.ST_OnlineApps_WazeCluster.emit('visible', { visible: true });
-        await until('pending from the marker', () => status.text === 'Patch pending — reboot to activate' &&
-            byName.wocEnable.visible === false && byName.wocDisable.visible === false && byName.wocRestart.visible === false);
-        console.log('ok   installed, the daemon not yet running: the marker\'s pending patch, no buttons');
-
-        /* The daemon up with the pending patch: the restart press reboots once. */
-        patch = new FakePatch(PSOCK);
-        await patch.listen();
-        patch.pending = 'apply';
-        patch.announce('unknown', 'high', 'patch written; takes effect at the next head-unit start', 'deferred');
-        await until('restart offered', () => byName.wocRestart.visible === true && byName.wocRestart.enabled === true);
-        byName.wocRestart.emit('action');
-        await until('rebooted once', () => patch.reboots === 1);
-        await until('restarting on screen', () => status.text === 'Restarting head unit…' && byName.wocRestart.enabled === false);
-        console.log('ok   pressing the restart button reboots the unit once');
-    } finally {
-        instance._design.close();
-        await graphics.close();
-        await render.close();
-        await patch.close();
-        [RSOCK, PSOCK, PENDING].forEach((p) => { try { fs.unlinkSync(p); } catch (e) { /* gone */ } });
-    }
+async function main(){
+ require('./check_rhmi').check(XML,UI);
+ assert.deepEqual(Object.keys(UI.containers),['20'],'only the graphical host is shipped');
+ assert(!/ST_OnlineApps_WazeCluster|wocModern|wocQuickStartup|Classic settings/.test(JSON.stringify(UI)));
+ for(let i=0;i<24;i++)assert.equal(byName['designProxy'+i].visible,false,'proxy labels start hidden');
+ const render=new FakeRender(RSOCK),patch=new FakePatch(PSOCK);
+ await render.listen();await patch.listen();await graphics.listen();
+ try{
+  runSource();await until('graphical dashboard',()=>instance._design&&instance._design.presented);
+  await until('native loading cleared',()=>byName.designStatus.text==='');
+  assert.equal(mappedState,byName.ST_WOC_Design);assert(openedPages.every(n=>n==='ST_WOC_Design'));
+  const h=instance._design;assert.equal(h.page,'overview');
+  assert(!h.items.some(b=>b.id==='classic'));
+  console.log('PASS tile opens graphical dashboard directly; no classic pages in package');
+  for(const page of ['layout','appearance','startup','support']){
+   h.page=page;h.render();assert(!h.items.some(b=>b.id==='classic'));
+  }
+  graphics.send(103,Buffer.from('test lost surface'));await until('recovery message',()=>byName.designRetry.visible);
+  assert.equal(mappedState,byName.ST_WOC_Design);assert(openedPages.every(n=>n==='ST_WOC_Design'));
+  await until('proxy labels hidden',()=>Array.from({length:24},(_,i)=>byName['designProxy'+i]).every(c=>c.text===''&&!c.visible));
+  assert(!byName.designStatus.text.includes('Select Retry graphical menu'));
+  byName.designRetry.emit('action');await until('same host recovered',()=>h.presented&&!byName.designRetry.visible);
+  console.log('PASS surface failure stays on same host, hides raw proxies and retries graphical dashboard');
+  byName.ST_WOC_Design.emit('focus',{focus:false});assert(!h.active);
+  byName.ST_WOC_Design.emit('focus',{focus:true});await until('focus restored',()=>h.presented);
+  instance._setVisible(false);assert(!h.active);
+  await instance._onEntryPointExecute(APP_JSON.application.entryPoints[0].uuid);await until('reentered',()=>h.presented);
+  assert(openedPages.length>=2&&openedPages.every(n=>n==='ST_WOC_Design'));
+  console.log('PASS popup, exit and repeated entry preserve the new menu');
+ }finally{
+  if(instance){if(instance._design)instance._design.close();instance._control.close();if(instance._profiles)instance._profiles.stop();}
+  await graphics.close();await render.close();await patch.close();
+ }
 }
-
-/* The app's sockets keep retrying, so the run ends here. */
-main().then(() => {
-    console.log('all passed');
-    exit(0);
-}, (err) => {
-    console.log(`FAIL ${err && err.stack}`);
-    exit(1);
-});
+main().catch(e=>{console.error(e.stack);process.exitCode=1;});

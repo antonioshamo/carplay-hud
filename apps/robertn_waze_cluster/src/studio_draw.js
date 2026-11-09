@@ -2,28 +2,18 @@
 'use strict';
 const M=require('./studio_model.js');
 function draw(r,d,b,data,options){
- // A permanent native center, including BMW's own badge. Feather only
- // the background into that center; never fade the live numbers or warnings.
+ // Keep the native center available while its active-state feed is unverified.
+ // Side coverage must be fully opaque to hide the underlying OEM dial numbers.
  if(d.template==='bmw-factory'&&!(options&&options.factoryPass)){
   if(d.background!=='transparent'){
-   const feather=128*b.w/1920,side=.365*b.w;
-   const colors=d.background==='black'?[[3,5,7],[3,5,7],[3,5,7]]:[[29,36,48],[24,30,40],[21,27,37]];
-   // Quantize adjacent boundaries together: fractional rectangles otherwise
-   // blend twice at shared edge pixels and create visible vertical seams.
-   const paint=(x,w,alpha)=>r.gradientRect(Math.round(x),b.y,Math.round(x+w)-Math.round(x),b.h,[0,.7,1].map((t,i)=>[t,colors[i].concat(alpha)]));
-   for(const right of [false,true]){
-    const edge=b.x+(right?.635:.365)*b.w;
-    paint(right?edge+feather:b.x,side-feather,255);
-    for(let i=0;i<48;i++){
-     const t=(i+.5)/48,alpha=Math.round(255*t*t*(3-2*t));
-     paint(right?edge+i*feather/48:edge-(i+1)*feather/48,feather/48,alpha);
-    }
-   }
+   // Opaque black is essential: alpha fades expose the factory numerals and
+   // readouts beneath the recreated gauges (confirmed by the owner's photo).
+   for(const z of M.FACTORY_REGIONS){const x=Math.round(b.x+z[0]*b.w),y=Math.round(b.y+z[1]*b.h);r.fillRect(x,y,Math.round(b.x+(z[0]+z[2])*b.w)-x,Math.round(b.y+(z[1]+z[3])*b.h)-y,'#000000');}
   }
   for(const z of M.FACTORY_REGIONS){
    const widgets=d.widgets.filter(w=>w.x<z[0]+z[2]&&w.x+w.w>z[0]&&w.y<z[1]+z[3]&&w.y+w.h>z[1]);
    r.clip(b.x+z[0]*b.w,b.y+z[1]*b.h,z[2]*b.w,z[3]*b.h);
-   draw(r,Object.assign({},d,{widgets,background:'transparent'}),b,data,Object.assign({},options,{factoryPass:true}));
+   draw(r,Object.assign({},d,{widgets,background:'transparent'}),b,data,Object.assign({},options,{factoryPass:true,factoryClip:z}));
    r.noclip();
   }
   return;
@@ -32,13 +22,14 @@ function draw(r,d,b,data,options){
  const rect=(x,y,w,h,c,rad)=>r.roundRect(b.x+x*sx,b.y+y*sy,w*sx,h*sy,(rad||0)*scale,c);
  // Anchor readouts to their widget center. Measure the actual glyph advances
  // so narrow widgets, long names and changing digit counts remain centered.
- const text=(s,cx,y,size,c,width)=>{
-  const value=String(s),opts={font:'bold',align:'center'};
+ const text=(s,cx,y,size,c,width,font)=>{
+  const value=String(s),opts={font:font||'bold',align:'center'};
   let pixels=size*scale;
   if(width&&r.textWidth){const measured=r.textWidth(value,pixels,opts);if(measured>width*sx)pixels*=width*sx/measured;}
   return r.text(value,b.x+cx*sx,b.y+y*sy,pixels,c||'#f3f5ff',opts);
  };
  const line=(x,y,xx,yy,n,c)=>r.line(b.x+x*sx,b.y+y*sy,b.x+xx*sx,b.y+yy*sy,n*scale,c);
+ const visible=(x,y,w,h)=>!o.factoryClip||x+w>o.factoryClip[0]*1920&&x<(o.factoryClip[0]+o.factoryClip[2])*1920&&y+h>o.factoryClip[1]*720&&y<(o.factoryClip[1]+o.factoryClip[3])*720;
  if(d.gauge==='ultra'&&d.background==='gradient')r.gradientRect(b.x,b.y,b.w,b.h,[[0,'#062c3a'],[.7,'#07151b'],[1,'#000000']]);
  else if(d.background==='gradient')r.gradientRect(b.x,b.y,b.w,b.h,[[0,t[3]],[.7,'#060a11'],[1,'#020408']]);
  else if(d.background==='black')r.fillRect(b.x,b.y,b.w,b.h,'#030507');
@@ -56,29 +47,53 @@ function draw(r,d,b,data,options){
    const quad=(pts,col)=>r.quad(pts.map(q=>[b.x+q[0]*sx,b.y+q[1]*sy]),col);
    // Cubic curves follow the rounded, open factory dials. Sample the same
    // curve for face, ticks and needle so no corner or speed discontinuity exists.
-   const curves=[[[.76,.94],[.42,.96],[.16,.89],[.07,.72]],[[.07,.72],[.005,.60],[.005,.44],[.075,.32]],[[.075,.32],[.18,.12],[.50,.04],[.76,.035]],[[.76,.035],[.84,.032],[.92,.035],[.98,.035]]];
-   const rail=[];
-   for(const c of curves)for(let j=0;j<16;j++){
-    const t=j/16,u=1-t;
-    rail.push(p(u*u*u*c[0][0]+3*u*u*t*c[1][0]+3*u*t*t*c[2][0]+t*t*t*c[3][0],u*u*u*c[0][1]+3*u*u*t*c[1][1]+3*u*t*t*c[2][1]+t*t*t*c[3][1]));
+   // The factory silhouette is a rounded trapezoid, not an oval: a flat
+   // foot, curved outer shoulder and long rising top rail. A separate inner
+   // contour gives the dial its broad, tapered face rather than a thin ring.
+   const curves=[[[.66,.95],[.53,.95],[.37,.95],[.27,.95]],[[.27,.95],[.18,.95],[.12,.83],[.075,.72]],[[.075,.72],[.025,.57],[.01,.44],[.07,.34]],[[.07,.34],[.16,.20],[.28,.10],[.40,.07]],[[.40,.07],[.57,.0275],[.79,.015],[.97,.025]]];
+   const inner=[[[.66,.95],[.70,.92],[.76,.88],[.80,.84]],[[.80,.84],[.79,.81],[.75,.71],[.73,.65]],[[.73,.65],[.70,.58],[.66,.50],[.68,.45]],[[.68,.45],[.68,.37],[.78,.23],[.85,.18]],[[.85,.18],[.91,.10],[.95,.04],[.97,.025]]];
+   const sample=cs=>{const pts=[];for(const c of cs)for(let j=0;j<16;j++){const t=j/16,u=1-t;pts.push(p(u*u*u*c[0][0]+3*u*u*t*c[1][0]+3*u*t*t*c[2][0]+t*t*t*c[3][0],u*u*u*c[0][1]+3*u*u*t*c[1][1]+3*u*t*t*c[2][1]+t*t*t*c[3][1]));}const end=cs[cs.length-1][3];pts.push(p(end[0],end[1]));return pts;};
+   const rail=sample(curves),face=sample(inner),center=p(.78,.52);
+   const edge=rail.map(q=>{const dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy),inset=Math.min(ww,hh)*.024;return [q[0]+dx/len*inset,q[1]+dy/len*inset];});
+   // Shared slanted quad edges leave spoke-like seams in the CPU renderer.
+   // Fill horizontal bands with shared pixel boundaries instead. The face is
+   // static artwork, so the frame cache keeps it out of live-value redraws.
+   const outline=rail.concat(face.slice().reverse()),crossings=yy=>{
+    const xs=[];for(let i=0;i<outline.length;i++){const a=outline[i],c=outline[(i+1)%outline.length];if((a[1]>yy)!==(c[1]>yy))xs.push(a[0]+(yy-a[1])*(c[0]-a[0])/(c[1]-a[1]));}return xs.sort((a,c)=>a-c);
+   };
+   const top=Math.ceil(Math.min(...rail.map(q=>q[1]))*sy+b.y),bottom=Math.floor((y+hh*.95)*sy+b.y);
+   for(let yy=top;yy<bottom;yy+=3){
+    const end=Math.min(bottom,yy+3),a=crossings((yy-b.y+.01)/sy),c=crossings((end-b.y-.01)/sy);
+    const shade=Math.round(39+10*(1-(yy-top)/(bottom-top)));
+    if(a.length===2&&c.length===2)r.quad([[b.x+a[0]*sx,yy],[b.x+a[1]*sx,yy],[b.x+c[1]*sx,end],[b.x+c[0]*sx,end]],[shade,shade+3,shade+10,255]);
    }
-   rail.push(p(.98,.035));
-   const center=p(.56,.51),edge=rail.map(q=>{const dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy),inset=Math.min(ww,hh)*.048;return [q[0]+dx/len*inset,q[1]+dy/len*inset];});
-   for(let i=0;i<rail.length-1;i++)quad([rail[i],rail[i+1],edge[i+1],edge[i]],'#202731');
-   poly(rail,2.5,accent);poly(edge,1,'#67717d');
+   poly(face,1,'#414754');poly(rail,2.6,accent);poly(edge,.8,'#8c949e');
    const lengths=[0];for(let i=1;i<rail.length;i++)lengths.push(lengths[i-1]+Math.hypot(rail[i][0]-rail[i-1][0],rail[i][1]-rail[i-1][1]));
    const total=lengths[lengths.length-1],at=f=>{const dist=f*total;let i=0;while(i<rail.length-2&&dist>lengths[i+1])i++;const k=(dist-lengths[i])/(lengths[i+1]-lengths[i]);return [rail[i][0]+(rail[i+1][0]-rail[i][0])*k,rail[i][1]+(rail[i+1][1]-rail[i][1])*k];};
+   const ticks=[.035,.13,.24,.35,.46,.57,.67,.76,.84,.92,.98];
+   const dialAt=f=>{const v=M.clamp(f,0,1)*10,i=Math.min(9,Math.floor(v));return at(ticks[i]+(ticks[i+1]-ticks[i])*(v-i));};
+   const glow=[dialAt(0),dialAt(.14)];
+   for(let j=0;j<8;j++){
+    const inset=(q,depth)=>{const dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy);return [q[0]+dx/len*depth,q[1]+dy/len*depth];};
+    quad([inset(glow[0],j*9),inset(glow[1],j*9),inset(glow[1],(j+1)*9),inset(glow[0],(j+1)*9)],[204,15,31,Math.round(90*Math.pow(1-j/8,2))]);
+   }
    const steps=mirror?8:10;
    for(let i=0;i<=steps*2;i++){
-    const q=at(i/(steps*2)),dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy),major=i%2===0;
+    const q=dialAt(i/(steps*2)),dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy),major=i%2===0;
     const end=[q[0]+dx/len*(major?18:10),q[1]+dy/len*(major?18:10)];line(q[0],q[1],end[0],end[1],major?2:1.1,accent);
-    if(major){const tick=mirror?i/2:Math.round(max*i/(steps*2));text(tick,q[0]+dx/len*39,q[1]+dy/len*39+8,Math.min(26,hh*.048),'#dce3eb',ww*.13);}
+    if(major){const tick=mirror?i/2:Math.round(max*i/(steps*2));text(tick,q[0]+dx/len*43,q[1]+dy/len*43+10,Math.min(32,hh*.060),'#e9ebeb',ww*.15,'cluster');}
    }
-   if(mirror)poly([at(.83),at(.88),at(.94),at(1)],5,red);
-   if(val!=null){const q=at(fraction),dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy);poly([q,[q[0]+dx/len*72,q[1]+dy/len*72]],6,red);}
-   text(label,center[0],y+hh*.43,22,'#adb8c5',ww*.50);
-   text(n,center[0],y+hh*.60,Math.min(100,ww/(Math.max(n.length,3)*.72),hh*.20),w.color&&w.color!=='theme'?w.color:'#f3f5f8',ww*.55);
-   text(unit,center[0],y+hh*.68,26,'#c5ced9',ww*.48);
+   if(mirror)poly([dialAt(.83),dialAt(.88),dialAt(.94),dialAt(1)],5,red);
+   if(val!=null){const q=dialAt(fraction),dx=center[0]-q[0],dy=center[1]-q[1],len=Math.hypot(dx,dy),end=[q[0]+dx/len*42,q[1]+dy/len*42];if(visible(Math.min(q[0],end[0])-3,Math.min(q[1],end[1])-3,Math.abs(q[0]-end[0])+6,Math.abs(q[1]-end[1])+6))poly([q,end],5,red);}
+   const readout=p(.80,.51),size=Math.min(mirror?68:78,ww/(Math.max(n.length,3)*1.6),hh*.14),unitSize=18;
+   const measure=(s,size,font)=>r.textWidth?r.textWidth(s,size*scale,{font})/scale:String(s).length*size*.62;
+   const numberWidth=measure(n,size,'cluster'),unitWidth=measure(unit,unitSize,'bold'),gap=9;
+   const start=readout[0]-(numberWidth+gap+unitWidth)/2;
+   if(visible(start,y+hh*.52-size,numberWidth+gap+unitWidth,size*1.25)){
+    text(n,start+numberWidth/2,y+hh*.52,size,w.color&&w.color!=='theme'?w.color:'#f3f5f8',ww*.38,'cluster');
+    text(unit,start+numberWidth+gap+unitWidth/2,y+hh*.52,unitSize,'#c5ced9',ww*.15);
+   }
+   const ruleStart=p(.26,.55),ruleEnd=p(.96,.55);line(ruleStart[0],ruleStart[1],ruleEnd[0],ruleEnd[1],1.2,'#78818c');
   }else if(mode==='id8'||mode==='id8-slim'){
    // Open hexagonal rails: each gauge remains an independently movable widget.
    // Geometry is static before the live rail/readout, so the frame cache can reuse it.
@@ -157,25 +172,40 @@ function draw(r,d,b,data,options){
    if(mode==='bar'){rect(x+22,y+hh-66,ww-44,12,'#283347',6);if(val!=null)rect(x+22,y+hh-66,(ww-44)*M.clamp(val/max,0,1),12,accent,6);}
   }
  };
+ const auxiliary=(w,reading,min,max)=>{
+  const x=w.x*1920,y=w.y*720,ww=w.w*1920,hh=w.h*720,right=w.type==='oil',color=w.color&&w.color!=='theme'?w.color:t[1];
+  const p=(u,v)=>[x+(right?1-u:u)*ww,y+v*hh],curves=[[[.77,.04],[.32,.04],[.10,.30],[.10,.50]],[[.10,.50],[.10,.70],[.32,.96],[.77,.96]]],rail=[];
+  for(const c of curves)for(let i=0;i<16;i++){const a=i/16,z=1-a;rail.push(p(z*z*z*c[0][0]+3*z*z*a*c[1][0]+3*z*a*a*c[2][0]+a*a*a*c[3][0],z*z*z*c[0][1]+3*z*z*a*c[1][1]+3*z*a*a*c[2][1]+a*a*a*c[3][1]));}rail.push(p(.77,.96));
+  const edgeX=p(.77,.5)[0];for(let yy=Math.ceil(y+hh*.04);yy<y+hh*.96;yy+=2){const hits=[];for(let i=0;i<rail.length-1;i++){const a=rail[i],z=rail[i+1];if(yy>=Math.min(a[1],z[1])&&yy<Math.max(a[1],z[1]))hits.push(a[0]+(z[0]-a[0])*(yy-a[1])/(z[1]-a[1]));}if(hits.length){const lo=Math.min(edgeX,...hits),hi=Math.max(edgeX,...hits);r.fillRect(b.x+lo*sx,b.y+yy*sy,(hi-lo)*sx,2*sy,'#171c25');}}
+  const inner=rail.map(q=>[q[0]+(right?-1:1)*ww*.12,q[1]]);
+  for(let i=0;i<rail.length-1;i++)r.quad([rail[i],rail[i+1],inner[i+1],inner[i]].map(q=>[b.x+q[0]*sx,b.y+q[1]*sy]),'#353a42');
+  r.polyline(rail.map(q=>[b.x+q[0]*sx,b.y+q[1]*sy]),2*scale,color);
+  for(const i of [0,8,16,24,32]){const q=rail[i];line(q[0],q[1],q[0]+(right?-1:1)*ww*.13,q[1],1.5,color);}
+  if(reading.available){const f=M.clamp((Number(reading.value)-min)/(max-min),0,1),q=rail[Math.round((1-f)*32)];line(q[0],q[1],q[0]+(right?-1:1)*ww*.12,q[1],4,'#ed3541');}
+  const center=p(.5,.5);text(reading.label,center[0],y+hh*.36,Math.min(18,ww*.13),'#b7bec8',ww*.78);
+  text(reading.value+reading.unit,center[0],y+hh*.59,Math.min(33,ww*.22),reading.available?(reading.alert||(w.type==='fuel'&&data.fuelWarning==='LOW FUEL')?'#ffbc55':'#eff1f3'):'#8192a8',ww*.54,'cluster');
+ };
  for(const w of d.widgets){if(!w.on)continue;const x=w.x*1920,y=w.y*720,ww=w.w*1920,hh=w.h*720;
   const val=data[w.type],accent=w.color&&w.color!=='theme'?w.color:t[1];
   if(w.type==='speed')gauge(w,val==null?null:d.units==='mph'?val/1.609344:val,((w.gauge==='bmw'||((!w.gauge||w.gauge==='inherit')&&d.gauge==='bmw'))?(d.units==='mph'?200:320):(d.units==='mph'?160:260)),'SPEED',d.units);
   else if(w.type==='rpm')gauge(w,val,8000,'ENGINE','RPM');
   else if(w.type==='gear'){if(d.borders)rect(x,y,ww,hh,'#1b273a',20);text(val==null?'—':val,x+ww/2,y+hh*.72,hh*.62,accent,ww*.9);}
-  else if(w.type==='clock')text(time,x+ww/2,y+hh*.74,hh*.68,accent,ww*.94);
+  else if(w.type==='clock')text(time,x+ww/2,y+hh*.74,d.template==='bmw-factory'?Math.min(32,hh*.68):hh*.68,accent,ww*.94,d.template==='bmw-factory'?'cluster':undefined);
   else if(w.type==='date'){const s=['SUN','MON','TUE','WED','THU','FRI','SAT'][now.getDay()]+' / '+(now.getMonth()+1)+'.'+now.getDate();text(s,x+ww/2,y+hh*.73,Math.min(36,hh*.7),'#acb9ca',ww*.94);}
   else if(w.type==='badge'){text('X4 M',x+ww/2,y+hh*.53,Math.min(ww*.25,hh*.6),accent,ww*.9);text('C O M P E T I T I O N',x+ww/2,y+hh*.88,Math.min(ww*.047,hh*.21),'#d1d9e5',ww*.9);}
   else if(w.type==='flag')flag(x,y,ww,hh);
   else if(w.type==='accent'){['#53bdeb','#3457aa','#e5475b'].forEach((c,i)=>rect(x+i*ww/3,y,ww/3-6,hh,c,3));}
   else if(w.type==='signature')text(d.signature||M.TITLES[d.title],x+ww/2,y+hh*.75,hh*.65,accent,ww*.94);
   else if(w.type==='connection')text(data.connected?'VEHICLE DATA / LIVE':'VEHICLE DATA / UNAVAILABLE',x+ww/2,y+hh*.75,hh*.7,'#acb9ca',ww*.94);
+  else if(d.template==='bmw-factory'&&w.type==='fuel'&&hh>ww*.9)auxiliary(w,M.reading('fuel',d,data),0,100);
+  else if(d.template==='bmw-factory'&&w.type==='oil'&&hh>ww*.9){const f=d.temperatureUnit==='F',v=val==null?null:Math.round(f?val*1.8+32:val);auxiliary(w,{label:'OIL',value:v==null?'—':String(v),unit:'°'+d.temperatureUnit,available:v!=null},f?120:50,f?300:150);}
   else if(M.METRICS[w.type]){
    const reading=M.reading(w.type,d,data),cx=x+ww/2,col=reading.alert||(w.type==='fuel'&&data.fuelWarning==='LOW FUEL')?'#ffbc55':accent;
    text(reading.label,cx,y+hh*.25,Math.min(23,hh*.24),'#acb9ca',ww*.94);
-   text(reading.value+(reading.unit?' '+reading.unit:''),cx,y+hh*.79,Math.min(46,hh*.48),reading.available?col:'#8192a8',ww*.94);
+   text(reading.value+(reading.unit?(reading.unit==='%'?'':' ')+reading.unit:''),cx,y+hh*.79,Math.min(d.template==='bmw-factory'?34:46,hh*.48),reading.available?col:'#8192a8',ww*.94,d.template==='bmw-factory'?'cluster':undefined);
    if(!reading.available)text('UNAVAILABLE',cx,y+hh*.99,Math.min(15,hh*.18),'#8192a8',ww*.94);
   }
-  else {const label=w.type==='oil'?'OIL':'COOLANT';text(label,x+ww/2,y+hh*.29,Math.min(23,hh*.3),'#acb9ca',ww*.94);text(val==null?'— °'+(d.temperatureUnit||'C'):Math.round(d.temperatureUnit==='F'?val*1.8+32:val)+' °'+(d.temperatureUnit||'C'),x+ww/2,y+hh*.85,Math.min(48,hh*.56),accent,ww*.94);}
+  else {const label=w.type==='oil'?'OIL':'COOLANT';text(label,x+ww/2,y+hh*.29,Math.min(23,hh*.3),'#acb9ca',ww*.94);text(val==null?'— °'+(d.temperatureUnit||'C'):Math.round(d.temperatureUnit==='F'?val*1.8+32:val)+' °'+(d.temperatureUnit||'C'),x+ww/2,y+hh*.85,Math.min(d.template==='bmw-factory'?34:48,hh*.56),accent,ww*.94,d.template==='bmw-factory'?'cluster':undefined);}
   if(o.selected===w.type)r.strokeRoundRect(b.x+x*sx,b.y+y*sy,ww*sx,hh*sy,8*scale,2,'#56bdff');
  }
 }
