@@ -1,4 +1,4 @@
-name: Verify and publish cockpit menus
+name: Verify and publish BMW gauge refinement
 on:
   workflow_dispatch:
 permissions:
@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-menu-0150.bundle ]; then
-            echo '606242c8cf9b5b7542ba7859c1f1b7b5ff3755c8863428f76e18a96e629dea17  bmw-menu-0150.bundle' | sha256sum -c -
-            git bundle verify bmw-menu-0150.bundle
-            git fetch ./bmw-menu-0150.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = 'be4d682e8fee860884f73b4c0b50a07abd625f1f'
+          if [ -f bmw-gauges-0151.bundle ]; then
+            echo '4d62b62b3a71b96be845c6fefad081bd6caf7d7c294b09dbb2ce408745912380  bmw-gauges-0151.bundle' | sha256sum -c -
+            git bundle verify bmw-gauges-0151.bundle
+            git fetch ./bmw-gauges-0151.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = 'f034b17ff105ccecf5a6beadedf686971f6a73ec'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-menu-0150.bundle
+            git rm bmw-gauges-0151.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor be4d682e8fee860884f73b4c0b50a07abd625f1f HEAD
+          git merge-base --is-ancestor f034b17ff105ccecf5a6beadedf686971f6a73ec HEAD
       - name: Replay menu with installed Renderer 0.6.15
         run: |
           set -eu
@@ -70,7 +70,7 @@ jobs:
           node release/test/release_test.js
       - name: Verify reproducible app and helper artifacts
         run: node release/release.js check cluster-studio robertn_waze_cluster
-      - name: Publish direct dashboard 0.4.150 and black BMW gauges 0.1.27
+      - name: Publish gauge refinement 0.4.151 and Cluster Studio 0.1.28
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
