@@ -43,4 +43,4 @@ const sizes=source.sizes.map(s=>{
  return {size:s.size,ascent:s.ascent,descent:s.descent,atlasW:1024,atlasH:height,alpha:zlib.deflateSync(atlas,{level:9}).toString('base64'),glyphs,key:'ClusterSquare-v1@'+s.size};
 });
 const out={family:'Cluster Square',baseFamily:'Russo One',baseSourceSha256:source.sourceSha256,sizes};
-fs.writeFileSync(path.join(__dirname,'../src/font_cluster_square.js'),'// SPDX-License-Identifier: OFL-1.1\n// Cluster Square: original numerals and Russo One non-digit glyphs. See LICENSE-RussoOne.txt.\nmodule.exports = '+JSON.stringify(out)+';\n');
+fs.writeFileSync(process.argv[2]||path.join(__dirname,'../src/font_cluster_square.js'),'// SPDX-License-Identifier: OFL-1.1\n// Cluster Square: original numerals and Russo One non-digit glyphs. See LICENSE-RussoOne.txt.\nmodule.exports = '+JSON.stringify(out)+';\n');
