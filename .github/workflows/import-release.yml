@@ -24,7 +24,7 @@ jobs:
           if [ -f bmw-gauges-0151c.bundle ]; then
             echo '761022448513ac09ec26bdd39cd56869b200ee6f2cb3ae72f4dd399c76fa7825  bmw-gauges-0151c.bundle' | sha256sum -c -
             git bundle verify bmw-gauges-0151c.bundle
-            git fetch ./bmw-gauges-0151c.bundle refs/heads/shamo/native-assistance-window:refs/remotes/import/recovery
+            git fetch ./bmw-gauges-0151c.bundle HEAD:refs/remotes/import/recovery
             test "$(git rev-parse refs/remotes/import/recovery)" = '59f2bde84dba3af2daace5707dbb26160c8f3f94'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
