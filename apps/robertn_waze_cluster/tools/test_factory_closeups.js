@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const assert=require('assert'),fs=require('fs'),path=require('path'),cp=require('child_process');
+const assert=require('assert'),fs=require('fs'),path=require('path'),cp=require('child_process'),os=require('os'),zlib=require('zlib');
 const M=require('../src/studio_model'),D=require('../src/studio_draw'),fonts=require('../src/kit_fonts');
 const {Canvas}=require('../src/kit_canvas');
 const source=path.join(__dirname,'../src/font_cluster_square.js'),before=fs.readFileSync(source);
-cp.execFileSync(process.execPath,[path.join(__dirname,'bake_cluster_square.js')]);
-assert.deepEqual(fs.readFileSync(source),before,'the original numeral atlas rebuilds exactly');
+// zlib versions can encode identical pixels differently. Compare every glyph,
+// metric and decompressed pixel without rewriting the packaged source in tests.
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),'cluster-square-')),rebuilt=path.join(temp,'font.js');
+try {
+ cp.execFileSync(process.execPath,[path.join(__dirname,'bake_cluster_square.js'),rebuilt]);
+ const expected=require(source),actual=require(rebuilt);
+ function pixels(font){return Object.assign({},font,{sizes:font.sizes.map(s=>Object.assign({},s,{alpha:zlib.inflateSync(Buffer.from(s.alpha,'base64'))}))});}
+ assert.deepEqual(pixels(actual),pixels(expected),'the original numeral glyphs, metrics and atlas pixels rebuild exactly');
+ assert.deepEqual(fs.readFileSync(source),before,'font verification never modifies the packaged source');
+} finally {if(fs.existsSync(rebuilt))fs.unlinkSync(rebuilt);fs.rmdirSync(temp);}
 for(const name of ['studio_draw.js','studio_model.js','kit_fonts.js','font_cluster_square.js'])assert.deepEqual(fs.readFileSync(path.join(__dirname,'../src',name)),fs.readFileSync(path.join(__dirname,'../../../native/cluster-studio/shared',name)),'app and physical cluster ship identical '+name);
 const manifest=require('../mgu-app.json'),helper=require('../../../native/cluster-studio/component.json');
 assert(manifest.modules.includes('src/font_cluster_square.js'),'the on-car app linker includes the new font');
