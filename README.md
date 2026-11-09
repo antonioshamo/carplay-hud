@@ -1,15 +1,12 @@
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-CarPlay HUD **0.4.147** adds recovery when BMW rejects a tile entry ID or
-leaves a screen request unanswered. It opens native settings as a fallback and
-allows a later tap to retry the modern cockpit. This recovery is tested offline;
-the reported vehicle launch failure still needs an in-car check. The reference-
-inspired home cards, app grid, climate section and reduced startup work remain.
-Existing custom layouts are preserved. [Launch recovery review](docs/cockpit-0147-review.md),
-[startup review](docs/cockpit-0146-review.md) and
-[reference review](docs/cockpit-0145-review.md) describe the checks and limits.
+CarPlay HUD **0.4.150** opens the graphical dashboard directly and removes the
+old native settings menus. Graphics recovery stays on the same dashboard host;
+a minimal Retry/Close message remains if the graphical renderer cannot present.
+The update is tested offline, not yet verified on the physical car.
+[Direct launch review](docs/cockpit-direct-launch.md) documents the changes.
 
-Cluster Studio **0.1.24** provides 37 movable widgets, fuel by default, saved
+Cluster Studio **0.1.27** provides 37 movable widgets, fuel by default, saved
 layouts, optional welcomes and Restore BMW defaults. Its new eight-action climate
 adapter waits for fresh vehicle readback; **climate is not yet verified in-car**.
 Temperature, fan, seat and rear-climate entries are disabled where command mapping
@@ -20,8 +17,8 @@ factory-preserving side widgets remain prototypes. Reliable route-free Apple Map
 startup and HUD flicker still require physical-car verification.
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps).
-Current component versions: app **0.4.147**, Waze on cluster **0.7.117**,
-Cluster Studio **0.1.24**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
+Current component versions: app **0.4.150**, Waze on cluster **0.7.117**,
+Cluster Studio **0.1.27**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
 comes from the official MGU Store source and draws the settings app; it is
 separate from cluster-render.
 
@@ -64,10 +61,8 @@ it is not the separate-map setup. No automatic navigation route is started.
 
 The new graphical app has Overview, Map layout, Appearance, Startup and Help
 sections, with large touch targets and iDrive dial input. It fits inside the BMW
-app area and yields when another screen or popup takes focus. If graphics are
-unavailable, the fourteen native settings pages remain usable; you can also select
-**Help & setup → Classic settings**. In Classic settings, direct HUD and startup
-buttons remain on Home. Choose **Appearance → Original map colors** to preserve faint pixels removed by the existing HUD dark-background
+app area and yields when another screen or popup takes focus. If graphics are unavailable, a minimal Retry/Close message stays on the
+dashboard host. The old native menu pages and Classic settings link are removed. Choose **Appearance → Original map colors** to preserve faint pixels removed by the existing HUD dark-background
 filter. This applies to the normal map feed. It cannot restore roads absent from
 Apple's source video or lock Apple Maps' geographic zoom. The reported loss on
 both cluster and HUD still needs a source capture to diagnose.

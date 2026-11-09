@@ -65,7 +65,7 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   h.studio.page='media';h.studio.client.status={media:{target:'center',playing:true,active:true,generation:1,rect:{x:0,y:0,w:1,h:1}},slots:[]};h.studio.client.statusAt=Date.now();h.render();await settled();assert(g.count(13)>0,'media binds a real VIDEO shared-file source');const videoCount=g.count(13);h.studio.client.status.media.generation=2;h.render();await settled();assert(g.count(13)>videoCount&&g.count(14)>0,'reopened shared file rebinds after pause');h.studio.videoFull=true;h.render();await settled();assert.equal(h.items.length,4,'movie view keeps Back, live editing, Apply and Stop controls');h.studio.client.statusAt=Date.now()-3000;h.render();await settled();assert(!h.videoBound,'stale helper status removes center video');h.studio.page='edit';h.studio.client.status=null;h.render();await settled();
   h.hostFocus(false);const hiddenX=h.studio.widget().x;g.touch(1,sx,sy);g.touch(2,sx+120,sy);g.touch(3,sx+120,sy);await wait(20);assert.equal(h.studio.widget().x,hiddenX);
   h.hostVisible(true);h.studio.nav=[];h.studio.page='gallery';h.render();await settled();await tap('navigate-back');assert.equal(h.page,'overview');await wait(310);await tap('go:layout');await tap('nav:support');
-  await tap('classic');assert.equal(classic,1);
+  assert(!h.items.some(b=>b.id==='classic'),'old menu link removed');
   console.log('ok rotary selection/press, baseline and jump handling, native-proxy fallback, disabled actions and Classic');
   const m=view.model(c);
   for(const page of ['overview','layout','appearance','startup','support','details']){
@@ -85,7 +85,7 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   // on a laptop but cannot link on the unit, plus omitted licenses/font resources.
   const base=path.join(__dirname,'..'),manifest=require('../mgu-app.json'),names=new Set(manifest.modules.map(f=>'./'+path.basename(f)));
   for(const file of manifest.modules){const source=fs.readFileSync(path.join(base,file),'utf8');for(const m of source.matchAll(/require\(['"](\.[^'"]+)['"]\)/g))assert(names.has(m[1]),file+' '+m[1]);}
-  for(const name of ['LICENSE-kit.txt','LICENSE-Inter.txt'])assert(fs.existsSync(path.join(base,manifest.tree,'licenses',name)));
+  for(const name of ['LICENSE-kit.txt','LICENSE-Inter.txt','LICENSE-RussoOne.txt'])assert(fs.existsSync(path.join(base,manifest.tree,'licenses',name)));
   assert.equal(require('../release.json').requires['mgu-render'],'0.6.11');
   console.log('ok complete source manifest, unit-linkable module imports, licenses and graphics dependency');
  }finally{h.close();c.close();await Promise.all([g.close(),r.close(),p.close()]);}

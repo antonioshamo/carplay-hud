@@ -9,13 +9,13 @@ for(let y=0;y<M.HEIGHT;y++)for(let x=0;x<M.WIDTH;x++){
  if(!inside)assert.equal(a,0,'no overlay outside the four side slots');else ink+=a>0;
 }
 assert(ink>60000);assert.equal(JSON.stringify(d),saved);
-assert.equal(M.reading('range',d,data).value,'250');assert.equal(M.reading('fuel',d,data).value,'8.5');
+assert.equal(M.reading('range',d,data).value,'250');assert.equal(M.reading('fuel',d,data).value,'49');
 assert.equal(M.reading('oil',d,data).value,'216');assert.equal(M.reading('pressureFL',d,data).value,'34.8');
 // Keep conversion behavior aligned with the installed widget library.
 const library=require('../../shared/studio_model');
 for(const units of ['mph','km/h'])for(const temperatureUnit of ['F','C'])for(const type of Object.keys(library.METRICS)){
  if(!M.METRICS.some(m=>m[0]===type))continue;
- const options=Object.assign({},d,{units,temperatureUnit}),values={[type]:['engineState','driveMode','fuelWarning'].includes(type)?'NORMAL':123};
+ const options=Object.assign({},d,{units,temperatureUnit,fuelCapacityLitres:65}),values={[type]:['engineState','driveMode','fuelWarning'].includes(type)?'NORMAL':123};
  const a=M.reading(type,options,values),b=library.reading(type,options,values);
  assert.equal(a.value,b.value,type+' value parity');assert.equal(a.unit,b.unit,type+' unit parity');
 }

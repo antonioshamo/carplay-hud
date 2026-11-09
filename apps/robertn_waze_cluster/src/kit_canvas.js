@@ -369,8 +369,9 @@ class Canvas {
     line(xa, ya, xb, yb, width, c) {
         c = rgba(c);
         const hw = width / 2;
-        const x0 = Math.max(0, Math.floor(Math.min(xa, xb) - hw - 1)), x1 = Math.min(this.w, Math.ceil(Math.max(xa, xb) + hw + 1));
-        const y0 = Math.max(0, Math.floor(Math.min(ya, yb) - hw - 1)), y1 = Math.min(this.h, Math.ceil(Math.max(ya, yb) + hw + 1));
+        const clip = this.clipBox || [0, 0, this.w, this.h];
+        const x0 = Math.max(0, clip[0], Math.floor(Math.min(xa, xb) - hw - 1)), x1 = Math.min(this.w, clip[2], Math.ceil(Math.max(xa, xb) + hw + 1));
+        const y0 = Math.max(0, clip[1], Math.floor(Math.min(ya, yb) - hw - 1)), y1 = Math.min(this.h, clip[3], Math.ceil(Math.max(ya, yb) + hw + 1));
         const vx = xb - xa, vy = yb - ya, len2 = vx * vx + vy * vy || 1;
         for (let py = y0; py < y1; py++) {
             // A round-capped segment can only cover this row within hw+.5
@@ -415,8 +416,9 @@ class Canvas {
             if (l > 1e-6) { const nx = -ey / l * s, ny = ex / l * s; E.push([nx, ny, -(nx * a[0] + ny * a[1])]); }
             x0 = Math.min(x0, a[0]); x1 = Math.max(x1, a[0]); y0 = Math.min(y0, a[1]); y1 = Math.max(y1, a[1]);
         }
-        for (let py = Math.max(0, Math.floor(y0) - 1); py < Math.min(this.h, Math.ceil(y1) + 1); py++) {
-            for (let px = Math.max(0, Math.floor(x0) - 1); px < Math.min(this.w, Math.ceil(x1) + 1); px++) {
+        const clip = this.clipBox || [0, 0, this.w, this.h];
+        for (let py = Math.max(0, clip[1], Math.floor(y0) - 1); py < Math.min(this.h, clip[3], Math.ceil(y1) + 1); py++) {
+            for (let px = Math.max(0, clip[0], Math.floor(x0) - 1); px < Math.min(this.w, clip[2], Math.ceil(x1) + 1); px++) {
                 const qx = px + 0.5, qy = py + 0.5;
                 let cov = 1;
                 for (let k = 0; k < E.length && cov > 0; k++) cov *= clamp01(E[k][0] * qx + E[k][1] * qy + E[k][2] + 0.5);
@@ -482,9 +484,10 @@ class Canvas {
         const A = f.alpha, AW = f.atlasW;
         const tw = gw * scale, th = gh * scale;
         const x0 = Math.floor(dx), y0 = Math.floor(dy);
-        for (let py = Math.max(0, y0); py < Math.min(this.h, Math.ceil(dy + th)); py++) {
+        const clip = this.clipBox || [0, 0, this.w, this.h];
+        for (let py = Math.max(0, clip[1], y0); py < Math.min(this.h, clip[3], Math.ceil(dy + th)); py++) {
             const sy = (py + 0.5 - dy) / scale - 0.5;
-            for (let px = Math.max(0, x0); px < Math.min(this.w, Math.ceil(dx + tw)); px++) {
+            for (let px = Math.max(0, clip[0], x0); px < Math.min(this.w, clip[2], Math.ceil(dx + tw)); px++) {
                 const sx = (px + 0.5 - dx) / scale - 0.5;
                 const ix = Math.floor(sx), iy = Math.floor(sy), fx = sx - ix, fy = sy - iy;
                 const at = (xx, yy) => (xx < 0 || yy < 0 || xx >= gw || yy >= gh) ? 0 : A[(gy + yy) * AW + gx + xx];

@@ -39,7 +39,7 @@
   if(isText){return {label,value:typeof n==='string'&&n.length<=32?n:'—',unit:''};}
   if(typeof n!=='number'||!Number.isFinite(n))return {label,value:'—',unit:''};
   if(type==='oil'||type==='coolant'||type==='outside'||type.indexOf('tireTemp')===0){unit='°'+v.temperatureUnit;if(v.temperatureUnit==='F')n=n*1.8+32;}
-  else if(type==='fuel'){unit=v.units==='mph'?'US gal':'L';if(v.units==='mph')n/=3.785411784;digits=1;}
+  else if(type==='fuel'){if(n<0||n>=255)return {label,value:'—',unit:''};unit='%';n=Math.max(0,Math.min(100,n/(v.fuelCapacityLitres||65)*100));}
   else if(type==='range'||type==='odometer'){unit=v.units==='mph'?'mi':'km';if(v.units==='mph')n/=1.609344;}
   else if(type==='battery'||/Percent$/.test(type))unit='%';
   else if(type.indexOf('pressure')===0||type.indexOf('target')===0){unit=v.units==='mph'?'psi':'bar';if(v.units==='mph')n*=14.5037738;digits=1;}

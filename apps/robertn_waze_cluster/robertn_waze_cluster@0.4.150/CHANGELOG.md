@@ -1,3 +1,11 @@
+## 0.4.150
+
+- Open the graphical dashboard directly. Remove all old native menu pages and the Classic settings link.
+- Keep graphics recovery on the same page; hide raw proxy labels and wait for BMW foreground ownership instead of treating it as a renderer failure.
+- Recreate broader BMW-style dial faces, inward readouts and corner fuel/oil gauges. Use opaque black side backgrounds so old factory numerals do not bleed through.
+- Show fuel as a percentage with configurable tank capacity. Preserve custom moves and colors; migrate only unchanged old default geometry.
+- Preserve the accepted native P opening. Requires Cluster Studio 0.1.27. Physical-car validation remains pending; automatic assistance-center switching and Drive activation are not enabled.
+
 ## 0.4.149
 
 - Round the BMW-style dials with continuous curves and matching ticks/needles. Keep primary readings white while retaining accent and widget color controls.
