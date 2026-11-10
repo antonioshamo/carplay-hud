@@ -17,6 +17,14 @@ Version 0.1.14 retains an existing gauge layer across HUD stock-pop-up waits. Re
 
 Version 0.1.14 also uses 50 ms speed/RPM fallback reads, 250 ms slower getters and a 34 ms drawing interval with a 30 fps ceiling. Native row comparisons and split left/right deltas reduce rendering work and traffic for every gauge style. See [offline measurements and validation](../../docs/cluster-studio/REFRESH-AND-WIDGETS-0.4.137.md); physical OEM timing equality is not established.
 
+## 0.1.31: prepared rotation views
+
+Pairs with CarPlay HUD 0.4.154. Includes cropped, display-sized views from the
+same accepted white X4 M render set, with alpha prepared for the native renderer.
+The app validates their hashes, prefetches adjacent angles, and streams through
+two reusable buffers. Source renders and all climate commands are unchanged.
+Rotation timing on the physical head unit is not yet verified.
+
 ## 0.1.30: updated white X4 M and climate read fallback
 
 Pairs with CarPlay HUD 0.4.153. Includes the owner's November 10 display package:

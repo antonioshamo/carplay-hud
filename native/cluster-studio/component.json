@@ -1,7 +1,7 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
   "description": "37 movable cluster widgets, fuel in every template, saved full-cluster layouts in Park, and live vehicle readings.",
@@ -547,6 +547,390 @@
     },
     {
       "path": "assets/x4m/095.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/000.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/001.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/002.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/003.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/004.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/005.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/006.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/007.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/008.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/009.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/010.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/011.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/012.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/013.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/014.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/015.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/016.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/017.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/018.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/019.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/020.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/021.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/022.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/023.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/024.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/025.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/026.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/027.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/028.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/029.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/030.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/031.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/032.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/033.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/034.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/035.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/036.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/037.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/038.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/039.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/040.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/041.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/042.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/043.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/044.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/045.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/046.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/047.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/048.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/049.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/050.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/051.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/052.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/053.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/054.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/055.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/056.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/057.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/058.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/059.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/060.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/061.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/062.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/063.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/064.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/065.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/066.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/067.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/068.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/069.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/070.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/071.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/072.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/073.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/074.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/075.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/076.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/077.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/078.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/079.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/080.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/081.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/082.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/083.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/084.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/085.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/086.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/087.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/088.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/089.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/090.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/091.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/092.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/093.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/094.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/x4m/motion/095.rgba.z",
       "mode": "0644"
     }
   ],

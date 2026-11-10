@@ -184,7 +184,7 @@ class RenderClient extends EventEmitter {
     }
     _reset() {
         this.sent.atlas.clear(); this.sent.ramp.clear(); this.sent.layer.clear(); this.sent.image.clear();
-        this.imageBytes = 0; this.waiting = false;
+        this.imageBytes = 0; this.waiting = false; this.displayedImages = null;
     }
     _write(b) {
         if (this.fd !== null) { fs.writeSync(this.fd, b); return true; }
@@ -409,23 +409,37 @@ class RenderClient extends EventEmitter {
     }
     _ensureImage(id, keep) {
         const have = this.sent.image.get(id);
-        if (have) { have.used = this.useSeq; return; }
         const img = this.kit.imageById && this.kit.imageById.get(id);
         if (!img) return;
+        if (have) {
+            have.used = this.useSeq;
+            if (img.stream && have.generation !== img.generation) this._uploadImage(id, img, have);
+            return;
+        }
         const bytes = img.w * img.h * 4;
         while (this.sent.image.size >= IMG_MAX || this.imageBytes + bytes > IMG_BYTES) {
             let old = null;
             for (const [k, v] of this.sent.image) {
-                if (!keep.has(k) && !(this.frameImages && this.frameImages.has(k)) && (!old || v.used < old[1].used)) old = [k, v];
+                if (!keep.has(k) && !(this.displayedImages && this.displayedImages.has(k)) && !(this.frameImages && this.frameImages.has(k)) && (!old || v.used < old[1].used)) old = [k, v];
             }
             if (!old) return;            // all held pictures are on this frame: this one draws nothing
             this._dropSent(old[0]);
         }
-        const head = Buffer.alloc(12);
-        head.writeUInt32LE(id, 0); head.writeUInt32LE(img.w, 4); head.writeUInt32LE(img.h, 8);
-        this._write(msg(M.IMAGE, Buffer.concat([head, premultiply(img.data)])));
-        this.sent.image.set(id, { bytes, used: this.useSeq });
+        const entry = { bytes, used: this.useSeq, pixmap: !!(img.stream && this.info && this.info.pixmap && this.info.pixmapSide >= Math.max(img.w,img.h)) };
+        if (entry.pixmap) this._write(u32msg(X.PIXMAP, [id,img.w,img.h,FORMATS.rgba,1]));
+        this._uploadImage(id,img,entry);
+        this.sent.image.set(id,entry);
         this.imageBytes += bytes;
+    }
+    _uploadImage(id,img,entry) {
+        const pixels = img.prepared && img.prepared.length === img.w*img.h*4 ? img.prepared : premultiply(img.data);
+        if (entry.pixmap) {
+            this._write(msg(X.PIXELS,Buffer.concat([words(new Uint32Array([id,1,0,0,img.w,img.h])),pixels])));
+        } else {
+            const head=Buffer.alloc(12);head.writeUInt32LE(id,0);head.writeUInt32LE(img.w,4);head.writeUInt32LE(img.h,8);
+            this._write(msg(M.IMAGE,Buffer.concat([head,pixels])));
+        }
+        entry.generation=img.generation;
     }
     _dropSent(id) {
         const s = this.sent.image.get(id);
@@ -442,7 +456,9 @@ class RenderClient extends EventEmitter {
         this.frameImages = r.images;
         this._ensureRes(r);
         this.frameImages = null;
-        return this.frameWords(r.words());
+        const result = this.frameWords(r.words());
+        this.displayedImages = r.images ? new Set(r.images) : null;
+        return result;
     }
     /** Send a frame of draw op words (Uint32Array). */
     frameWords(u32) {

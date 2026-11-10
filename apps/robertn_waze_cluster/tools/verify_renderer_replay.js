@@ -20,6 +20,9 @@ const results=[];
 function verify(name,record){
  const file=path.join(out,name+'.bin'),gpu=new RenderClient('robertn_waze_cluster',console,{kit,file});
  gpu.connect();gpu.place({x:0,y:0,w:H.W,h:H.H,scale:1,ox:0,oy:0});gpu.frame(record);gpu.close();
+ inspect(name,file,record);fs.unlinkSync(file);
+}
+function inspect(name,file,record){
  const pam=file+'.pam';
  cp.execFileSync(renderer,['--replay',file,'--out',pam],{env:Object.assign({},process.env,{LIBGL_ALWAYS_SOFTWARE:'1',EGL_PLATFORM:'surfaceless'}),stdio:['ignore','ignore','inherit'],timeout:30000});
  const bytes=fs.readFileSync(pam),end=bytes.indexOf(Buffer.from('ENDHDR\n'))+7;
@@ -33,10 +36,22 @@ function verify(name,record){
  // frames, misplaced content or lost resources, not identical edge coverage.
  assert(mean<24&&fraction<.15,name+' diverged from menu preview: '+mean+', '+fraction);
  results.push({name,meanPixelError:mean,largeDifferenceFraction:fraction});
- fs.unlinkSync(file);fs.unlinkSync(pam);console.log('PASS native GPU replay '+name);
+ fs.unlinkSync(pam);console.log('PASS native GPU replay '+name);
 }
 for(const [name,page,extra] of cases)verify(name,H.frame(Object.assign({},model,extra),page,0,0,1).record);
 for(const n of [0,24,36,48,60,72,84]){const data=require('zlib').inflateSync(fs.readFileSync(path.resolve(__dirname,'../../../native/cluster-studio/assets/x4m/'+('00'+n).slice(-3)+'.rgba.z'))),image=kit.makeImage(900,450,data);verify('car-angle-'+n,H.frame(Object.assign({},model,{carImage:image}),'overview',0,0,1).record);kit.dropImage(image);}
+// Keep the same connection while all angles stream through two GPU buffers.
+// Replay a partially staged next angle too: the visible car must stay complete
+// until the frame command switches to the other buffer.
+const orbit=require('../src/car_views.js'),bytesPerView=orbit.width*orbit.height*4;
+const orbitFile=path.join(out,'continuous-rotation.bin'),orbitGpu=new RenderClient('robertn_waze_cluster',console,{kit,file:orbitFile}),slots=[];
+orbitGpu.connect();orbitGpu.place({x:0,y:0,w:H.W,h:H.H,scale:1,ox:0,oy:0});orbitGpu.info={pixmap:true,pixmapSide:1024};
+function loadSlot(n,k){const bytes=require('zlib').inflateSync(fs.readFileSync(path.resolve(__dirname,'../../../native/cluster-studio/assets/x4m/'+orbit.views[n].file)));assert.equal(bytes.length,bytesPerView);let im=slots[k];if(!im)im=slots[k]=Object.assign(kit.makeImage(orbit.width,orbit.height,bytes),{stream:true,premultiplied:true,crop:orbit.crop,generation:0});im.data=im.prepared=bytes;im.generation++;return im;}
+let lastOrbit;
+try{
+ for(let n=0;n<96;n++){const image=loadSlot(n,n%2);lastOrbit=H.frame(Object.assign({},model,{carImage:image}),'overview',0,0,1).record;orbitGpu.frame(lastOrbit);if([12,36,60,95].includes(n))inspect('car-stream-'+n,orbitFile,lastOrbit);}
+ const staged=loadSlot(0,0);orbitGpu._ensureImage(staged.imageId,new Set([staged.imageId]));inspect('car-staged-next-view',orbitFile,lastOrbit);
+}finally{orbitGpu.close();slots.forEach(kit.dropImage);fs.unlinkSync(orbitFile);}
 const studio=new StudioScreen(()=>{});studio.client.status=model.helper;studio.client.statusAt=Date.now();
 try{for(const page of ['gallery','edit','add','gauges']){studio.page=page;verify('studio-'+page,studio.frame(0,1).record);}}finally{studio.close();}
 fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({renderer:'0.6.15',source:'54c656a79f08db3385393417a93b5608778fa571',vehicleVerified:false,results},null,2));
