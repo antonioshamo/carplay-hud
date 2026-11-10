@@ -67,7 +67,11 @@ class Telemetry {
      if(this.closed){proxy.shutdown();break;}
      await bounded(proxy.init(),2000);if(this.closed){proxy.shutdown();break;}
      const entry=Object.assign({proxy},row),def=row.config.fields[row.field];
-     if(def.event)await bounded(proxy.subscribe({name:row.field,onReceive:v=>{if(!this.closed&&!abandoned)this.receive(row.kind,v);}}),2000);if(this.closed){proxy.shutdown();break;}
+     if(def.event){
+      try{await bounded(proxy.subscribe({name:row.field,onReceive:v=>{if(!this.closed&&!abandoned)this.receive(row.kind,v);}}),2000);}
+      catch(e){if(!this.o.allowPollingFallback||!def.getter)throw e;}
+     }
+     if(this.closed){proxy.shutdown();break;}
      this.proxies.push(entry);this.poll();
     }catch(e){abandoned=true;if(proxy)try{proxy.shutdown();}catch(ignore){}}
    }

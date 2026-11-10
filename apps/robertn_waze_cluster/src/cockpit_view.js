@@ -16,7 +16,10 @@ const CLIMATE=[
 ];
 const AIR_NAMES=['Footwell','Face vents','Face + footwell','Windshield','Screen + footwell','Screen + face','All vents','AUTO'];
 const CONTROL_IDS=['ac','maxAC','defrost','freshAir','autoDR','autoPS','airDR','airPS'];
-function control(m,id){const c=m.helper&&m.helper.climate;return m.helperFresh&&c&&c.controls&&c.controls.find(v=>v.id===id);}
+function control(m,id){
+ const c=m.helper&&m.helper.climate;if(!m.helperFresh||!c||!Array.isArray(c.controls))return null;
+ return c.controls.find(v=>v.id===id)||{id,value:null,available:false,reason:'Update Cluster Studio'};
+}
 function climateLabel(c){if(!c||c.value==null)return c&&c.reason||'Waiting for car';if(c.choices&&c.choices[c.value])return c.choices[c.value];return c.id==='freshAir'?['Fresh air','Automatic','Recirculate'][c.value]:/^air/.test(c.id)?AIR_NAMES[c.value]:c.value?'On':'Off';}
 function state(m){return m.cockpit||{};}
 function appList(m){const s=state(m);return APPS.filter(a=>!s.category||s.category==='all'||a[3]===s.category);}
@@ -60,10 +63,9 @@ function frame(m,page,focus,scale){
  // First paint contains working controls and a vector car. Upload the detailed
  // artwork after the renderer has acknowledged that first frame.
  const car=(area)=>{
-  const p=s.car||Car.pose(),w=area.w*p.zoom,h=w/2,x=area.x+(area.w-w)/2+p.x,y=area.y+(area.h-h)/2+p.y;
   r.clip(area.x,area.y,area.w,area.h);
   if(m.deferArtwork)T.icon(r,'car',area.x+area.w/2,area.y+area.h/2,T.C.active,60);
-  else r.image(m.carImage||require('./cockpit_car.js')(),x,y,w,h);
+  else {const artwork=require('./cockpit_car.js'),box=Car.placement(area,s.car||Car.pose(),artwork.bounds);r.image(m.carImage||artwork(),box.x,box.y,box.w,box.h);}
   r.noclip();
  };
  T.background(r);
@@ -103,7 +105,8 @@ function frame(m,page,focus,scale){
  }else if(page==='climate'){
   txt(CLIMATE[s.climateTab||0][0],226,104,31,C.text,850);
   txt(!(s.climateTab||0)?'Tap a control to change it. BMW status confirms each change.':'NOT YET VERIFIED IN CAR · Tap to change a level; BMW must confirm it.',226,139,20,C.muted,1300);
-  const climate=connected&&m.helper.climate;txt(s.climateNotice||(climate&&climate.message)||(connected&&!m.helper.climateSupported?'Update Cluster Studio to 0.1.24 for climate controls.':'Connect the car to check available climate controls.'),226,488,18,C.muted,860);txt(s.climateTab?'New seat and rear controls: ready for testing when valid car data is available.':'Front A/C and airflow: confirmed working by owner.',226,451,17,C.amber,850);
+  const climate=connected&&m.helper.climate,needsUpdate=connected&&(!m.helper.climateSupported||(s.climateTab&&climate&&Array.isArray(climate.controls)&&!climate.controls.some(c=>c.id==='heatDR')));
+  txt(s.climateNotice||(needsUpdate?'Update Cluster Studio in MGU Store for seat and rear controls.':climate&&climate.message)||'Connect the car to check available climate controls.',226,488,18,C.muted,860);txt(s.climateTab?'Supported controls activate when the car supplies a valid reading.':'Front A/C and airflow: confirmed working by owner.',226,451,17,C.amber,850);
  }
  buttons.forEach((b,i)=>{
   if(b.hero)return;

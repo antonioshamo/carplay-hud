@@ -8,6 +8,10 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function pose(){return {angle:45,zoom:1,x:0,y:0,mode:'rotate'};}
 function index(angle){return ((Math.round(angle*COUNT/360)%COUNT)+COUNT)%COUNT;}
 function rect(page,s){if(page==='overview'&&!s.homePage)return {x:524,y:136,w:710,h:278};if(page==='vehicle')return {x:220,y:168,w:595,h:250};return null;}
+function placement(area,p,bounds){
+ const b=bounds||{x:0,y:0,w:W,h:H},scale=Math.min(area.w/b.w,area.h/b.h)*.96*p.zoom;
+ return {x:area.x+area.w/2-(b.x+b.w/2)*scale+p.x,y:area.y+area.h/2-(b.y+b.h/2)*scale+p.y,w:W*scale,h:H*scale};
+}
 function adjust(p,action){
  if(action==='left')p.angle-=15;else if(action==='right')p.angle+=15;
  else if(action==='in')p.zoom=clamp(p.zoom+.1,.85,1.25);else if(action==='out')p.zoom=clamp(p.zoom-.1,.85,1.25);
@@ -45,4 +49,4 @@ class CarModel {
  }
  close(){this.closed=true;for(const img of this.cache.values())kit.dropImage(img);this.cache.clear();this.current=null;}
 }
-module.exports={CarModel,pose,index,rect,adjust,drag,COUNT,W,H};
+module.exports={CarModel,pose,index,rect,placement,adjust,drag,COUNT,W,H};

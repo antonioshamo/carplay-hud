@@ -72,7 +72,7 @@ function profile(db,action){
 }
 function bounded(p,ms){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Climate request timed out; use BMW controls')),ms);Promise.resolve(p).then(v=>{clearTimeout(timer);resolve(v);},e=>{clearTimeout(timer);reject(e);});});}
 class ClimateControls {
- constructor(o){this.o=o||{};this.now=this.o.now||Date.now;this.reader=this.o.reader||new Telemetry(Object.assign({},o,{specs:SPECS,decode,pollMs:500}));this.profiles={};this.writers={};this.pending=false;this.closed=false;this.leaseUntil=0;this.message='Open Climate to check the car';}
+ constructor(o){this.o=o||{};this.now=this.o.now||Date.now;this.reader=this.o.reader||new Telemetry(Object.assign({},o,{specs:SPECS,decode,pollMs:500,allowPollingFallback:true}));this.profiles={};this.writers={};this.pending=false;this.closed=false;this.leaseUntil=0;this.message='Open Climate to check the car';}
  async open(){
   if(this.closed)throw Error('Climate session closed');this.leaseUntil=this.now()+8000;
   if(this.initializing)return this.initializing;
