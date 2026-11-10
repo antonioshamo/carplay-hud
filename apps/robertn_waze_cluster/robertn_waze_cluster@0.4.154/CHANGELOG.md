@@ -1,3 +1,10 @@
+## 0.4.154
+
+- Stream the owner's accepted white X4 M through two reusable display buffers. Prepare alpha and display-sized rotation views before installation, and retain the complete visible car while loading the next angle.
+- Track drag input immediately while waiting for the renderer, prefetch adjacent angles, and show progress during continuous dragging instead of waiting for the finger to stop.
+- Validate every rotating view against the app's expected hashes so an older helper cannot mix a different car appearance into the dashboard. Requires Cluster Studio 0.1.31.
+- Retain the accepted tint, materials, dashboard placement and controls. Physical-car rotation smoothness still needs confirmation after updating.
+
 ## 0.4.153
 
 - Use all 96 exact display views from Antonio_WHITE_X4M_Complete_Updated.zip, including the revised wheels, seats, brakes, tint, cross and carbon spoiler. Keep the large central car and direct dashboard rotation, Move, zoom and Reset.

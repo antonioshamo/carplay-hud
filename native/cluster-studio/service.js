@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const VERSION = '0.1.30';
+const VERSION = '0.1.31';
 const fs=require('fs'),path=require('path'),net=require('net');
 const M=require('./shared/studio_model.js');
 const {ClimateControls}=require('./climate_controls.js');

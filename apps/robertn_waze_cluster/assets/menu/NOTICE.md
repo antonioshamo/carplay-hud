@@ -19,16 +19,23 @@ Reset restores the initial view. This is not an arbitrary-camera 3D mesh rendere
 The car appears large on the dashboard itself. Initial framing uses all angles'
 silhouette bounds, keeping the roof and wheels visible throughout rotation.
 Deliberate zoom and movement can crop the car.
-The first view is embedded in cockpit_car.js; the remaining views are lazily
-loaded from the installed Cluster Studio package with a six-image decode cache.
+The full-resolution first view is embedded in cockpit_car.js. Rotation views
+remove unused transparent margins and resize the same pixels to 600 x 315,
+without changing materials or tint. Premultiplied RGBA is prepared at build
+time. The app holds up to twelve decoded views, prefetches
+nearby angles, and alternates two display buffers after frame acknowledgements.
+The renderer updates existing pixel textures when supported; older renderers
+use two ordinary image resources. Every view is verified against its expected
+hash before display, preserving appearance when app and helper versions differ.
 
 Rebuild from the supplied display package:
 
     python3 tools/x4m/pack.py /tmp/x4m-frames
 
 First verify the source manifest and decode its 96 zlib frames to 900 x 450 PNGs
-named 000.png through 095.png. The packer requires Pillow and preserves RGBA
-pixels losslessly. views.json records hashes, sizes and shared silhouette bounds.
+named 000.png through 095.png. The packer requires Pillow and preserves the
+original RGBA views losslessly. views.json records source and prepared-view
+hashes, sizes and shared silhouette bounds.
 The older SceneKit renderer remains a development tool; the shipped images use
 the owner's Blender renders to retain the updated materials. The model retains
 its original rights; application source licensing does not relicense the model

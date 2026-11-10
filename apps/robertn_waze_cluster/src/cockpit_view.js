@@ -65,7 +65,7 @@ function frame(m,page,focus,scale){
  const car=(area)=>{
   r.clip(area.x,area.y,area.w,area.h);
   if(m.deferArtwork)T.icon(r,'car',area.x+area.w/2,area.y+area.h/2,T.C.active,60);
-  else {const artwork=require('./cockpit_car.js'),box=Car.placement(area,s.car||Car.pose(),artwork.bounds);r.image(m.carImage||artwork(),box.x,box.y,box.w,box.h);}
+  else {const artwork=require('./cockpit_car.js'),img=m.carImage||artwork(),box=Car.placement(area,s.car||Car.pose(),artwork.bounds,img.crop);r.image(img,box.x,box.y,box.w,box.h);}
   r.noclip();
  };
  T.background(r);

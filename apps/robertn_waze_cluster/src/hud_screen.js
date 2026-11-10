@@ -37,7 +37,7 @@ class HudScreen extends EventEmitter {
  }
  connect(){this.gpu.connect();this.studio.open();}
  observeClimate(){const c=this.studio.client;if(this.closed||!this.active||this.page!=='climate'||!c.status||!c.status.climateSupported||c.pending||Date.now()-(c.statusAt||0)>=2000||Date.now()-(this.climateObservedAt||0)<2000)return;this.climateObservedAt=Date.now();c.send('climate-observe').then(()=>{this.dirty=true;},e=>{this.cockpit.climateNotice=e.message;this.dirty=true;});}
- _model(){return Object.assign(view.model(this.host.control),{cockpit:this.cockpit,carImage:this.artworkReady&&Car.rect(this.page,this.cockpit)?this.carModel.get(this.cockpit.car.angle):null,carError:this.carModel.error,deferArtwork:!this.artworkReady,helper:this.studio.client.status,helperFresh:!!this.studio.client.status&&Date.now()-(this.studio.client.statusAt||0)<2000});}
+ _model(loadCar){return Object.assign(view.model(this.host.control),{cockpit:this.cockpit,carImage:this.artworkReady&&Car.rect(this.page,this.cockpit)?(loadCar?this.carModel.get(this.cockpit.car.angle):this.carModel.current):null,carError:this.carModel.error,deferArtwork:!this.artworkReady,helper:this.studio.client.status,helperFresh:!!this.studio.client.status&&Date.now()-(this.studio.client.statusAt||0)<2000});}
  _ready(info){
   trace.record('graphics-ready',JSON.stringify(info));
   this.presentation=null;this.lastAck=0;this.presentationSince=0;
@@ -92,7 +92,7 @@ class HudScreen extends EventEmitter {
   // Force the first frame on return; keep subsequent recovery at 1 Hz.
   if(!force&&this.gpu.waiting&&Date.now()-this.sentAt<1000){this.dirty=true;return;}
   try {
-   const f=this.page==='studio'?this.studio.frame(this.focus,this.scale):view.frame(this._model(),this.page,this.focus,this.logPage,this.scale);
+   const f=this.page==='studio'?this.studio.frame(this.focus,this.scale):view.frame(this._model(true),this.page,this.focus,this.logPage,this.scale);
    const media=this.studio.client.status&&this.studio.client.status.media;const showVideo=this.page==='studio'&&this.studio.page==='media'&&media&&media.target==='center'&&media.playing&&Date.now()-(this.studio.client.statusAt||0)<2000&&this.studio.videoSupported;
    if(showVideo&&(!this.videoBound||this.videoGeneration!==media.generation)){if(this.videoBound)this.gpu.video(9001,null);this.gpu.video(9001,'/dev/shm/mgu-video-shamo-clips');this.videoBound=true;this.videoGeneration=media.generation;}else if(!showVideo&&this.videoBound){this.gpu.video(9001,null);this.videoBound=false;}
    this.items=f.items;this.focus=Math.max(0,Math.min(this.focus,this.items.length-1));
@@ -125,7 +125,7 @@ class HudScreen extends EventEmitter {
    if(id.indexOf('ctab:')===0)this.cockpit.climateTab=Number(id.slice(5));
    this.motionAt=Date.now();this.cockpit.enterAt=this.motionAt;this.render();return true;
   }
-  if(id.indexOf('car:')===0){Car.adjust(this.cockpit.car,id==='car:surface'?'right':id.slice(4));this.render();return true;}
+  if(id.indexOf('car:')===0){Car.adjust(this.cockpit.car,id==='car:surface'?'right':id.slice(4));this.carModel.request(this.cockpit.car.angle);this.render();return true;}
   if(id.indexOf('climate-set:')===0){const action=id.slice(12),c=require('./cockpit_view.js').control(this._model(),action);if(!c||!c.available||this.cockpit.climateBusy)return false;this.cockpit.climateBusy=true;this.cockpit.climateNotice='Waiting for BMW confirmation…';const count=c.choiceCount||(action==='freshAir'?3:/^air/.test(action)?7:2);this.studio.client.send('climate-set',{action,value:(c.value+1)%count}).then(()=>{this.cockpit.climateBusy=false;this.cockpit.climateNotice='';this.dirty=true;},e=>{this.cockpit.climateBusy=false;this.cockpit.climateNotice=e.message;this.dirty=true;});this.render();return true;}
   if(id.indexOf('vehicle:')===0){this.navigation.push(this.page);this.page='vehicle';this.cockpit.vehicleTab=id.slice(8);this.focus=0;this.render();return true;}
   if(id==='navigate-back'){if(this.navigation.length)this.page=this.navigation.pop();else if(this.page!=='overview')this.page='overview';else if(this.host.exit)this.host.exit();this.focus=0;this.render();return true;}
@@ -166,7 +166,7 @@ class HudScreen extends EventEmitter {
   if(this.page==='studio'&&this.studio.touch(phase,x,y)){this.touch=null;return;}
   const area=Car.rect(this.page,this.cockpit);
   if(phase==='down'&&area&&x>=area.x&&x<area.x+area.w&&y>=area.y&&y<area.y+area.h){this.touch={car:true,x,y,page:this.page,start:Object.assign({},this.cockpit.car)};return;}
-  if(this.touch&&this.touch.car){const t=this.touch;if(t.page===this.page&&(phase==='move'||phase==='up')){Car.drag(this.cockpit.car,t.start,x-t.x,y-t.y);this.render();}if(phase==='up'||phase==='cancel')this.touch=null;return;}
+  if(this.touch&&this.touch.car){const t=this.touch;if(t.page===this.page&&(phase==='move'||phase==='up')){Car.drag(this.cockpit.car,t.start,x-t.x,y-t.y);this.carModel.request(this.cockpit.car.angle);this.render();}if(phase==='up'||phase==='cancel')this.touch=null;return;}
   if(phase==='down'){this.touch={i:this.hit(x,y),x,y,page:this.page};return;}
   const t=this.touch;if(!t)return;
   if(Math.hypot(x-t.x,y-t.y)>20)t.cancel=true;

@@ -206,7 +206,9 @@ class Canvas {
                 const w00 = (1 - fx) * (1 - fy) * s[i00 + 3], w10 = fx * (1 - fy) * s[i10 + 3], w01 = (1 - fx) * fy * s[i01 + 3], w11 = fx * fy * s[i11 + 3];
                 const a = w00 + w10 + w01 + w11;
                 if (a <= 0) continue;
-                for (let k = 0; k < 3; k++) px[k] = (s[i00 + k] * w00 + s[i10 + k] * w10 + s[i01 + k] * w01 + s[i11 + k] * w11) / a;
+                for (let k = 0; k < 3; k++) px[k] = src.premultiplied ?
+                    (s[i00+k]*(1-fx)*(1-fy)+s[i10+k]*fx*(1-fy)+s[i01+k]*(1-fx)*fy+s[i11+k]*fx*fy)*255/a :
+                    (s[i00 + k] * w00 + s[i10 + k] * w10 + s[i01 + k] * w01 + s[i11 + k] * w11) / a;
                 px[3] = a;
                 this._blend(qx, py, px, cov * al);
             }
