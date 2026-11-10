@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "robertn_waze_cluster",
-  "version": "0.4.151",
-  "tree": "robertn_waze_cluster@0.4.151",
+  "version": "0.4.152",
+  "tree": "robertn_waze_cluster@0.4.152",
   "modules": [
     "src/startup.js",
     "src/robertn_waze_cluster.js",
@@ -30,7 +30,8 @@
     "src/qrcodegen.js",
     "src/cockpit_view.js",
     "src/cockpit_theme.js",
-    "src/cockpit_car.js"
+    "src/cockpit_car.js",
+    "src/car_model.js"
   ],
   "sdk": [
     "oap-sdk/src/core/OnlineApp.js",

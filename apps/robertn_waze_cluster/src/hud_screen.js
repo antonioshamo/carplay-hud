@@ -5,12 +5,14 @@ const {RenderClient}=require('./mgu_render_client.js');
 const kit=require('./kit_record.js');
 const view=require('./hud_view.js');
 const trace=require('./startup_trace.js');
+const Car=require('./car_model.js');
 const {StudioScreen}=require('./studio_screen.js');
 const HOST='ST_WOC_Design',PROXIES=24;
 class HudScreen extends EventEmitter {
  constructor(host,options) {
   super();this.host=host;this.gpu=options&&options.client||new RenderClient('robertn_waze_cluster',host.log,{kit,mode:'layer'});
-  this.cockpit={homePage:0,appPage:0,category:'all',vehicleTab:'engine',climateTab:0};this.motionAt=0;this.page='overview';this.navigation=[];this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
+  this.cockpit={homePage:0,appPage:0,category:'all',vehicleTab:'engine',climateTab:0,car:Car.pose()};
+  this.carModel=new Car.CarModel(()=>{this.dirty=true;if(this.active&&!this.gpu.waiting)this.render();});this.motionAt=0;this.page='overview';this.navigation=[];this.logPage=0;this.focus=0;this.items=[];this.ready=false;this.visible=false;this.focused=true;
   this.active=false;this.info=null;this.scale=1;this.closed=false;this.touch=null;this.ccu=null;this.last={};this.dirty=false;this.suspended=false;
   this.studio=new StudioScreen(()=>{this.dirty=true;});
   this.sentAt=0;this.reshowTimer=null;
@@ -35,7 +37,7 @@ class HudScreen extends EventEmitter {
  }
  connect(){this.gpu.connect();this.studio.open();}
  observeClimate(){const c=this.studio.client;if(this.closed||!this.active||this.page!=='climate'||!c.status||!c.status.climateSupported||c.pending||Date.now()-(c.statusAt||0)>=2000||Date.now()-(this.climateObservedAt||0)<2000)return;this.climateObservedAt=Date.now();c.send('climate-observe').then(()=>{this.dirty=true;},e=>{this.cockpit.climateNotice=e.message;this.dirty=true;});}
- _model(){return Object.assign(view.model(this.host.control),{cockpit:this.cockpit,deferArtwork:!this.artworkReady,helper:this.studio.client.status,helperFresh:!!this.studio.client.status&&Date.now()-(this.studio.client.statusAt||0)<2000});}
+ _model(){return Object.assign(view.model(this.host.control),{cockpit:this.cockpit,carImage:this.artworkReady&&Car.rect(this.page,this.cockpit)?this.carModel.get(this.cockpit.car.angle):null,carError:this.carModel.error,deferArtwork:!this.artworkReady,helper:this.studio.client.status,helperFresh:!!this.studio.client.status&&Date.now()-(this.studio.client.statusAt||0)<2000});}
  _ready(info){
   trace.record('graphics-ready',JSON.stringify(info));
   this.presentation=null;this.lastAck=0;this.presentationSince=0;
@@ -123,7 +125,8 @@ class HudScreen extends EventEmitter {
    if(id.indexOf('ctab:')===0)this.cockpit.climateTab=Number(id.slice(5));
    this.motionAt=Date.now();this.cockpit.enterAt=this.motionAt;this.render();return true;
   }
-  if(id.indexOf('climate-set:')===0){const action=id.slice(12),c=require('./cockpit_view.js').control(this._model(),action);if(!c||!c.available||this.cockpit.climateBusy)return false;this.cockpit.climateBusy=true;this.cockpit.climateNotice='Waiting for BMW confirmation…';const count=action==='freshAir'?3:/^air/.test(action)?7:2;this.studio.client.send('climate-set',{action,value:(c.value+1)%count}).then(()=>{this.cockpit.climateBusy=false;this.cockpit.climateNotice='';this.dirty=true;},e=>{this.cockpit.climateBusy=false;this.cockpit.climateNotice=e.message;this.dirty=true;});this.render();return true;}
+  if(id.indexOf('car:')===0){Car.adjust(this.cockpit.car,id==='car:surface'?'right':id.slice(4));this.render();return true;}
+  if(id.indexOf('climate-set:')===0){const action=id.slice(12),c=require('./cockpit_view.js').control(this._model(),action);if(!c||!c.available||this.cockpit.climateBusy)return false;this.cockpit.climateBusy=true;this.cockpit.climateNotice='Waiting for BMW confirmation…';const count=c.choiceCount||(action==='freshAir'?3:/^air/.test(action)?7:2);this.studio.client.send('climate-set',{action,value:(c.value+1)%count}).then(()=>{this.cockpit.climateBusy=false;this.cockpit.climateNotice='';this.dirty=true;},e=>{this.cockpit.climateBusy=false;this.cockpit.climateNotice=e.message;this.dirty=true;});this.render();return true;}
   if(id.indexOf('vehicle:')===0){this.navigation.push(this.page);this.page='vehicle';this.cockpit.vehicleTab=id.slice(8);this.focus=0;this.render();return true;}
   if(id==='navigate-back'){if(this.navigation.length)this.page=this.navigation.pop();else if(this.page!=='overview')this.page='overview';else if(this.host.exit)this.host.exit();this.focus=0;this.render();return true;}
   if(id==='open-studio'||id.indexOf('studio:')===0){this.studioReturn=this.page;this.page='studio';this.studio.page=id==='open-studio'?'gallery':id.slice(7);this.studio.entryPage=this.studio.page;this.studio.nav=[];this.studio.open();this.focus=Math.max(0,require('./studio_view.js').items(this.studio).findIndex(b=>b.id.indexOf('page:')===0&&b.selected));this.render();return true;}
@@ -161,6 +164,9 @@ class HudScreen extends EventEmitter {
  _touch(phase,x,y){
   if(!this.active||!Number.isFinite(x)||!Number.isFinite(y))return;
   if(this.page==='studio'&&this.studio.touch(phase,x,y)){this.touch=null;return;}
+  const area=Car.rect(this.page,this.cockpit);
+  if(phase==='down'&&area&&x>=area.x&&x<area.x+area.w&&y>=area.y&&y<area.y+area.h){this.touch={car:true,x,y,page:this.page,start:Object.assign({},this.cockpit.car)};return;}
+  if(this.touch&&this.touch.car){const t=this.touch;if(t.page===this.page&&(phase==='move'||phase==='up')){Car.drag(this.cockpit.car,t.start,x-t.x,y-t.y);this.render();}if(phase==='up'||phase==='cancel')this.touch=null;return;}
   if(phase==='down'){this.touch={i:this.hit(x,y),x,y,page:this.page};return;}
   const t=this.touch;if(!t)return;
   if(Math.hypot(x-t.x,y-t.y)>20)t.cancel=true;
@@ -175,6 +181,6 @@ class HudScreen extends EventEmitter {
   }
   if((e.press===1||e.press===2)&&e.press!==prev.press&&e.seq!==prev.seq)this.press(this.focus);
  }
- close(){this.closed=true;clearTimeout(this.reshowTimer);this.studio.close();clearInterval(this.timer);this.hide();this.gpu.removeAllListeners('close');this.gpu.close();}
+ close(){this.closed=true;this.carModel.close();clearTimeout(this.reshowTimer);this.studio.close();clearInterval(this.timer);this.hide();this.gpu.removeAllListeners('close');this.gpu.close();}
 }
 module.exports={HudScreen,HOST,PROXIES};
