@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const kit=require('./kit_record.js'),T=require('./cockpit_theme.js');
+const kit=require('./kit_record.js'),T=require('./cockpit_theme.js'),Car=require('./car_model.js');
 const APPS=[
  ['open-studio','My gauges','gauge','display'],['go:layout','HUD layout','hud','display'],['go:startup','CarPlay startup','power','display'],
  ['studio:edit','Arrange widgets','widgets','display'],['studio:style','Colors & dials','sun','display'],['studio:intro','Welcome','play','display'],
@@ -17,7 +17,7 @@ const CLIMATE=[
 const AIR_NAMES=['Footwell','Face vents','Face + footwell','Windshield','Screen + footwell','Screen + face','All vents','AUTO'];
 const CONTROL_IDS=['ac','maxAC','defrost','freshAir','autoDR','autoPS','airDR','airPS'];
 function control(m,id){const c=m.helper&&m.helper.climate;return m.helperFresh&&c&&c.controls&&c.controls.find(v=>v.id===id);}
-function climateLabel(c){if(!c||c.value==null)return 'Waiting for car';return c.id==='freshAir'?['Fresh air','Automatic','Recirculate'][c.value]:/^air/.test(c.id)?AIR_NAMES[c.value]:c.value?'On':'Off';}
+function climateLabel(c){if(!c||c.value==null)return c&&c.reason||'Waiting for car';if(c.choices&&c.choices[c.value])return c.choices[c.value];return c.id==='freshAir'?['Fresh air','Automatic','Recirculate'][c.value]:/^air/.test(c.id)?AIR_NAMES[c.value]:c.value?'On':'Off';}
 function state(m){return m.cockpit||{};}
 function appList(m){const s=state(m);return APPS.filter(a=>!s.category||s.category==='all'||a[3]===s.category);}
 function items(m,page){
@@ -25,8 +25,9 @@ function items(m,page){
  add('navigate-back','Back',16,10,164,48,true,{icon:'back'});T.dock(a,page);
  if(page==='overview'){
   const set=s.homePage||0;
-  const rows=set===0?[['open-studio','MY GAUGES','gauge'],['go:vehicle','MY BMW','car'],['go:layout','HEAD-UP DISPLAY','hud']]:[['go:climate','CLIMATE & COMFORT','fan'],['studio:library','MY DESIGNS','save'],['studio:features','LIGHTING & FEATURES','sun']];
-  rows.forEach((v,i)=>add(v[0],v[1],198+i*454+(s.enterAt?24*Math.pow(1-Math.max(0,Math.min(1,(Date.now()-s.enterAt)/220)),3):0),104,438,344,true,{hero:true,icon:v[2],index:i}));
+  const rows=set===0?[['open-studio','MY GAUGES','gauge'],['car:surface','MY BMW','car'],['go:layout','HEAD-UP DISPLAY','hud']]:[['go:climate','CLIMATE & COMFORT','fan'],['studio:library','MY DESIGNS','save'],['studio:features','LIGHTING & FEATURES','sun']];
+  rows.forEach((v,i)=>add(v[0],v[1],set?198+i*454:[198,514,1260][i],104,set?438:[296,730,302][i],344,true,{hero:true,icon:v[2],index:i}));
+  if(!set)[['left','Left'],['right','Right'],['mode',s.car&&s.car.mode==='move'?'Rotate':'Move'],['out','-'],['in','+'],['reset','Reset'],['readings','Data']].forEach((v,i)=>add(v[0]==='readings'?'go:vehicle':'car:'+v[0],v[1],514+i*105,458,97,44,true,{selected:v[0]==='mode'&&s.car&&s.car.mode==='move'}));
   add('home-prev','Previous',206,458,148,44,set>0);add('home-next','Next',1390,458,148,44,set<1);
  }else if(page==='apps'){
   [['all','All apps'],['display','Displays'],['vehicle','Vehicle'],['comfort','Comfort']].forEach((v,i)=>add('category:'+v[0],v[1],18,102+i*94,152,80,true,{chrome:'rail',icon:['apps','gauge','car','fan'][i],selected:(s.category||'all')===v[0]}));
@@ -42,7 +43,13 @@ function items(m,page){
    const labels=['A/C','MAX A/C','Front defrost','Cabin air','Driver AUTO','Passenger AUTO','Driver airflow','Passenger airflow'];
    CONTROL_IDS.forEach((id,i)=>{const c=control(m,id),pending=s.climateBusy||m.helper&&m.helper.climate&&m.helper.climate.pending;add('climate-set:'+id,labels[i],222+i%4*340,169+Math.floor(i/4)*100,324,86,!!(c&&c.available&&!pending),{climate:true,value:climateLabel(c),selected:!!(c&&c.value>0),controlId:id});});
    ['Driver temperature','Passenger temperature','Fan speed','Temperature sync'].forEach((v,i)=>add('climate-unverified:'+i,v,222+i*340,369,324,62,false,{climate:true,value:'Command mapping pending'}));
-  }else CLIMATE[s.climateTab||0][1].forEach((v,i)=>add('climate-unverified:'+i,v,222+i%4*340,169+Math.floor(i/4)*92,324,78,false,{climate:true,value:'Not implemented · mapping pending'}));
+  }else {
+   const ids=s.climateTab===1?['heatDR','heatPS','ventDR','ventPS','heatDRR','heatPSR']:['rearPower','rearAuto','rearFan','rearAir','rearAC','rearLock','heatDRR','heatPSR'];
+   const pending=s.climateBusy||m.helper&&m.helper.climate&&m.helper.climate.pending;
+   ids.forEach((id,i)=>{const c=control(m,id);add('climate-set:'+id,(c&&c.label)||({heatDR:'Driver seat heating',heatPS:'Passenger seat heating',ventDR:'Driver ventilation',ventPS:'Passenger ventilation',heatDRR:'Rear left seat heating',heatPSR:'Rear right seat heating',rearPower:'Rear climate',rearAuto:'Rear AUTO',rearFan:'Rear fan speed',rearAir:'Rear airflow',rearAC:'Rear A/C',rearLock:'Rear control lock'}[id]),222+i%4*340,169+Math.floor(i/4)*92,324,78,!!(c&&c.available&&!pending),{climate:true,value:climateLabel(c),selected:!!(c&&c.value>0),controlId:id});});
+   const planned=s.climateTab===1?['Steering-wheel heat','Seat heat balance','Automatic seat heating','Automatic seat cooling','Armrest heating','Air quality']:['Rear driver temperature','Rear passenger temperature','Parked ventilation','Residual heat'];
+   planned.forEach((v,j)=>{const i=ids.length+j;add('climate-unverified:'+i,v,222+i%4*340,169+Math.floor(i/4)*92,324,78,false,{climate:true,value:'Command mapping pending'});});
+  }
   add('studio:features','Check car capabilities',1100,458,442,46,true);
  }
  return a;
@@ -52,7 +59,13 @@ function frame(m,page,focus,scale){
  const txt=(v,x,y,z,c,w,center)=>T.text(r,v,x,y,z,c,w,center);
  // First paint contains working controls and a vector car. Upload the detailed
  // artwork after the renderer has acknowledged that first frame.
- const car=(x,y,w)=>m.deferArtwork?T.icon(r,'car',x+w/2,y+w/4,T.C.active,w/7):T.car(r,x,y,w);
+ const car=(area)=>{
+  const p=s.car||Car.pose(),w=area.w*p.zoom,h=w/2,x=area.x+(area.w-w)/2+p.x,y=area.y+(area.h-h)/2+p.y;
+  r.clip(area.x,area.y,area.w,area.h);
+  if(m.deferArtwork)T.icon(r,'car',area.x+area.w/2,area.y+area.h/2,T.C.active,60);
+  else r.image(m.carImage||require('./cockpit_car.js')(),x,y,w,h);
+  r.noclip();
+ };
  T.background(r);
  txt({overview:'MY COCKPIT',apps:'ALL APPS',vehicle:'LIVE VEHICLE',climate:'CLIMATE & COMFORT'}[page],214,41,23,C.text,650);
  const connected=!!m.helperFresh,raw=connected&&m.helper&&m.helper.data||{};
@@ -64,30 +77,33 @@ function frame(m,page,focus,scale){
   buttons.filter(b=>b.hero).forEach((b,i)=>{
    T.slant(r,b.x-20,b.y,b.w+20,b.h,i===1?'#405587':'#253753',62);
    T.slant(r,b.x+b.w-65,b.y,30,b.h,'#687fae',62);
-   if(!s.homePage&&i===1){r.polyline([[b.x+152,b.y+45],[b.x+306,b.y+45],[b.x+275,b.y+100],[b.x+199,b.y+100],[b.x+278,b.y+100],[b.x+250,b.y+164],[b.x+112,b.y+164]],18,'#7489ba');car(b.x+30,b.y+72,390);txt('Vehicle, engine and tire readings',b.x+40,b.y+292,20,C.muted,360);}
+   if(!s.homePage&&i===1){
+    txt('MY BMW',b.x+30,b.y+34,24,C.text,220);txt('X4 M COMPETITION',b.x+b.w-270,b.y+34,17,C.muted,250);
+    car(Car.rect(page,s));
+    txt(m.carError?'Update Cluster Studio to load all angles':(s.car&&s.car.mode==='move'?'Drag to move · Rotate switches back':'Drag the car to rotate · 360°'),b.x+b.w/2,b.y+327,17,m.carError?C.amber:C.muted,b.w-36,true);
+   }
    else if(!s.homePage&&i===0){
-    r.arc(b.x+208,b.y+143,84,87,145,395,'#89a7eb');r.arc(b.x+208,b.y+143,78,80,145,325,'#4e689e');txt('PERSONAL',b.x+208,b.y+129,16,C.muted,220,true);txt('STUDIO',b.x+208,b.y+166,32,C.text,280,true);txt('104 looks. Your own layout.',b.x+38,b.y+292,20,C.muted,360);
-   }else if(!s.homePage){r.strokeRoundRect(b.x+70,b.y+57,300,163,15,2,'#9cb7dd');r.polyline([[b.x+112,b.y+184],[b.x+192,b.y+111],[b.x+297,b.y+111]],5,'#8fbbff');T.icon(r,'hud',b.x+225,b.y+251,C.active,25);txt('Apple Maps, independently.',b.x+40,b.y+292,20,C.muted,360);}
+    r.arc(b.x+b.w/2,b.y+143,70,73,145,395,'#89a7eb');r.arc(b.x+b.w/2,b.y+143,64,66,145,325,'#4e689e');txt('PERSONAL',b.x+b.w/2,b.y+129,16,C.muted,220,true);txt('STUDIO',b.x+b.w/2,b.y+166,29,C.text,250,true);txt('Your gauges. Your layout.',b.x+24,b.y+292,17,C.muted,b.w-40);
+   }else if(!s.homePage){r.strokeRoundRect(b.x+34,b.y+65,b.w-68,150,15,2,'#9cb7dd');r.polyline([[b.x+64,b.y+184],[b.x+130,b.y+111],[b.x+225,b.y+111]],5,'#8fbbff');T.icon(r,'hud',b.x+b.w/2,b.y+251,C.active,25);txt('Apple Maps, independently.',b.x+20,b.y+292,17,C.muted,b.w-30);}
    else{T.icon(r,b.icon,b.x+210,b.y+142,C.active,85);txt(['Air, seats and cabin features','Keep five personal layouts','See what your car supports'][i],b.x+36,b.y+292,20,C.muted,370);}
-   txt(b.label,b.x+35,b.y+326,23,C.text,b.w-66);
+   if(s.homePage||i!==1)txt(b.label,b.x+24,b.y+326,s.homePage?23:20,C.text,b.w-40);
    if(buttons.indexOf(b)===focus)r.line(b.x+24,b.y+b.h,b.x+b.w-40,b.y+b.h,3,C.active);
   });
-  [0,1].forEach(i=>r.circle(796+i*20,480,4,i===(s.homePage||0)?C.active:C.dim));
-  txt('Choose a card or open All apps',800,500,17,C.dim,700,true);
+  if(s.homePage){[0,1].forEach(i=>r.circle(796+i*20,480,4,i===(s.homePage||0)?C.active:C.dim));txt('Choose a card or open All apps',800,500,17,C.dim,700,true);}
  }else if(page==='apps'){
   txt('Everything in one place',220,91,20,C.muted,1000);
   const count=appList(m).length;txt(count+' features  ·  Page '+((s.appPage||0)+1)+' / '+Math.ceil(count/12),224,486,19,C.muted,850);
  }else if(page==='vehicle'){
   const tab=s.vehicleTab||'engine';
-  txt('Your BMW. At a glance.',238,107,31,C.text,600);txt('M3 illustration · X4 M vehicle data',238,139,18,C.dim,600);
-  T.slant(r,213,168,602,244,'#293d64',110);car(235,162,570);
+  txt('Your BMW. At a glance.',238,107,31,C.text,600);txt('Your X4 M model · Drag to rotate',238,139,18,C.dim,600);
+  T.slant(r,213,168,602,244,'#293d64',110);car(Car.rect(page,s));
   const rows=tab==='tires'?[['Front left',value('pressureFL','bar',1)],['Front right',value('pressureFR','bar',1)],['Rear left',value('pressureRL','bar',1)],['Rear right',value('pressureRR','bar',1)],['Front tire temp.',value('tireTempFL','°C')],['Rear tire temp.',value('tireTempRL','°C')]]:tab==='journey'?[['Fuel level',value('fuel','L')],['Range',value('range','km')],['Odometer',value('odometer','km')],['Journey time',value('tripTime','min')],['Outside',value('outside','°C')],['Fuel warning',raw.fuelWarning||'—']]:[['Engine speed',value('rpm','RPM')],['Drive mode',raw.driveMode||'—'],['Oil',value('oil','°C')],['Coolant',value('coolant','°C')],['Fuel level',value('fuel','L')],['Range',value('range','km')]];
   rows.forEach((v,i)=>{const x=860+i%2*336,y=126+Math.floor(i/2)*108;r.line(x,y+87,x+300,y+87,1,C.line);txt(v[0],x,y+23,19,C.muted,300);txt(v[1],x,y+65,34,C.text,300);});
   txt(connected?'Fresh readings from the car. Unavailable signals show —.':'Connect the car to see live readings. No sample values are shown.',860,490,17,C.muted,680);
  }else if(page==='climate'){
   txt(CLIMATE[s.climateTab||0][0],226,104,31,C.text,850);
-  txt(!(s.climateTab||0)?'Tap a control to change it. BMW status confirms each change.':'NOT VERIFIED · These controls are planned; command mapping is still pending.',226,139,20,C.muted,1300);
-  const climate=connected&&m.helper.climate;txt(s.climateNotice||(climate&&climate.message)||(connected&&!m.helper.climateSupported?'Update Cluster Studio to 0.1.24 for climate controls.':'Connect the car to check available climate controls.'),226,488,18,C.muted,860);txt(s.climateTab?'NOT IMPLEMENTED · Command mapping is required before testing':'NOT VERIFIED IN CAR · Supported commands are ready for testing',226,451,17,C.amber,850);
+  txt(!(s.climateTab||0)?'Tap a control to change it. BMW status confirms each change.':'NOT YET VERIFIED IN CAR · Tap to change a level; BMW must confirm it.',226,139,20,C.muted,1300);
+  const climate=connected&&m.helper.climate;txt(s.climateNotice||(climate&&climate.message)||(connected&&!m.helper.climateSupported?'Update Cluster Studio to 0.1.24 for climate controls.':'Connect the car to check available climate controls.'),226,488,18,C.muted,860);txt(s.climateTab?'New seat and rear controls: ready for testing when valid car data is available.':'Front A/C and airflow: confirmed working by owner.',226,451,17,C.amber,850);
  }
  buttons.forEach((b,i)=>{
   if(b.hero)return;

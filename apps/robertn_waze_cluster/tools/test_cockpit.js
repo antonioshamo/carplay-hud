@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
 const assert=require('assert'),EventEmitter=require('events'),C=require('../src/cockpit_view.js'),M=require('../src/studio_model.js'),{HudScreen}=require('../src/hud_screen.js'),{SettingsControl}=require('../src/settings_control.js'),kit=require('../src/kit_record.js');
-const controls=['ac','maxAC','defrost','freshAir','autoDR','autoPS','airDR','airPS'].map(id=>({id,value:0,available:true}));
+const actions=require('../../../native/cluster-studio/climate_controls.js').ACTIONS;
+const controls=Object.keys(actions).map(id=>({id,label:actions[id].label,value:0,available:true,choices:actions[id].labels,choiceCount:actions[id].options.length}));
 const helper={design:M.preset(0),slots:[],climateSupported:true,climate:{controls,pending:false},data:{rpm:738,oil:90,fuel:32,range:310},parked:true};
 const pages=[['overview',{homePage:0}],['overview',{homePage:1}],['apps',{category:'all',appPage:0}],['apps',{category:'all',appPage:1}],['apps',{category:'display'}],['apps',{category:'vehicle'}],['apps',{category:'comfort'}],['vehicle',{vehicleTab:'engine'}],['vehicle',{vehicleTab:'tires'}],['vehicle',{vehicleTab:'journey'}],['climate',{climateTab:0}],['climate',{climateTab:1}],['climate',{climateTab:2}]];
 let texts=[];const original=kit.Recorder.prototype.text;kit.Recorder.prototype.text=function(v){texts.push(String(v));return original.apply(this,arguments);};
@@ -9,9 +10,9 @@ try{
  for(const fresh of [false,true])for(const [page,cockpit] of pages){
   texts=[];const f=C.frame({helper,helperFresh:fresh,cockpit},page,5,1);assert(f.items.length<=24);assert.equal(new Set(f.items.map(b=>b.id)).size,f.items.length);
   for(let i=0;i<f.items.length;i++){const a=f.items[i];assert(a.x>=0&&a.y>=0&&a.x+a.w<=1600&&a.y+a.h<=580,page+' bounds '+a.id);assert(texts.includes(a.label),'truncated button '+a.label);for(const b of f.items.slice(i+1))assert(!(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y),page+' overlap '+a.id+'/'+b.id);}
-  if(page==='climate'){assert(texts.some(t=>t.includes('NOT VERIFIED')));for(const b of f.items.filter(b=>b.id.indexOf('climate-set:')===0))assert.equal(b.enabled,fresh);for(const b of f.items.filter(b=>b.id.indexOf('climate-unverified:')===0))assert.equal(b.enabled,false);}
+  if(page==='climate'){assert(texts.some(t=>t.includes(cockpit.climateTab?'NOT YET VERIFIED IN CAR':'confirmed working by owner')));for(const b of f.items.filter(b=>b.id.indexOf('climate-set:')===0))assert.equal(b.enabled,fresh);for(const b of f.items.filter(b=>b.id.indexOf('climate-unverified:')===0))assert.equal(b.enabled,false);}
   if(page==='vehicle'&&!fresh)assert(!texts.includes('738 RPM'),'no cached telemetry shown offline');
-  if(page==='climate'&&cockpit.climateTab)assert(!texts.some(t=>t.includes('Supported commands are ready')),'unfinished tabs cannot claim test-ready commands');
+
  }
  for(const pair of [['bar','2.5 bar'],['psi','36.3 psi'],['kPa','250.0 kPa']]){
   texts=[];C.frame({helper:{design:M.preset(0),data:{pressureFL:2.5,pressureUnit:pair[0]}},helperFresh:true,cockpit:{vehicleTab:'tires'}},'vehicle',0,1);
@@ -32,12 +33,16 @@ async function main(){
    const id=C.APPS[n][0];press(id);assert.notEqual(h.page,'apps','app route opens: '+id);press('navigate-back');assert.equal(h.page,'apps','Back returns from '+id);
   }
   h.cockpit.appPage=0;
-  for(let i=0;i<10;i++){press('nav:apps');press('studio:edit');assert.equal(h.page,'studio');press('navigate-back');assert.equal(h.page,'apps');press('nav:overview');h._touch('down',600,240);h._touch('up',300,240);assert.equal(h.cockpit.homePage,1);press('home-prev');assert.equal(h.cockpit.homePage,0);}
+  for(let i=0;i<10;i++){press('nav:apps');press('studio:edit');assert.equal(h.page,'studio');press('navigate-back');assert.equal(h.page,'apps');press('nav:overview');h._touch('down',450,240);h._touch('up',220,240);assert.equal(h.cockpit.homePage,1);press('home-prev');assert.equal(h.cockpit.homePage,0);}
   press('nav:climate');await Promise.resolve();assert(requests.some(r=>r.cmd==='climate-observe'));
-  for(const c of controls){press('climate-set:'+c.id);await Promise.resolve();assert(requests.some(r=>r.cmd==='climate-set'&&r.args.action===c.id&&r.args.value===1));assert(!h.cockpit.climateBusy);}
+  for(const c of controls){press('ctab:'+(/^(heat|vent)/.test(c.id)?1:/^rear/.test(c.id)?2:0));press('climate-set:'+c.id);await Promise.resolve();assert(requests.some(r=>r.cmd==='climate-set'&&r.args.action===c.id&&r.args.value===1));assert(!h.cockpit.climateBusy);}
+  press('ctab:0');
   helper.climate.pending=true;h.render();assert(!h.press(h.items.findIndex(b=>b.id==='climate-set:ac')),'a second controller cannot overlap a pending vehicle change');helper.climate.pending=false;
   h.studio.client.statusAt=Date.now()-3000;h.render();assert(!h.press(h.items.findIndex(b=>b.id==='climate-set:ac')),'stale button cannot write');
-  h.studio.client.statusAt=Date.now();press('nav:overview');const before=requests.length;h.observeClimate();assert.equal(requests.length,before,'hidden climate page cannot renew observers');
+  h.studio.client.statusAt=Date.now();press('nav:overview');
+  const angle=h.cockpit.car.angle;h._touch('down',800,250);h._touch('move',1000,250);h._touch('up',1000,250);assert.equal(h.cockpit.homePage,0,'car drag must not swipe the dashboard');assert.equal(h.page,'overview','rotate directly on dashboard');assert.equal(h.cockpit.car.angle,(angle+100)%360);
+  press('car:mode');h._touch('down',800,250);h._touch('up',830,270);assert.equal(h.cockpit.car.x,30);assert.equal(h.cockpit.car.y,20);press('car:in');assert(h.cockpit.car.zoom>1);press('car:reset');assert.deepEqual(h.cockpit.car,require('../src/car_model.js').pose());
+  const before=requests.length;h.observeClimate();assert.equal(requests.length,before,'hidden climate page cannot renew observers');
   h.page='climate';h.active=false;h.observeClimate();assert.equal(requests.length,before,'unfocused settings cannot renew observers');
   console.log('ok all new pages, proxy limits, complete labels, no overlap, unverified/disabled controls, stale data, ten navigation/swipe cycles, correct Back destination and climate request routing');
  }finally{h.close();control.close();}

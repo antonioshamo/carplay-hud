@@ -1,3 +1,11 @@
+## 0.4.152
+
+- Replace the temporary M3 with 96 views rendered from the supplied customized X4 M GLB. Make MY BMW the large center dashboard card with direct drag rotation, Move, zoom and Reset; no enlargement step.
+- Load model angles asynchronously on demand with a bounded decoded-image cache, preserving the immediate first paint. Requires Cluster Studio 0.1.29 for the view assets.
+- Add mapped driver/passenger/rear seat heat, front seat ventilation, rear climate power, AUTO, fan, airflow, A/C and rear lock controls. Keep new controls explicitly unverified in car; only fresh supported readings enable them, and each change requires new BMW readback confirmation.
+- Keep unmapped temperature and comfort controls disabled with an explicit reason. Front A/C and airflow are reported working by the owner. No live climate changes were made during this offline release.
+- The native menu uses a fixed-elevation 360-view sequence of the supplied model, not a full GLB/WebGL runtime. Gauge and HUD activation policies are unchanged.
+
 ## 0.4.151
 
 - Refine recreated BMW dials from the supplied close-up photos: darker faces, longer scale spokes, square numerals, and a shallow foot with red mesh.

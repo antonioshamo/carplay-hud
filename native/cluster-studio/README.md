@@ -16,3 +16,12 @@ The paired phone designer is an explicit five-minute parked session. It supports
 Version 0.1.14 retains an existing gauge layer across HUD stock-pop-up waits. Renderer 0.3.103 keeps its published scene reserved while that layer still wants to resume after a BMW interruption. See [recovery validation and the remaining HUD conflict](../../docs/cluster-studio/CALL-RECOVERY-0.1.14.md).
 
 Version 0.1.14 also uses 50 ms speed/RPM fallback reads, 250 ms slower getters and a 34 ms drawing interval with a 30 fps ceiling. Native row comparisons and split left/right deltas reduce rendering work and traffic for every gauge style. See [offline measurements and validation](../../docs/cluster-studio/REFRESH-AND-WIDGETS-0.4.137.md); physical OEM timing equality is not established.
+
+## 0.1.29: dashboard model and climate additions
+
+Ships the 96 X4 M dashboard orbit views with integrity metadata. The app decodes
+only the current/recent angles. The seat and rear climate adapters are matched
+to the captured service schema but are not physically verified. No command is
+issued by opening a page; each explicit action uses untouched-field neutral
+values, a fresh availability check, a bounded lease and fresh readback. Commands
+without a known mapping remain unavailable.

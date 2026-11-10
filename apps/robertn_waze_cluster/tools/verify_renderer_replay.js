@@ -12,10 +12,10 @@ fs.mkdirSync(out,{recursive:true});
 const model={target:'hud',state:'showing',width:60,offset:[0,0],step:10,background:false,corners:true,
  startup:false,startupResult:'Sample status',notice:'Offline render',captureText:'No capture running',captureButton:'Capture logs',logs:[],
  helperFresh:true,helper:{design:M.defaultDesign(),slots:[],data:{rpm:738,oil:90,fuel:32,range:310},climateSupported:true,
- climate:{controls:['ac','maxAC','defrost','freshAir','autoDR','autoPS','airDR','airPS'].map(id=>({id,value:0,available:true}))}}};
+ climate:{controls:Object.keys(require('../../../native/cluster-studio/climate_controls.js').ACTIONS).map(id=>{const a=require('../../../native/cluster-studio/climate_controls.js').ACTIONS[id];return {id,label:a.label,value:1,available:true,choices:a.labels,choiceCount:a.options.length};})}}};
 for(const key of ['canDisplay','canSize','canLarger','canSmaller','canMove','canStyle','canCorners','canStartup','canDisable','canCapture'])model[key]=true;
 const cases=[['home-first','overview',{deferArtwork:true}],['home-artwork','overview',{}],['home-second','overview',{cockpit:{homePage:1}}],
- ['apps','apps',{}],['vehicle','vehicle',{}],['climate','climate',{}],['hud-layout','layout',{}],['startup','startup',{}]];
+ ['apps','apps',{}],['vehicle','vehicle',{}],['climate','climate',{}],['climate-seats','climate',{cockpit:{climateTab:1}}],['climate-rear','climate',{cockpit:{climateTab:2}}],['hud-layout','layout',{}],['startup','startup',{}]];
 const results=[];
 function verify(name,record){
  const file=path.join(out,name+'.bin'),gpu=new RenderClient('robertn_waze_cluster',console,{kit,file});
@@ -36,6 +36,7 @@ function verify(name,record){
  fs.unlinkSync(file);fs.unlinkSync(pam);console.log('PASS native GPU replay '+name);
 }
 for(const [name,page,extra] of cases)verify(name,H.frame(Object.assign({},model,extra),page,0,0,1).record);
+for(const n of [0,24,36,48,60,72,84]){const data=require('zlib').inflateSync(fs.readFileSync(path.resolve(__dirname,'../../../native/cluster-studio/assets/x4m/'+('00'+n).slice(-3)+'.rgba.z'))),image=kit.makeImage(900,450,data);verify('car-angle-'+n,H.frame(Object.assign({},model,{carImage:image}),'overview',0,0,1).record);kit.dropImage(image);}
 const studio=new StudioScreen(()=>{});studio.client.status=model.helper;studio.client.statusAt=Date.now();
 try{for(const page of ['gallery','edit','add','gauges']){studio.page=page;verify('studio-'+page,studio.frame(0,1).record);}}finally{studio.close();}
 fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({renderer:'0.6.15',source:'54c656a79f08db3385393417a93b5608778fa571',vehicleVerified:false,results},null,2));
