@@ -1,4 +1,4 @@
-name: Verify and publish BMW gauge refinement
+name: Verify and publish X4 M dashboard
 on:
   workflow_dispatch:
 permissions:
@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-gauges-0151c.bundle ]; then
-            echo '761022448513ac09ec26bdd39cd56869b200ee6f2cb3ae72f4dd399c76fa7825  bmw-gauges-0151c.bundle' | sha256sum -c -
-            git bundle verify bmw-gauges-0151c.bundle
-            git fetch ./bmw-gauges-0151c.bundle HEAD:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = '59f2bde84dba3af2daace5707dbb26160c8f3f94'
+          if [ -f bmw-x4m-0152.bundle ]; then
+            echo 'd2283dbbe60deaaf0c9e571119948b45bd69f7956b8a15af60dc6ac5c6d2d48b  bmw-x4m-0152.bundle' | sha256sum -c -
+            git bundle verify bmw-x4m-0152.bundle
+            git fetch ./bmw-x4m-0152.bundle HEAD:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = 'db006a9cae34ea75a988b83fa0574c632cbef987'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-gauges-0151c.bundle
+            git rm bmw-x4m-0152.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 59f2bde84dba3af2daace5707dbb26160c8f3f94 HEAD
+          git merge-base --is-ancestor db006a9cae34ea75a988b83fa0574c632cbef987 HEAD
       - name: Replay menu with installed Renderer 0.6.15
         run: |
           set -eu
@@ -70,7 +70,7 @@ jobs:
           node release/test/release_test.js
       - name: Verify reproducible app and helper artifacts
         run: node release/release.js check cluster-studio robertn_waze_cluster
-      - name: Publish gauge refinement 0.4.151 and Cluster Studio 0.1.28
+      - name: Publish X4 M dashboard 0.4.152 and Cluster Studio 0.1.29
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
