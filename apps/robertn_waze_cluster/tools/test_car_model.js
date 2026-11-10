@@ -7,7 +7,11 @@ const wait=()=>new Promise(resolve=>setTimeout(resolve,5));
 async function settled(c){for(let i=0;i<1000&&c.loading;i++)await wait();assert(!c.loading,'frame loading must finish');}
 async function main(){
  const manifest=JSON.parse(fs.readFileSync(root+'/views.json'));assert.equal(manifest.views.length,Car.COUNT);const hashes=new Set();
- for(const v of manifest.views){const bytes=fs.readFileSync(root+'/'+v.file);assert.equal(bytes.length,v.bytes);assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),v.sha256);assert.equal(zlib.inflateSync(bytes).length,Car.W*Car.H*4);hashes.add(v.sha256);}assert.equal(hashes.size,Car.COUNT,'every orbit angle is distinct');
+ assert.deepEqual(manifest.contentBounds,require('../src/cockpit_car.js').bounds,'poster and orbit share framing');
+ for(const v of manifest.views){const bytes=fs.readFileSync(root+'/'+v.file);assert.equal(bytes.length,v.bytes);assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),v.sha256);const rgba=zlib.inflateSync(bytes);assert.equal(rgba.length,Car.W*Car.H*4);hashes.add(v.sha256);
+  const b=manifest.contentBounds;for(let i=3;i<rgba.length;i+=4)if(rgba[i]>=8){const n=(i-3)/4,x=n%Car.W,y=Math.floor(n/Car.W);assert(x>=b.x&&x<b.x+b.w&&y>=b.y&&y<b.y+b.h,'every car silhouette fits shared bounds');}
+ }assert.equal(hashes.size,Car.COUNT,'every orbit angle is distinct');
+ for(const page of ['overview','vehicle']){const area=Car.rect(page,{}),b=manifest.contentBounds,box=Car.placement(area,Car.pose(),b),scale=box.w/Car.W;assert(box.x+b.x*scale>=area.x&&box.y+b.y*scale>=area.y);assert(box.x+(b.x+b.w)*scale<=area.x+area.w&&box.y+(b.y+b.h)*scale<=area.y+area.h,'roof and wheels fit without zooming first');}
  let reads=0,changes=0;const c=new Car.CarModel(()=>changes++,{root,read:(p,fn)=>{reads++;fs.readFile(p,fn);}});assert.equal(reads,0,'startup does not load the orbit');
  const poster=c.get(45);assert.equal(reads,0,'default view is already bundled');assert(kit.imageById.has(poster.imageId));
  for(let i=0;i<24;i++){c.get(i*15);await settled(c);assert(c.cache.size<=6,'decoded image cache stays bounded');assert.equal(c.current,c.cache.get(Car.index(i*15)));}

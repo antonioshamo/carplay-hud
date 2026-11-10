@@ -1,3 +1,10 @@
+## 0.4.153
+
+- Use all 96 exact display views from Antonio_WHITE_X4M_Complete_Updated.zip, including the revised wheels, seats, brakes, tint, cross and carbon spoiler. Keep the large central car and direct dashboard rotation, Move, zoom and Reset.
+- Fit the complete car silhouette at every rotation angle so its roof and wheels are visible at the default view. Requires Cluster Studio 0.1.30 for matching assets.
+- Explain when seat/rear controls require a helper update. Keep fresh getter readings available if climate notification subscription fails, while preserving stale-data expiry and confirmation requirements.
+- Front A/C and airflow commands are unchanged. New seat and rear controls remain unverified on the physical car.
+
 ## 0.4.152
 
 - Replace the temporary M3 with 96 views rendered from the supplied customized X4 M GLB. Make MY BMW the large center dashboard card with direct drag rotation, Move, zoom and Reset; no enlargement step.

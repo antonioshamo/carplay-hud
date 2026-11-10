@@ -1,14 +1,14 @@
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-CarPlay HUD **0.4.152** opens the graphical dashboard directly and removes the
+CarPlay HUD **0.4.153** opens the graphical dashboard directly and removes the
 old native settings menus. Graphics recovery stays on the same dashboard host;
 a minimal Retry/Close message remains if the graphical renderer cannot present.
 The update is tested offline, not yet verified on the physical car.
 [Direct launch review](docs/cockpit-direct-launch.md) documents the changes.
 
-Cluster Studio **0.1.29** provides 37 movable widgets, fuel by default, saved
+Cluster Studio **0.1.30** provides 37 movable widgets, fuel by default, saved
 layouts, optional welcomes and Restore BMW defaults. The large MY BMW dashboard
-card now uses the supplied X4 M model, with direct 360-degree drag rotation,
+card now uses the November 10 updated white X4 M model, with direct 360-degree drag rotation,
 move, zoom and reset. Its twenty-action climate adapter waits for fresh supported
 status and readback confirmation. The owner reports front A/C and airflow working;
 **new seat and rear commands are not yet verified in-car**. Unmapped controls
@@ -17,8 +17,8 @@ factory-preserving side widgets remain prototypes. Reliable route-free Apple Map
 startup and HUD flicker still require physical-car verification.
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps).
-Current component versions: app **0.4.152**, Waze on cluster **0.7.117**,
-Cluster Studio **0.1.29**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
+Current component versions: app **0.4.153**, Waze on cluster **0.7.117**,
+Cluster Studio **0.1.30**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
 comes from the official MGU Store source and draws the settings app; it is
 separate from cluster-render.
 

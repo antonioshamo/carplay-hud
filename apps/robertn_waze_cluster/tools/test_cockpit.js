@@ -18,6 +18,9 @@ try{
   texts=[];C.frame({helper:{design:M.preset(0),data:{pressureFL:2.5,pressureUnit:pair[0]}},helperFresh:true,cockpit:{vehicleTab:'tires'}},'vehicle',0,1);
   assert(texts.includes(pair[1]),'correct pressure display: '+pair[1]);
  }
+ const older={helperFresh:true,helper:{climateSupported:true,climate:{controls:controls.filter(c=>!/^heat|^vent|^rear/.test(c.id))}},cockpit:{climateTab:1}};
+ const legacy=C.frame(older,'climate',0,1);assert(legacy.items.filter(b=>b.id.indexOf('climate-set:')===0).every(b=>!b.enabled&&b.value==='Update Cluster Studio'),'missing adapters explain the required helper update');
+ assert.equal(C.control({helperFresh:false,helper},'heatDR'),null,'old helper state is never presented as current');
 }finally{kit.Recorder.prototype.text=original;}
 async function main(){
  const gpu=new EventEmitter();for(const name of ['fps','connect','claim','grab','show','close'])gpu[name]=()=>{};const frames=[];gpu.frame=r=>frames.push(r);
