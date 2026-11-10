@@ -21,19 +21,19 @@ jobs:
       - name: Import tested cockpit source
         run: |
           set -eu
-          if [ -f bmw-x4m-0153.bundle ]; then
-            echo 'b48c5e7d7cf6bc4d0773788579c35a932fbde0e8225e02aaaa5480095a4593ba  bmw-x4m-0153.bundle' | sha256sum -c -
-            git bundle verify bmw-x4m-0153.bundle
-            git fetch ./bmw-x4m-0153.bundle HEAD:refs/remotes/import/recovery
-            test "$(git rev-parse refs/remotes/import/recovery)" = '471d2dee36a2160d9816ce235619f85553fe9b99'
+          if [ -f bmw-x4m-0154.bundle ]; then
+            echo 'ed6e6f71573e1ad04fe6127a8517b27e2ff37d3fb73f1d9782ee3359742e57b7  bmw-x4m-0154.bundle' | sha256sum -c -
+            git bundle verify bmw-x4m-0154.bundle
+            git fetch ./bmw-x4m-0154.bundle HEAD:refs/remotes/import/recovery
+            test "$(git rev-parse refs/remotes/import/recovery)" = '99f9ac9c16b519d44533fa62e0bbc8ce2b5fe5cf'
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git merge --no-ff --no-edit refs/remotes/import/recovery
-            git rm bmw-x4m-0153.bundle
+            git rm bmw-x4m-0154.bundle
             git commit -m 'Remove tested cockpit source transport bundle'
             git push origin HEAD:main
           fi
-          git merge-base --is-ancestor 471d2dee36a2160d9816ce235619f85553fe9b99 HEAD
+          git merge-base --is-ancestor 99f9ac9c16b519d44533fa62e0bbc8ce2b5fe5cf HEAD
       - name: Replay menu with installed Renderer 0.6.15
         run: |
           set -eu
@@ -70,7 +70,7 @@ jobs:
           node release/test/release_test.js
       - name: Verify reproducible app and helper artifacts
         run: node release/release.js check cluster-studio robertn_waze_cluster
-      - name: Publish X4 M dashboard 0.4.153 and Cluster Studio 0.1.30
+      - name: Publish X4 M dashboard 0.4.154 and Cluster Studio 0.1.31
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}
