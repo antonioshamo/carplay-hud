@@ -1,10 +1,10 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.31",
+  "version": "0.1.32",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
-  "description": "37 movable cluster widgets, fuel in every template, saved full-cluster layouts in Park, and live vehicle readings.",
+  "description": "Source-based cluster themes, visual previews and shared customization; native BMW center and warning strip retained.",
   "requires": {
     "mgu-deploy": "0.7.0",
     "cluster-render": "0.3.105"
@@ -18,10 +18,6 @@
     "build.js"
   ],
   "files": [
-    {
-      "path": "frame_cache.js",
-      "mode": "0644"
-    },
     {
       "path": "service.js",
       "mode": "0644"
@@ -55,10 +51,6 @@
       "mode": "0644"
     },
     {
-      "path": "shared/studio_draw.js",
-      "mode": "0644"
-    },
-    {
       "path": "shared/kit_canvas.js",
       "mode": "0644"
     },
@@ -79,26 +71,12 @@
       "mode": "0644"
     },
     {
-      "path": "shared/studio_intro.js",
-      "from": "shared/studio_intro.js",
-      "mode": "0644"
-    },
-    {
-      "path": "shared/studio_assets.js",
-      "from": "shared/studio_assets.js",
-      "mode": "0644"
-    },
-    {
       "path": "shared/kit_record.js",
       "from": "shared/kit_record.js",
       "mode": "0644"
     },
     {
       "path": "ASSET-NOTICE.md",
-      "mode": "0644"
-    },
-    {
-      "path": "welcome_gpu.js",
       "mode": "0644"
     },
     {
@@ -122,23 +100,11 @@
       "mode": "0644"
     },
     {
-      "path": "phone_design.html",
-      "mode": "0644"
-    },
-    {
-      "path": "image_delta.js",
-      "mode": "0644"
-    },
-    {
       "path": "assistance.js",
       "mode": "0644"
     },
     {
       "path": "display_policy.js",
-      "mode": "0644"
-    },
-    {
-      "path": "panel_composition.js",
       "mode": "0644"
     },
     {
@@ -931,6 +897,290 @@
     },
     {
       "path": "assets/x4m/motion/095.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "cluster_store.js",
+      "mode": "0644"
+    },
+    {
+      "path": "source_mesh.js",
+      "mode": "0644"
+    },
+    {
+      "path": "shared/cluster_catalog.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/clock.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_retro.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/font_orb.wad",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/car_sprite.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_classic.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/font.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/LICENSE",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_sport.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/themes.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_gt3.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/bimmer.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/font_baked.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_digital_round.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/NOTICE",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layouts.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_track.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/shaders.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/font_light.wad",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_digital_dash.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_analog_sport.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_freedom.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/engine.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/attribution.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_modern_wide.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/font_bold.wad",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/UPSTREAM.json",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_m.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_pulse.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/layout_common.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/font_wide.wad",
+      "mode": "0644"
+    },
+    {
+      "path": "vendor/cluster-layouts/attribution_sig.js",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/analog_sport-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/analog_sport-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/analog_sport-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/classic-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/classic-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/classic-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/digital_dash-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/digital_dash-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/digital_dash-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/digital_round-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/digital_round-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/digital_round-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/freedom-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/freedom-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/freedom-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/gt3-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/gt3-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/gt3-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/m-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/m-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/m-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/modern_wide-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/modern_wide-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/modern_wide-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/pulse-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/pulse-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/pulse-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/retro-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/retro-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/retro-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/sport-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/sport-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/sport-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/track-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/track-efficient.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/track-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "SOURCE-INTEGRATION.md",
       "mode": "0644"
     }
   ],

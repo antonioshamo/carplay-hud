@@ -56,21 +56,18 @@ jobs:
       - name: Verify map tool integration
         run: |
           make -C native/waze-on-cluster test
-      - name: Verify app, helper and factory preview
+      - name: Verify app, source cluster and regression coverage
         run: |
           set -eu
           for test in native/cluster-studio/test/*.js apps/robertn_waze_cluster/tools/test_*.js; do
             node "$test"
           done
-          node native/cluster-studio/test/factory-personal/test.js
-          node native/cluster-studio/test/assistance-window/test.js
-          node native/cluster-studio/test/assistance-window/bmw_transition.js
           sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
           node native/hud-startup-diagnostics/test.js
           node release/test/release_test.js
       - name: Verify reproducible app and helper artifacts
         run: node release/release.js check cluster-studio robertn_waze_cluster
-      - name: Publish X4 M dashboard 0.4.154 and Cluster Studio 0.1.31
+      - name: Publish X4 M dashboard 0.4.155 and Cluster Studio 0.1.32
         env:
           GH_TOKEN: ${{ github.token }}
           MGU_PUBLISH: github:${{ github.repository }}

@@ -1,146 +1,92 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const M=require('./shared/studio_model.js'),I=require('./shared/studio_intro.js'),G=require('./welcome_gpu.js'),P=require('./image_delta.js');
-const {FrameCache}=require('./frame_cache.js');
+const M=require('./shared/studio_model');
+const Layouts=require('./vendor/cluster-layouts/layouts');
+const {startCluster}=require('./vendor/cluster-layouts/engine');
+const {SourceMesh}=require('./source_mesh');
+const Clock=require('./vendor/cluster-layouts/clock');
+const {lookNow}=require('./vendor/cluster-layouts/themes');
+const C=require('./vendor/cluster-layouts/layout_common');
+function widgets(design,raw){
+ const value=k=>{let v=raw[k],unit='';if(['driveMode','engineState','fuelWarning'].includes(k))return typeof v==='string'&&v?v:'--';if(!Number.isFinite(v))return '--';if(k==='fuel'){v=Math.max(0,Math.min(100,v/design.fuelCapacityLitres*100));unit='%';}else if(['oil','coolant','outside'].includes(k)||/^tireTemp/.test(k)){if(design.temperatureUnit==='F')v=v*1.8+32;unit='°'+design.temperatureUnit;}else if(k==='range'||k==='odometer'){if(design.units==='mph')v/=1.609344;unit=design.units==='mph'?' mi':' km';}else if(/^(pressure|target)/.test(k)){if(design.units==='mph')v*=14.5037738;return v.toFixed(1)+(design.units==='mph'?' psi':' bar');}else if(k==='torque'){if(design.units==='mph')v*=.737562149;unit=design.units==='mph'?' lb-ft':' Nm';}else if(k==='power'){if(design.units==='mph')v*=1.34102209;unit=design.units==='mph'?' hp':' kW';}else if(k==='tripTime')return Math.floor(v/60)+'h '+Math.round(v%60)+'m';else if(['battery','powerPercent','torquePercent'].includes(k))unit='%';return Math.round(v)+unit;};
+ return value;
+}
+function sourceData(raw,d){
+ const n=k=>Number.isFinite(raw[k])?raw[k]:null;
+ const stage=['P','R','N','D'].includes(raw.gear)?raw.gear:/^[1-9]$/.test(raw.gear||'')?'D':null;
+ return {speed:n('speed'),rpm:n('rpm'),stage,gear:/^[1-9]$/.test(raw.gear||'')?Number(raw.gear):null,mode:null,
+  oil:n('oil'),coolant:n('coolant'),outside:n('outside'),torque:n('torque'),kw:n('power'),frange:n('range'),driveMode:raw.driveMode||null,
+  fuelPct:n('fuel')==null?null:Math.max(0,Math.min(100,raw.fuel/d.fuelCapacityLitres*100)),engineOn:n('rpm')==null?null:raw.rpm>0,
+  tyres:{p:{FL:n('pressureFL'),FR:n('pressureFR'),RL:n('pressureRL'),RR:n('pressureRR')},t:{FL:n('tireTempFL'),FR:n('tireTempFR'),RL:n('tireTempRL'),RR:n('tireTempRR')}},
+  // No demo lane objects, inferred cruise engagement or synthetic diagnostics.
+  dap:null,soc:null,erange:null,gearbox:null,iat:null,battTemp:null,boostActual:null,boostTarget:null,timing:null,hpfp:null};
+}
 class Engine {
  constructor(cr,telemetry,o){
-  this.cr=cr;this.telemetry=telemetry;this.panelBlock=null;this.output='center';this.now=o&&o.now||Date.now;this.design=M.defaultDesign();this.enabled=false;this.ref=null;this.target=null;this.panelUntil=0;this.introUntil=0;this.lastDraw=0;this.state='Off';this.condition=null;this.hud='unknown';
-  this.targets={};this.layerState=null;this.layerReason='';this.clearRecovery();
-  cr.on('target',(target,state,holder,reason)=>{
-   const previous=this.targets[target];this.targets[target]={state,holder,reason:reason||''};
-   if(target===this.target&&previous&&previous.state==='shown'&&state==='waiting'&&holder==='none'&&/^(taken:|not rendered:)/.test(reason||''))this.pendingLoss={ref:this.ref,target,at:this.now()+1000};
-   if(target==='hud'){this.hud=state;this.hudHolder=holder;this.hudReason=reason;if(!this.hudAllowsPanel()&&this.target==='panel'){this.stopPreview();this.drop();}}
-   if(target===this.target)this.state='Renderer: '+state;
-  });
-  cr.on('disconnected',()=>{this.drop();this.targets={};this.hud='unknown';this.state='Renderer disconnected';});
-  cr.on('ready',()=>{this.drop();this.targets={};this.hud='unknown';this.lastDraw=0;});
-  cr.on('layer',(ref,state,reason)=>{if(ref!==this.ref)return;this.layerState=state;this.layerReason=reason||'';if(state==='error')this.failed('layer',reason);});
-  cr.on('refused',(op,ref,reason)=>{
-   // Late replies to a retired layer (or another client of this connection)
-   // must not tear down the currently displayed gauges.
-   if(!(this.ref!=null&&ref===this.ref)&&!(this.welcome&&(ref===this.welcome.ref||this.welcome.assets.includes(ref))))return;
-   // A rejected welcome is optional. Its assets must not tear down healthy
-   // gauges; the safety lease of the gauge image itself is not optional.
-   if(ref!==this.ref){G.drop(this.cr,this.welcome);this.welcome=null;this.introUntil=0;return;}
-   this.failed(op,reason);
-  });
+  this.cr=cr;this.telemetry=telemetry;this.now=o&&o.now||Date.now;this.design=M.defaultDesign();this.enabled=false;this.output='panel';this.target=null;this.ref=null;this.panelUntil=0;this.panelBlock=null;
+  this.hud='unknown';this.hudHolder=null;this.hudReason='';this.state='BMW gauges active';this.layerStates=new Map();this.clearRecovery();this.swept=false;
+  cr.on('target',(target,state,holder,reason)=>{if(target==='hud'){this.hud=state;this.hudHolder=holder;this.hudReason=reason;}if(target==='panel')this.panelState={state,holder,reason};});
+  cr.on('ready',()=>{this.hud='unknown';this.panelState=null;this.layerStates.clear();if(this.adapter)this.adapter.reconnect();});
+  cr.on('disconnected',()=>{this.hud='unknown';this.panelState=null;this.layerStates.clear();this.state='Waiting for cluster renderer';});
+  cr.on('layer',(ref,state,reason)=>{if(!this.owns(ref))return;this.layerStates.set(ref,state);if(state==='error')this.failed('layer',reason);});
+  cr.on('refused',(op,ref,reason)=>{if(this.owns(ref))this.failed(op,reason);});
  }
- clearRecovery(){this.failures=0;this.retryAt=0;this.recoveryPaused=false;this.lastFailure=null;this.healthyAt=0;this.losses=[];this.pendingLoss=null;}
- failed(op,reason){
-  this.failures++;this.lastFailure={at:new Date(this.now()).toISOString(),target:this.target,op,reason:String(reason||'Renderer rejected the layer').slice(0,240)};
-  this.drop();this.panelUntil=0;this.introUntil=0;this.pendingWelcome=0;
-  this.recoveryPaused=this.failures>=3;this.retryAt=this.recoveryPaused?0:this.now()+(this.failures===1?2000:5000);
-  this.state=this.recoveryPaused?'Display paused · retry saved display':'Renderer retry pending';
- }
- retry(){this.drop();this.panelUntil=0;this.introUntil=0;this.pendingWelcome=0;this.clearRecovery();}
+ owns(ref){return this.adapter&&(this.adapter.meshes.includes(ref)||this.adapter.assets.has(ref));}
+ clearRecovery(){this.failures=0;this.retryAt=0;this.recoveryPaused=false;this.lastFailure=null;}
+ failed(op,reason){if(this.recoveryPaused)return;this.failures++;this.lastFailure={at:new Date(this.now()).toISOString(),op,reason:String(reason||'Renderer refused cluster').slice(0,240)};this.drop();this.recoveryPaused=this.failures>=3;this.retryAt=this.recoveryPaused?0:this.now()+(this.failures===1?2000:5000);this.state=this.recoveryPaused?'Cluster paused; BMW gauges active':'Waiting to retry source cluster';}
  health(){return {paused:this.recoveryPaused,retryInMs:Math.max(0,this.retryAt-this.now()),attempts:this.failures,failure:this.lastFailure};}
- display(){
-  const t=this.target&&this.targets[this.target];
-  return {target:this.target,visible:!!(this.ref&&this.layerState==='shown'&&t&&t.state==='shown'),state:t?t.state:null,holder:t?t.holder:null,reason:(t&&t.reason)||this.layerReason||'',layerState:this.layerState};
- }
+ display(){const refs=this.adapter?this.adapter.meshes:[],t=this.panelState;return {target:refs.length?'panel':null,visible:!!(refs.length&&refs.every(r=>this.layerStates.get(r)==='shown')&&t&&t.state==='shown'),state:t&&t.state||null,holder:t&&t.holder||null,reason:t&&t.reason||'',layerState:refs.length?'source meshes':'off'};}
  hudAllowsPanel(){
-  // The renderer confirms distinct loaded scene IDs and slots. Older/shared
-  // mappings retain the existing conflict gate; Park checks remain below.
+  // Observe only. Never start, stop, retarget or reconfigure the HUD.
   if(this.cr.ready&&this.cr.independentPanelHud===true)return true;
   if(['idle','released'].includes(this.hud))return true;
-  // A queued HUD or a HUD suspended for a stock popup has no mapping of
-  // its own. Keep the existing gauge demand so the slot manager can resume
-  // it after BMW releases the call/speech dialog. Dropping it here hands
-  // the shared scene to the queued map and strands the saved gauges.
-  // This only retains an existing layer; the renderer still arbitrates
-  // BMW dialogs/locks. Never acquire a new layer from an unknown HUD state.
-  const queued=this.hudReason==='scene id in use by another target';
-  const popup=this.hudHolder==='stock'&&this.hudReason==='a stock pop-up shows in its place';
-  return this.target==='panel'&&!!this.ref&&this.hud==='waiting'&&(queued||popup);
+  const queued=this.hudReason==='scene id in use by another target',popup=this.hudHolder==='stock'&&this.hudReason==='a stock pop-up shows in its place';
+  return !!(this.adapter&&this.adapter.meshes.length)&&this.hud==='waiting'&&(queued||popup);
  }
- drop(){G.drop(this.cr,this.welcome);this.welcome=null;if(this.ref)this.cr.drop(this.ref);this.ref=null;this.target=null;this.pendingLoss=null;this.layerState=null;this.layerReason='';this.healthyAt=0;this.lastDraw=0;this.lastLease=0;this.panelLease=null;this.previousPixels=null;this.frames=null;}
+ options(){const d=this.design;return {centre:'stock',bottomStrip:'stock',vehicle:'ice',cluster:'standard',speedUnit:d.units==='mph'?'mph':'kmh',tempUnit:d.temperatureUnit==='F'?'f':'c',rpmMax:d.rpmMax,redline:d.redline,black:true,boxBezel:false};}
+ window(){const w=Layouts.byId(this.design.theme).mapWindow;return w?[Math.min(711,w.x),Math.min(128,w.y),Math.max(1209,w.x+w.w),660]:[416,120,1504,660];}
+ layout(){const l=Layouts.byId(this.design.theme);return Object.assign({},l,{pieces:o=>{
+  let p=l.pieces(o).map(x=>Object.assign({},x));
+  // M's original speed/gear sit below its short map window. The X4 M needs
+  // that entire center for native assistance: move speed into the left card.
+  if(l.id==='m'){p=p.filter(x=>!['gear','gearStack'].includes(x.key)&&! /^(fuelBar|chargeBar)/.test(x.key));p.forEach(x=>{if(x.key==='speedDigits')Object.assign(x,{x:200,y:426,w:280,h:85});if(x.key==='speedUnit')Object.assign(x,{x:415,y:474,w:90,h:28});});}
+  if(l.id==='gt3')p.forEach(x=>{if(['coolant','oil'].includes(x.key))Object.assign(x,{y:x.y+12,h:44});});
+  p=p.filter(x=>!/^stripFuel/.test(x.key));
+  for(const x of [0,1504])p.push(Object.assign(C.flat('personal-bg-'+x,x,606,416,54,'bg'),{z:45}));
+  this.design.widgets.forEach((k,i)=>{const x=[18,216,1522,1720][i],key='personal-'+i;
+   const label=({fuel:'FUEL %',oil:'OIL',coolant:'COOLANT',range:'RANGE',outside:'OUTSIDE',power:'POWER (CALC)',torque:'TORQUE',battery:'BATTERY',odometer:'ODOMETER',tripTime:'JOURNEY',powerPercent:'POWER %',torquePercent:'TORQUE %',driveMode:'DRIVE MODE',engineState:'ENGINE',fuelWarning:'FUEL RESERVE'})[k]||k.replace('pressure','TIRE ').replace('tireTemp','TEMP ').replace('target','TARGET ');
+   const small=['driveMode','engineState','fuelWarning'].includes(k);
+   p.push(C.text(key+'-label',x,609,180,16,label,t=>({color:[t.dim||'#9ba8ba',1]}),{z:46}),C.text(key+'-value',x,small?636:630,180,small?19:28,()=>widgets(this.design,this.telemetry.snapshot())(k),t=>({color:[t.text||t.fg||'#ffffff',1]}),{z:46}));
+  });return p;
+ }});}
+ data(){return sourceData(this.telemetry.snapshot(),this.design);}
+ live(){const d=this.telemetry.snapshot();return Number.isFinite(d.speed)&&d.speed>=0&&Number.isFinite(d.rpm)&&d.rpm>=0&&/^(P|R|N|D|[1-9])$/.test(d.gear||'');}
+ allowed(){return this.enabled&&!this.suspendedMedia&&!this.recoveryPaused&&this.now()>=this.retryAt&&this.cr.ready&&/(^|,)panel:1920x720(,|$)/.test(this.cr.targets||'')&&this.hudAllowsPanel()&&this.live();}
+ start(){
+  const adapter=this.adapter=new SourceMesh(this.cr,{failed:reason=>this.failed('mesh',reason),window:()=>this.window()});
+  const catalog=()=>M.THEMES.find(t=>t.id===this.design.theme);
+  this.source=startCluster({client:adapter,layout:()=>this.layout(),options:()=>this.options(),data:()=>this.data(),font:()=>catalog().font,
+   theme:()=>{const p=Object.assign({},Layouts.byId(this.design.theme).palette(lookNow(this.design.palette,this.data())));p.bg='#000000';if(this.design.accent!=='source'){p.mark=this.design.accent;p.lit=this.design.accent;p.glow=this.design.accent;p.accent=this.design.accent;p.needle=this.design.accent;}return p;},
+   enabled:()=>this.allowed(),live:()=>this.live(),sweep:()=>{if(this.swept||!this.design.startup||!this.telemetry.parked())return false;this.swept=true;return true;},settleMs:600,target:'panel',contend:false,log:{info:()=>{},warn:()=>{}}});
+ }
  configure(design,on,output){
-  if(output&&!['center','parked-panel'].includes(output))throw Error('Invalid output');
-  const next=M.validate(design),enabled=!!on,target=output||'center';
-  const same=JSON.stringify(next)===JSON.stringify(this.design),stable=enabled&&this.enabled&&target===this.output;
-  if(!enabled||target!==this.output)this.clearRecovery();
-  this.design=next;this.enabled=enabled;this.output=target;
-  if(stable&&!this.panelUntil){
-   // Apply edits to the existing image. Releasing/reacquiring its scene
-   // for a save exposes the factory gauges and restarts arbitration.
-   if(!same){this.lastDraw=0;this.pendingWelcome=0;this.introUntil=0;G.drop(this.cr,this.welcome);this.welcome=null;}
-   return;
-  }
-  this.pendingWelcome=0;this.drop();this.panelUntil=0;this.introUntil=0;
+  if(output&&output!=='panel')throw Error('Old cluster output removed');const next=M.validate(design),same=JSON.stringify(next)===JSON.stringify(this.design);this.design=next;this.enabled=!!on;this.output='panel';
+  Clock.setTwelve(!next.clock24);Clock.setZone('eastern');
+  if(!this.enabled){this.drop();this.clearRecovery();this.state='BMW gauges active';return;}
+  if(this.source&&!same){this.source.rebuild();this.source.recolour();}else if(!this.source&&!this.recoveryPaused&&this.now()>=this.retryAt)this.start();
  }
- preview(design,seconds){
-  if(this.panelBlock)throw Error(this.panelBlock);
-  if(this.recoveryPaused||this.now()<this.retryAt)throw Error('Renderer recovery pending; use Retry saved display');
-  seconds=seconds===undefined?10:seconds;if(![10,30,60].includes(seconds))throw Error('Choose a 10, 30 or 60 second test');
-  if(!this.telemetry.parked())throw Error('Full-screen test needs fresh speed 0 and gear P');
-  if(!this.cr.ready||!/(^|,)panel:1920x720(,|$)/.test(this.cr.targets||''))throw Error('Full-cluster renderer unavailable');
-  // Never steal the shared scene from HUD. Unknown ownership also blocks it.
-  if(!this.hudAllowsPanel())throw Error('HUD is active or its state is unknown; full-screen test unavailable');
-  this.panelDesign=M.validate(design);this.drop();this.panelUntil=this.now()+seconds*1000;this.introAt=this.now();this.introUntil=design.introEnabled?this.now()+I.duration(design):0;this.lastDraw=0;this.lastLease=0;
- }
- stopPreview(){if(this.panelUntil)this.introUntil=0;if(this.target==='panel')this.drop();this.panelUntil=0;}
  tick(){
-  const now=this.now(),data=this.telemetry.snapshot();
-  if(this.pendingLoss&&now>=this.pendingLoss.at){
-   const loss=this.pendingLoss,t=this.targets[loss.target];this.pendingLoss=null;
-   // Let the slot manager classify a removal before counting it. BMW calls,
-   // stock dialogs, foreign owners and display locks are not upload failures.
-   if(loss.ref===this.ref&&t&&t.state==='waiting'&&t.holder==='none'&&/^(taken:|not rendered:)/.test(t.reason)){
-    this.losses=this.losses.filter(at=>now-at<60000);this.losses.push(now);
-    if(this.losses.length>=3){this.failures=2;this.failed('target',t.reason);}
-   }
-  }
-  if(this.recoveryPaused||now<this.retryAt){this.state=this.recoveryPaused?'Display paused · retry saved display':'Renderer retry in '+Math.ceil((this.retryAt-now)/1000)+' s';return;}
-  // Count a recovery only after the renderer reports a stable, shown layer.
-  // Repeated short-lived mappings must not erase the retry limit.
-  if(this.display().visible){if(!this.healthyAt)this.healthyAt=now;if(this.failures&&now-this.healthyAt>=10000)this.clearRecovery();}else this.healthyAt=0;
-  if(this.suspendedMedia){this.drop();this.introUntil=0;this.state='Parked video test';return;}
-  if(data.welcomeOffHint===true&&data.rpm===0){this.condition='off';this.pendingWelcome=0;if(!this.panelUntil){this.introUntil=0;G.drop(this.cr,this.welcome);this.welcome=null;}}
-  if(data.condition==='ready'&&this.condition!=='ready'&&this.design.introEnabled&&!this.panelUntil)this.pendingWelcome=now+10000;
-  if(data.condition){this.condition=data.condition;if(data.condition!=='ready')this.pendingWelcome=0;}
-  if(this.pendingWelcome){
-   if(now>=this.pendingWelcome||this.panelUntil||(data.speed!=null&&data.speed>=.1)||(data.gear!=null&&data.gear!=='P'))this.pendingWelcome=0;
-   else if(data.condition==='ready'&&this.telemetry.parked()){this.pendingWelcome=0;this.introAt=now;this.introUntil=now+I.duration(this.design);this.drop();}
-  }
-  if(this.panelUntil&&(now>=this.panelUntil||!this.telemetry.parked())){this.stopPreview();this.state='Full-screen test ended';}
-  if(this.introUntil&&(now>=this.introUntil||!this.telemetry.parked())){this.introUntil=0;G.drop(this.cr,this.welcome);this.welcome=null;}
-  if(!this.cr.ready){this.state='Waiting for cluster renderer';return;}
-  if(!this.enabled&&!this.panelUntil&&!this.introUntil){this.drop();this.state='Off';return;}
-  const held=this.enabled&&this.output==='parked-panel';
-  if(held&&!this.panelUntil&&(!this.telemetry.parked()||!this.hudAllowsPanel())){
-   this.drop();this.introUntil=0;this.state=this.telemetry.parked()?'Full cluster waiting for HUD release':'BMW gauges active; full cluster resumes in Park';return;
-  }
-  const target=this.panelUntil||held?'panel':'map';
-  const design=this.panelUntil?this.panelDesign:this.design;
-  if(!new RegExp('(^|,)'+target+':'+(target==='panel'?'1920x720':'1088x480')+'(,|$)').test(this.cr.targets||'')){this.drop();this.state='Unsupported cluster geometry';return;}
-  if(this.target!==target){this.drop();this.target=target;}
-  const w=target==='panel'?1920:1088,h=target==='panel'?720:480;
-  const dw=target==='panel'?1920:1088,dh=target==='panel'?720:480;
-  if(!this.ref){
-   // Ask to keep the ordinary foreground slot. This does not enable the
-   // renderer's panel_take_over_stock option or bypass display locks.
-   this.ref=this.cr.image({target,klass:'overlay',z:5,x:0,y:0,w:dw,h:dh,iw:w,ih:h,visible:false,exclusive:false,contend:true,fps:30,sampling:'bilinear'});
-   this.state='Layer prepared';
-  }
-  if(this.introUntil&&!this.welcome)this.welcome=G.create(this.cr,target,dw,dh,design,now-this.introAt);
-  if(target==='panel'&&(!this.lastLease||now-this.lastLease>=500)){
-   const lease=Math.max(1,Math.min(1500,this.panelUntil?this.panelUntil-now:1500));
-   const renew=(ref,old,ms)=>{if(old)this.cr.stop(ref,old);return this.cr.animate(ref,{property:'translate',keys:'0:0,0,0 '+ms+':0,0,0 '+(ms+1)+':0,1200,0',interp:'step',loop:false});};
-   this.panelLease=renew(this.ref,this.panelLease,lease);
-   if(this.welcome)this.welcome.expiry=renew(this.welcome.ref,this.welcome.expiry,Math.max(1,Math.min(lease,this.introUntil-now)));
-   this.lastLease=now;
-  }
-  if(now-this.lastDraw<34&&this.lastDraw)return;
-  // No sample values ever reach the physical cluster.
-  if(!this.frames)this.frames=new FrameCache(w,h,target==='panel');
-  const cv=this.frames.render(design,data);
-  if(!cv){this.lastDraw=now;return;}
-  const first=!this.lastDraw,update=P.delta(this.previousPixels,cv.d,w,h);
-  if(update)this.cr.pixels(this.ref,update.rects,update.pixels);
-  this.previousPixels=cv.d;if(first)this.cr.set(this.ref,{visible:true});
-
-  this.lastDraw=now;
+  if(this.enabled&&!this.source&&!this.recoveryPaused&&this.now()>=this.retryAt)this.start();
+  if(this.adapter&&!this.telemetry.parked())this.adapter.cancelAnimations();
+  if(this.adapter&&this.allowed()&&(!this.lastLease||this.now()-this.lastLease>=400)){this.adapter.renew();this.lastLease=this.now();}
+  this.ref=this.adapter&&this.adapter.meshes[0]||null;this.target=this.ref?'panel':null;
+  if(this.recoveryPaused||this.now()<this.retryAt)return;
+  this.state=!this.enabled?'BMW gauges active':!this.cr.ready?'Waiting for cluster renderer':!this.live()?'BMW gauges active; waiting for fresh readings':!this.hudAllowsPanel()?'Cluster waiting for independent display resource':this.display().visible?'Source cluster shown; BMW center and warnings retained':'Source cluster starting';
  }
+ retry(){this.drop();this.clearRecovery();if(this.enabled)this.start();}
+ preview(){throw Error('Timed legacy cluster preview removed; use the theme gallery');}
+ stopPreview(){}
+ drop(){const src=this.source;this.source=null;if(src)src.stop();if(this.adapter)this.adapter.close();this.adapter=null;this.ref=null;this.target=null;this.lastLease=0;this.layerStates.clear();}
  close(){this.drop();this.cr.close();}
 }
-module.exports={Engine};
+module.exports={Engine,sourceData,widgets};

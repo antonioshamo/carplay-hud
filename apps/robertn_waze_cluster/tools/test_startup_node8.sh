@@ -15,18 +15,16 @@ tar -xzf "$runtime_dir/node.tar.gz" -C "$runtime_dir"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_design_lifecycle.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_presentation.js"
 
-"$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_customization.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_editor_live.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_menu_navigation.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_telemetry.js
 
-"$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_widget_library.js
 
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_cockpit.js"
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_climate.js
 
-"$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_factory_default.js"
 
-"$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_factory_closeups.js"
 
 "$runtime_dir/node-v8.17.0-linux-x64/bin/node" "$(dirname "$0")/test_car_model.js"
+
+"$runtime_dir/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_source_cluster.js

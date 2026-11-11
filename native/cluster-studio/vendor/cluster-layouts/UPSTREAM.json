@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/eroobeeroo/idrive7-cluster-info",
+  "commit": "a39ce37273409cb46ffff8e858c2b8a1a0710f66",
+  "version": "0.28.1",
+  "license": "GPL-3.0-or-later",
+  "note": "Pinned before the later noncommercial license change; this commit includes Bimmer-lab GT3/M/Sport with MIT notices. Modified integration, not an official upstream build."
+}

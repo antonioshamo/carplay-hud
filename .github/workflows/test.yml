@@ -33,13 +33,10 @@ jobs:
       - run: node apps/robertn_waze_cluster/tools/test_control.js
       - run: node native/hud-startup-diagnostics/test.js
       - run: node apps/robertn_waze_cluster/tools/test_trace.js
-      - run: node native/cluster-studio/test/test.js
-      - run: node native/cluster-studio/test/test_recovery.js
+      - run: node native/cluster-studio/test/test_source_cluster.js
+      - run: node native/cluster-studio/test/test_source_transport.js
+      - run: node apps/robertn_waze_cluster/tools/test_menu_navigation.js
       - run: node native/cluster-studio/test/test_startup_recovery.js
-      - run: node native/cluster-studio/test/assistance-window/test.js
-      - run: node native/cluster-studio/test/test_stability.js
-      - run: node native/cluster-studio/test/test_renderer_integration.js
-      - run: node native/cluster-studio/test/test_renderer_independent.js
       - run: node apps/robertn_waze_cluster/tools/test_editor_live.js
       - run: node apps/robertn_waze_cluster/tools/test_studio.js
       - run: node apps/robertn_waze_cluster/tools/test_design.js

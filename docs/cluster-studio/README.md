@@ -1,3 +1,24 @@
+# Current source theme library (0.4.155 / 0.1.32)
+
+Open **My gauges → Themes** to see pictures of all twelve imported layouts.
+Choose a theme, use **Colors & units** and **Widgets** to personalize it, then
+open **Cluster output → Enable selected source cluster**. Live changes save
+through the helper; **Saved designs** stores five alternatives. **Restore BMW
+gauges** turns off custom output. Every page has Back and Save changes.
+
+The old designer is retired. Existing designs are backed up, not mixed into the
+replacement. Gauge output and live settings do not require Park; the optional
+startup sweep is skipped or cancelled outside Park. BMW center/warning areas
+stay clear and OEM popups can take priority. Physical X4 M behavior is pending.
+
+[Source review, integration details and test boundaries](../../native/cluster-studio/SOURCE-INTEGRATION.md).
+
+---
+
+# Archived documentation for the removed designer
+
+The material below describes previous releases and is not the current interface.
+
 **0.4.123 SDK loading compatibility:** Explicitly enables screen and entry-point loading, which some SDK 27.x donors disable by default ([documented upstream failure](https://github.com/cauliflowermossgrape/idrive7-apps/issues/39#issuecomment-6546607787)). The affected car still could not open 0.4.122. Two new linked-package regression scenarios fail with its empty configuration and pass with these flags; actual vehicle launch remains unconfirmed. Update the App, then restart the head unit while parked before testing.
 
 **0.4.121 installation recovery:** The app manifest now uses the pre-Studio (0.4.116) interface contract after a vehicle rejected 0.4.120 at `generateSomeipInterfaces`. Optional vehicle-data proxies no longer block installation. HUD controls and the editor remain; live-data-dependent Studio tests (including parked clips and feature scan) stay unavailable until compatible telemetry is verified. This is an installation hotfix, not a claim those experiments work on this car.

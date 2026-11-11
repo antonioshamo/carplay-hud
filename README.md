@@ -1,24 +1,30 @@
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-CarPlay HUD **0.4.154** opens the graphical dashboard directly and removes the
+CarPlay HUD **0.4.155** opens the graphical dashboard directly and removes the
 old native settings menus. Graphics recovery stays on the same dashboard host;
 a minimal Retry/Close message remains if the graphical renderer cannot present.
 The update is tested offline, not yet verified on the physical car.
 [Direct launch review](docs/cockpit-direct-launch.md) documents the changes.
 
-Cluster Studio **0.1.31** provides 37 movable widgets, fuel by default, saved
-layouts, optional welcomes and Restore BMW defaults. The large MY BMW dashboard
-card now uses the November 10 updated white X4 M model, with direct 360-degree drag rotation,
-move, zoom and reset. Rotation uses prepared images and two reusable display buffers. Its twenty-action climate adapter waits for fresh supported
-status and readback confirmation. The owner reports front A/C and airflow working;
-**new seat and rear commands are not yet verified in-car**. Unmapped controls
-remain disabled and labeled. Full-panel output still requires fresh Park data. Factory Home replacement and
-factory-preserving side widgets remain prototypes. Reliable route-free Apple Maps
+Cluster Studio **0.1.32** replaces the retired custom cluster with twelve
+source-based themes, thirty-six actual rendered theme/palette pictures and a
+shared editor. It offers accent colors, units, four side readings chosen from
+27 supported metrics, five saved designs and an optional needle sweep. Old
+layouts are backed up; BMW gauges remain active until a replacement is enabled.
+Live gauge output and customization no longer depend on Park. BMW center and
+warning-strip areas stay clear, and OEM popup ownership remains authoritative.
+Physical X4 M startup, Drive behavior and warning visibility are **not yet
+verified**. See [sources, changes and validation limits](native/cluster-studio/SOURCE-INTEGRATION.md).
+
+The large MY BMW dashboard card retains the updated white X4 M model, direct
+rotation, move, zoom and reset. Climate controls and HUD code are unchanged by
+this cluster replacement. Front A/C and airflow were reported working; seat and
+rear commands remain unverified in the car. Reliable route-free Apple Maps
 startup and HUD flicker still require physical-car verification.
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps).
-Current component versions: app **0.4.154**, Waze on cluster **0.7.117**,
-Cluster Studio **0.1.31**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
+Current component versions: app **0.4.155**, Waze on cluster **0.7.117**,
+Cluster Studio **0.1.32**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
 comes from the official MGU Store source and draws the settings app; it is
 separate from cluster-render.
 

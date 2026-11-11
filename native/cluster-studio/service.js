@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const VERSION = '0.1.31';
+const VERSION = '0.1.32';
 const fs=require('fs'),path=require('path'),net=require('net');
 const M=require('./shared/studio_model.js');
+const Store=require('./cluster_store.js');
 const {ClimateControls}=require('./climate_controls.js');
 const {Assistance}=require('./assistance.js');
 const {StartupRecovery}=require('./startup_recovery.js');
 const capabilities=require('./capabilities.js'),{ParkedMedia}=require('./parked_media.js');
 const {ClusterRender}=require('./shared/cluster_render_client.js'),{Telemetry}=require('./telemetry.js'),{Engine}=require('./engine.js');
-function validateStore(v){if(!v||v.schema!==1||typeof v.enabled!=='boolean'||!Array.isArray(v.slots)||v.slots.length!==5)throw Error('Invalid saved studio');if(v.output!==undefined&&!['center','parked-panel'].includes(v.output))throw Error('Invalid saved output');return {schema:1,enabled:v.enabled,output:v.output||'center',design:M.validate(v.design),slots:v.slots.map(d=>d===null?null:M.validate(d))};}
-function save(file,v){const data=validateStore(v);fs.writeFileSync(file+'.tmp',JSON.stringify(data)+'\n',{mode:384});let fd=fs.openSync(file+'.tmp','r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(file+'.tmp',file);fd=fs.openSync(path.dirname(file),'r');try{fs.fsyncSync(fd);}finally{fs.closeSync(fd);}return data;}
+const validateStore=Store.validate,save=Store.save;
 class StudioService {
- constructor(o){this.o=o;this.clients=new Set();this.store={schema:1,enabled:false,output:'center',design:M.defaultDesign(),slots:[null,null,null,null,null]};try{this.store=validateStore(JSON.parse(fs.readFileSync(o.file,'utf8')));}catch(e){}o.engine.configure(this.store.design,this.store.enabled,this.store.output);}
+ constructor(o){this.o=o;this.clients=new Set();this.store=Store.load(o.file);o.engine.configure(this.store.design,this.store.enabled,this.store.output);}
  state(){
   const e=this.o.engine,parked=this.o.telemetry.parked(),renderer=!!e.cr.ready;
   const recovery=e.health(),display=e.display();
-  const panelReady=!e.panelBlock&&parked&&renderer&&/(^|,)panel:1920x720(,|$)/.test(e.cr.targets||'');
-  const testReason=e.panelBlock||(!parked?'Needs fresh speed 0 and gear P':!renderer?'Waiting for cluster renderer':!panelReady?'Full-cluster renderer unavailable':recovery.paused?'Renderer paused; retry saved display':recovery.retryInMs?'Waiting for renderer retry':!e.hudAllowsPanel()?'HUD active or ownership unknown':'Ready for a parked test');
-  return {climateSupported:true,climate:this.climate?this.climate.status():null,assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!e.panelBlock,panelClearance:'native-gear-v1',independentPanelHud:renderer&&e.cr.independentPanelHud===true,output:this.store.output,
+  const panelReady=!e.panelBlock&&renderer&&/(^|,)panel:1920x720(,|$)/.test(e.cr.targets||'');
+  const testReason=e.panelBlock||(!renderer?'Waiting for cluster renderer':!panelReady?'Cluster renderer unavailable':recovery.paused?'Renderer paused; retry saved display':recovery.retryInMs?'Waiting for renderer retry':!e.hudAllowsPanel()?'HUD active or ownership unknown':'Source cluster ready');
+  return {generation:'source-cluster-v2',vehicleVerified:false,climateSupported:true,climate:this.climate?this.climate.status():null,assistance:this.o.assistance?this.o.assistance.status():null,panelBlocked:!!e.panelBlock,panelClearance:'source-native-center-and-strip-v2',independentPanelHud:renderer&&e.cr.independentPanelHud===true,output:this.store.output,
    features:this.features?{lighting:this.features.lighting,climate:this.features.climate,media:this.features.media,rows:this.features.rows.slice(0,6),scannedAt:this.features.scannedAt}:null,media:this.o.media?this.o.media.state():null,
-   panelRemaining:Math.max(0,Math.ceil(((e.panelUntil||0)-e.now())/1000)),canPreview:testReason==='Ready for a parked test',canSelectPanel:panelReady,
-   canRetry:!!(this.store.enabled&&parked&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:VERSION,phoneDesigner:true,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
+   panelRemaining:0,canPreview:false,canSelectPanel:panelReady,
+   canRetry:!!(this.store.enabled&&renderer&&!e.suspendedMedia),testReason,ev:'status',version:VERSION,phoneDesigner:false,enabled:this.store.enabled,design:this.store.design,slots:this.store.slots,
    parked,state:e.state,renderer,data:this.o.telemetry.snapshot(),panel:e.target==='panel',recovery,displayVisible:display.visible,displayTarget:display.target,displayState:display.state,displayReason:display.reason,
    hud:{state:e.hud,holder:e.hudHolder||null,reason:e.hudReason||''}};
  }
@@ -37,24 +37,22 @@ class StudioService {
     return this.climate.command(m.action,m.value).then(()=>this.state());
    case 'retry':
     if(!this.store.enabled)throw Error('Choose an enabled output before retrying');
-    if(!this.o.telemetry.parked())throw Error('Retry requires fresh speed 0 and gear P (Park)');
     if(!this.o.engine.cr.ready)throw Error('Waiting for cluster renderer');
     if(this.o.engine.suspendedMedia)throw Error('End the video session before retrying');
     this.o.engine.retry();return this.state();
    case 'save':next.design=M.validate(m.design);break;
    case 'apply':
     next.design=M.validate(m.design);next.enabled=true;
-    if(m.output!==undefined){if(!['center','parked-panel'].includes(m.output))throw Error('Invalid output');next.output=m.output;}
-    if(next.output==='parked-panel'&&!this.o.telemetry.parked())throw Error('Full cluster needs fresh speed 0 and gear P');
-    break;
-   case 'off':if(this.o.media)this.o.media.stop();next.enabled=false;next.design.introEnabled=false;break;
+    if(m.output!==undefined&&m.output!=='panel')throw Error('Old cluster output has been removed');
+    next.output='panel';break;
+   case 'off':if(this.o.media)this.o.media.stop();next.enabled=false;next.design.startup=false;break;
    case 'slot':if(!Number.isInteger(m.slot)||m.slot<0||m.slot>=5)throw Error('Invalid slot');next.slots[m.slot]=M.validate(m.design);break;
    case 'scan':
     if(!this.o.telemetry.parked())throw Error('Feature scan requires fresh speed 0 and gear P');
     if(this.o.media)this.o.media.stop();this.o.engine.stopPreview();
     this.features=(this.o.scan||capabilities.scan)();if(this.o.media)this.o.media.report=this.features;return this.state();
-   case 'editor-start':if(!this.o.media)throw Error('Phone designer unavailable');return this.o.media.start('design').then(()=>this.state());
-   case 'media-start':if(!this.o.media)throw Error('Video helper unavailable');return this.o.media.start(m.target).then(()=>this.state());
+   case 'editor-start':throw Error('Old phone designer removed; customize in the source theme gallery');
+   case 'media-start':if(m.target==='design')throw Error('Old phone designer removed; customize in the source theme gallery');if(!this.o.media)throw Error('Video helper unavailable');return this.o.media.start(m.target).then(()=>this.state());
    case 'media-stop':if(this.o.media)this.o.media.stop();return this.state();
    case 'media-place':if(!this.o.media)throw Error('Video helper unavailable');this.o.media.place(m.rect);return this.state();
    case 'preview':if(this.o.media)this.o.media.stop();this.o.engine.preview(M.validate(m.design),m.seconds);return this.state();
@@ -88,7 +86,7 @@ async function main(){
  try{fs.unlinkSync(socket);}catch(e){if(e.code!=='ENOENT')throw e;}
  const assistance=new Assistance(),telemetry=new Telemetry(),cr=new ClusterRender('shamo_cluster_studio'),engine=new Engine(cr,telemetry);
  const media=new ParkedMedia({engine,telemetry,cr});media.stop();
- const service=new StudioService({file,engine,telemetry,media,assistance});media.o.designRead=()=>({design:service.store.design,slots:service.store.slots});media.o.designSave=m=>service.command(m);await service.listen(socket);cr.connect();telemetry.start();assistance.start();
+ const service=new StudioService({file,engine,telemetry,media,assistance});await service.listen(socket);cr.connect();telemetry.start();assistance.start();
  const startupRecovery=new StartupRecovery();
  const timer=setInterval(()=>{engine.tick();media.tick();startupRecovery.tick({ready:cr.ready,independent:cr.independentPanelHud,parked:telemetry.parked(),state:engine.hud,holder:engine.hudHolder,reason:engine.hudReason});},34);
  const close=()=>{clearInterval(timer);service.close();media.stop();assistance.close();telemetry.close();engine.close();process.exit(0);};process.on('SIGTERM',close);process.on('SIGINT',close);

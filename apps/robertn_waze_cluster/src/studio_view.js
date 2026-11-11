@@ -1,185 +1,88 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const kit=require('./kit_record.js'),M=require('./studio_model.js'),D=require('./studio_draw.js'),fonts=require('./kit_fonts.js');
-const T=require('./cockpit_theme.js');
-const BOX={x:274,y:153,w:976,h:366};
+const kit=require('./kit_record.js'),M=require('./studio_model.js'),T=require('./cockpit_theme.js'),P=require('./cluster_previews.js');
 const QR=require('./qrcodegen.js'),{videoOp}=require('./mgu_render_client.js');
-const PAGES=[['gallery','Templates'],['edit','Arrange widgets'],['style','Colors & dials'],['intro','Welcome'],['library','My designs'],['output','Display output'],['tools','More features']];
-const TITLES={gallery:'Choose your look',idrive:'iDrive 8 inspired',layouts:'Choose a layout',themes:'Choose your colors',gauges:'Choose your dials',edit:'Arrange your widgets',add:'Add a widget',widgets:'Choose a widget',properties:'Widget details',style:'Colors & dial style',intro:'Your welcome animation',library:'Your saved designs',phone:'Design on your phone',output:'Choose your display',tools:'More features',features:'Car feature scan',assistance:'BMW driving assistance',media:'Phone video'};
-const WIDGETS_PER_PAGE=8;
-let qrText=null,qrCode=null;
+const PAGES=[['gallery','Themes'],['edit','Widgets'],['style','Colors & units'],['intro','Startup'],['library','Saved designs'],['output','Cluster output']];
+const TITLES={gallery:'Choose your cluster',edit:'Your side widgets',metric:'Choose a reading',style:'Make it yours',intro:'Startup',library:'Your saved designs',phone:'Your saved designs',output:'Cluster output',tools:'More features',features:'Vehicle interfaces',assistance:'BMW assistance preferences',media:'Phone video'};
 function items(s){
- const out=[],add=(id,label,x,y,w,h,enabled,selected)=>out.push({id,label,x,y,w,h,enabled:enabled!==false,selected:!!selected});
- const live=s.client.status&&s.client.status.media;
- if(s.page==='media'&&s.videoFull&&live&&live.playing&&live.target==='center'&&Date.now()-(s.client.statusAt||0)<2000){add('navigate-back','Back',18,476,222,54);add('live-toggle','Live changes: '+(s.liveChanges?'On':'Off'),258,476,300,54);add('apply','Apply design',1000,476,270,54,!s.client.pending);add('media-stop','Stop session',1290,476,290,54,!s.client.pending);return out;}
- add('navigate-back','Back',18,24,222,55);
- add('live-toggle','Live changes: '+(s.liveChanges?'On':'Off'),1050,24,244,55,true,s.liveChanges);
- const ready=!!s.client.status&&!s.client.pending&&!s.liveSending;
- add('apply','Apply changes',1310,24,268,55,ready&&(!(s.client.status.output==='parked-panel')||s.client.status.parked));
- PAGES.forEach((p,i)=>{add('page:'+p[0],p[1],i<4?18:440+(i-4)*320,i<4?109+i*94:522,i<4?222:306,i<4?80:50,true,s.page===p[0]||(p[0]==='edit'&&['widgets','add','properties'].includes(s.page))||(p[0]==='gallery'&&['layouts','idrive'].includes(s.page))||(p[0]==='style'&&['themes','gauges'].includes(s.page))||(p[0]==='library'&&s.page==='phone')||(p[0]==='tools'&&['assistance','features','media'].includes(s.page)));const b=out[out.length-1];b.chrome=i<4?'rail':'dock';b.icon=['gauge','widgets','sun','play','save','hud','apps'][i];});
- const d=s.design,connected=!!s.client.status,busy=!!s.client.pending;
+ const a=[],add=(id,label,x,y,w,h,enabled,extra)=>a.push(Object.assign({id,label,x,y,w,h,enabled:enabled!==false},extra||{}));
+ const status=s.client.status,ready=s.ready(),d=s.design,media=status&&status.media;
+ add('navigate-back','Back',18,20,202,58);
+ add('live-toggle','Live changes: '+(s.liveChanges?'On':'Off'),1060,20,252,58,true,{selected:s.liveChanges});
+ add('apply','Save changes',1328,20,254,58,ready);
+ if(s.page==='media'&&s.videoFull&&media&&media.playing&&media.target==='center'&&s.videoSupported){add('media-stop','Stop video',18,510,202,48,!!media.active&&!s.client.pending);return a;}
+ PAGES.forEach((p,i)=>add('page:'+p[0],p[1],18,100+i*66,202,56,true,{selected:s.page===p[0]}));
+ add('page:tools','More features',18,510,202,48);
  if(s.page==='gallery'){
-  add('previous','Previous',274,427,170,62);add('next','Next',458,427,170,62);add('shuffle','Surprise me',642,427,220,62);add('edit','Customize',876,427,374,62);
-  [['pick-factory','BMW original style'],['page:idrive','iDrive 8 templates'],['page:themes','Color: '+M.THEMES[d.theme][0]],['page:layouts','Choose a layout'],['tested-layout','Tested M Competition'],['go:output','Choose display output']].forEach((a,i)=>add(a[0],a[1],1282,146+i*62,290,52,true,a[0]==='pick-factory'&&d.template==='bmw-factory'));
- }else if(s.page==='idrive'){
-  M.IDRIVE_TEMPLATES.forEach((a,i)=>add('pick-idrive:'+i,'Use '+a[1],286+i*432,437,410,65,true,d.template===a[0]));
- }else if(s.page==='gauges'){
-  M.STYLES.forEach((style,i)=>add('pick-gauge:'+style[0],style[1],286+(i%4)*322,156+Math.floor(i/4)*89,306,72,true,style[0]===(s.styleTarget==='design'?d.gauge:d.widgets.find(w=>w.type===s.styleTarget).gauge)));
- }else if(s.page==='layouts'||s.page==='themes'){
-  const themes=s.page==='themes',rows=themes?M.THEMES.map(t=>t[0]):M.LAYOUTS;
-  rows.forEach((name,i)=>add((themes?'pick-theme:':'pick-layout:')+i,name,286+(i%2)*640,146+Math.floor(i/2)*73,614,61,true,i===(themes?d.theme:d.preset%10)));
- }else if(s.page==='add'||s.page==='widgets'){
-  M.GROUPS.forEach((g,i)=>add('widget-group:'+i,g[0],286+i*322,143,308,49,true,(s.widgetGroup||0)===i));
-  const group=M.GROUPS[s.widgetGroup||0],adding=s.page==='add';
-  const pages=Math.ceil(group[1].length/WIDGETS_PER_PAGE),page=Math.min(s.widgetPage||0,pages-1);
-  add('widget-prev','Previous',1050,474,244,48,page>0);
-  add('widget-next','Next',1310,474,254,48,page<pages-1);
-  group[1].slice(page*WIDGETS_PER_PAGE,(page+1)*WIDGETS_PER_PAGE).forEach((type,i)=>{const w=d.widgets.find(w=>w.type===type);if(!w)return;add((adding?'add-widget:':'widget:')+type,M.LABELS[type],286+(i%2)*646,201+Math.floor(i/2)*67,622,57,!adding||!w.on,s.selected===type&&!adding);const b=out[out.length-1];b.badge=adding?(w.on?'In layout':'+ Add'):(w.on?'Visible':'Hidden');b.widgetCard=true;});
+  M.THEMES.slice(s.galleryPage*3,s.galleryPage*3+3).forEach((t,i)=>add('theme:'+t.id,t.name,248+i*446,146,426,290,true,{theme:t,selected:d.theme===t.id}));
+  add('gallery-prev','Previous',248,464,220,56,s.galleryPage>0);add('gallery-next','Next',484,464,220,56,(s.galleryPage+1)*3<M.THEMES.length);add('go:output','Use this cluster',1222,464,360,56,ready);
  }else if(s.page==='edit'){
-  const free=!s.widget().locked;
-  add('page:add','Add widget',1282,146,296,60);
-  add('select',M.LABELS[s.selected],1282,216,296,52);
-  add('left','Left',1282,282,90,52,free);add('up','Up',1385,282,90,52,free);add('right','Right',1488,282,90,52,free);
-  add('precision',s.moveStep===.01?'Fine':'Coarse',1282,345,90,52,free);add('down','Down',1385,345,90,52,free);add('page:properties','Details',1488,345,90,52);
-  add('smaller','Smaller',1282,409,142,52,free);add('larger','Larger',1434,409,144,52,free);
-  add('undo','Undo',1282,474,142,48,s.history.length>0);add('redo','Redo',1434,474,144,48,s.redo.length>0);
- }else if(s.page==='properties'){
-  const w=s.widget(),free=!w.locked;
-  [['width-less','Narrower'],['width-more','Wider'],['height-less','Shorter'],['height-more','Taller'],['align-x','Center X'],['align-y','Center Y'],['front','To front'],['back','To back'],['widget-color','Color: '+(w.color||'theme')],['widget-gauge','Dial: '+(!w.gauge||w.gauge==='inherit'?'Theme':w.gauge)],['snap',d.snap?'Grid: On':'Grid: Off'],['reset-widget','Reset widget'],['toggle',w.on?'Hide widget':'Show widget'],['lock',free?'Lock widget':'Unlock widget']].forEach((a,i)=>add(a[0],a[1],1174+(i%2)*206,146+Math.floor(i/2)*54,198,46,['lock','snap'].includes(a[0])||free));
- }else if(s.page==='style'){
-  [['page:themes','Color: '+M.THEMES[d.theme][0]],['gauge','Dial: '+M.gaugeLabel(d.gauge)],['background','Backdrop: '+d.background],['units','Speed: '+d.units],['borders',d.borders?'Widget cards: On':'Widget cards: Off'],['clock',d.clock24?'Clock: 24 hour':'Clock: 12 hour'],['temperature','Temperature: °'+(d.temperatureUnit||'C')]].forEach((a,i)=>add(a[0],a[1],1282,146+i*54,296,46));
- }else if(s.page==='intro'){
-  [['animation',({slide:'X4 M / fly-in',reveal:'X4 M / reveal',apple:'Apple / CarPlay Ultra',welcome:'Welcome Antonio',none:'No animation'})[d.intro]],['duration','Length: '+(d.introDuration/1000)+' seconds'],['shine','Badge shine: '+(d.introShine?'On':'Off')],['light','Light: '+d.introLight],['intro-toggle',d.introEnabled?'At startup: On':'At startup: Off'],['play','Preview sequence'],['save','Save startup choice']].forEach((a,i)=>add(a[0],a[1],1282,146+i*54,296,46,a[0]==='save'?connected&&!busy:a[0]==='shine'?['slide','reveal'].includes(d.intro):a[0]==='light'?['slide','reveal','welcome'].includes(d.intro):a[0]==='duration'||a[0]==='intro-toggle'?d.intro!=='none':true));
- }else if(s.page==='phone'){
-  add('editor-start','Start phone designer',1040,170,520,74,connected&&!busy&&s.client.status.parked===true&&s.client.status.phoneDesigner===true);
-  add('media-stop','End phone session',1040,268,520,64,connected&&!busy&&s.client.status.media&&s.client.status.media.active);
-  add('go:library','Back to My designs',1040,424,520,64);
- }else if(s.page==='library'){
-  add('page:phone','Name, import & edit on phone',286,138,680,50);
-  for(let i=0;i<5;i++){const full=s.client.status&&s.client.status.slots[i];add('load:'+i,'Load '+(i+1),1034,139+i*70,160,54,!!full);add('save-slot:'+i,'Save '+(i+1),1208,139+i*70,160,54,connected&&!busy);}
-  add('title','Signature: '+(d.signature||M.TITLES[d.title]),286,427,680,62);
- }else if(s.page==='output'){
-  const fixed=connected&&s.client.status.panelClearance==='native-gear-v1'&&Date.now()-(s.client.statusAt||0)<2000;
-  add('apply-panel','Save full cluster in Park',1034,139,520,58,fixed&&!busy&&(s.client.status.canSelectPanel===undefined?s.client.status.canPreview:s.client.status.canSelectPanel),connected&&s.client.status.output==='parked-panel');
-  add('apply-center','Use center layout',1034,207,520,58,connected&&!busy,connected&&s.client.status.output==='center');
-  add('off','Restore BMW display',1034,275,520,58,connected&&!busy);
-  add('retry','Retry saved display',1034,343,520,48,fixed&&!busy&&s.client.status.canRetry);
-  add('test-length','Test: '+s.testSeconds+' seconds',1034,401,254,48);
-  add('preview','Try full cluster',1300,401,254,48,fixed&&!busy&&s.client.status.canPreview);
-  add('stop-preview','End timed test',1034,459,520,48,connected&&!busy&&s.client.status.panelRemaining>0);
- }else if(s.page==='tools'){
-  [['assistance','Driving assistance'],['features','Car feature scan'],['media','Parked video'],['phone','Phone designer']].forEach((a,i)=>add('page:'+a[0],a[1],286+(i%2)*646,174+Math.floor(i/2)*140,622,112));
- }else if(s.page==='features'){
-  add('scan','Scan this car',1050,146,500,65,connected&&!busy&&s.client.status.parked===true);
-  add('page:media','Get report on phone',1050,227,500,65,connected&&!busy);
- }else if(s.page==='media'){
-  const media=connected&&s.client.status.media;
-  add('media-target','Display: '+({center:'Center screen',map:'Cluster center',panel:'Full cluster',hud:'Head-up display'})[s.mediaTarget],1040,138,524,58,!busy&&!(media&&media.active));
-  add('media-start','Start session',1040,209,254,58,connected&&!busy&&s.client.status.parked===true&&!(media&&media.active)&&s.mediaTarget!=='panel'&&(s.mediaTarget!=='center'||s.videoSupported));
-  add('media-stop','Stop session',1310,209,254,58,connected&&!busy&&media&&media.active);
-  ['left','up','right','down','size','reset'].forEach((a,i)=>add('video:'+a,{left:'Left',right:'Right',up:'Up',down:'Down',size:'Size',reset:'Center'}[a],1040+(i%3)*178,285+Math.floor(i/3)*65,166,54,connected&&!busy&&media&&media.active&&media.target!=='center'&&media.target!=='design'));
-  add('video-full','Full-screen movie view',1040,464,524,54,!!(media&&media.playing&&media.target==='center'&&s.videoSupported));
+  d.widgets.forEach((k,i)=>add('widget:'+i,(i<2?'Left ':'Right ')+(i%2+1)+' · '+M.LABELS[k],248+(i%2)*670,170+Math.floor(i/2)*114,650,90));
+  add('undo','Undo',248,438,210,58,s.history.length>0);add('redo','Redo',476,438,210,58,s.redo.length>0);
+ }else if(s.page==='metric'){
+  M.METRICS.slice((s.metricPage||0)*12,(s.metricPage||0)*12+12).forEach((k,i)=>add('metric:'+k,M.LABELS[k],248+(i%3)*446,154+Math.floor(i/3)*77,426,64,true,{selected:d.widgets[s.widgetSlot]===k}));
+  add('metric-prev','Previous',248,474,220,52,(s.metricPage||0)>0);add('metric-next','Next',486,474,220,52,((s.metricPage||0)+1)*12<M.METRICS.length);
  }
- return out;
+ else if(s.page==='style'){
+  [['palette','Palette: '+d.palette],['accent','Accent: '+(d.accent==='source'?'Original theme':d.accent)],['units','Speed & distance: '+d.units],['temperature','Temperature: °'+d.temperatureUnit]].forEach((b,i)=>add(b[0],b[1],930,158+i*83,650,66));
+ }else if(s.page==='intro')add('intro-toggle','Needle sweep: '+(d.startup?'On':'Off'),280,340,900,78,true,{selected:d.startup});
+ else if(s.page==='library'||s.page==='phone')for(let i=0;i<5;i++){const d=status&&status.slots&&status.slots[i],theme=d&&M.THEMES.find(t=>t.id===d.theme);add('save-slot:'+i,'Save '+(i+1),248,152+i*70,210,56,ready);add('load:'+i,theme?theme.name+' · '+d.palette:'Empty slot',480,152+i*70,1094,56,!!theme&&ready);}
+ else if(s.page==='output'){
+  add('enable','Enable selected source cluster',280,292,820,70,ready&&status.canSelectPanel,{primary:true});
+  add('off','Restore BMW gauges',280,380,820,70,!!status&&!s.client.pending);
+  add('retry','Retry source cluster',1120,292,450,70,ready&&status.canRetry);
+ }else if(s.page==='tools'){
+  [['page:features','Vehicle feature scan'],['page:assistance','BMW assistance preferences'],['page:media','Phone video'],['go:output','Restore BMW / cluster output']].forEach((b,i)=>add(b[0],b[1],280,160+i*82,1280,66));
+ }else if(s.page==='features')add('scan','Scan vehicle interfaces',1110,158,440,68,!!status&&status.parked&&!s.client.pending);
+ else if(s.page==='media'){
+  add('media-target','Display: '+s.mediaTarget,1040,150,514,58,!media||!media.active);
+  add('media-start','Start session',1040,223,246,58,!!status&&status.parked&&!s.client.pending&&!(media&&media.active)&&s.mediaTarget!=='panel'&&(s.mediaTarget!=='center'||s.videoSupported));
+  add('media-stop','Stop',1302,223,252,58,!!media&&media.active&&!s.client.pending);
+  ['left','up','right','down','size','reset'].forEach((k,i)=>add('video:'+k,k,1040+(i%3)*176,300+Math.floor(i/3)*66,164,54,media&&media.active&&!['center','design'].includes(media.target)));
+  add('video-full','Full-screen movie',1040,450,514,58,!!(media&&media.playing&&media.target==='center'&&s.videoSupported));
+ }
+ return a;
 }
 function frame(s,focus,scale){
- const r=new kit.Recorder(1600,580,{textScale:scale||1}),buttons=items(s),d=s.design,t=M.THEMES[d.theme];
- function text(str,x,y,size,col,max){if(y>=522)return;str=String(str||'');const font=fonts.get('bold',size);while(max&&fonts.measure(font,str)*size/font.size>max&&str.length)str=str.slice(0,-2)+'…';r.text(str,x,y,size,col||'#f0f5ff',{font:'bold'});}
- const live=s.client.status&&s.client.status.media;
- if(s.page==='media'&&s.videoFull&&live&&live.playing&&live.target==='center'&&Date.now()-(s.client.statusAt||0)<2000){r.clear('#000000');const op=videoOp(9001,0,0,1600,460,0);r._grow(op.length);r.u.set(op,r.n);r.n+=op.length;buttons.forEach(b=>{r.roundRect(b.x,b.y,b.w,b.h,8,'#183858');text(b.label,b.x+15,b.y+35,23);});return {record:r,items:buttons};}
- T.background(r);
- text('CLUSTER STUDIO / X4 M COMPETITION',276,24,14,'#94b5cf',740);
- text(TITLES[s.page]||'Cluster Studio',276,65,31,'#f0f5ff',750);
- const subtitle={idrive:'Three iDrive 8-inspired designs. Every widget can be moved, resized and recolored.',gallery:'Choose a template. Arrange, style and apply it to your car.',layouts:'Choose your layout. Your colors and welcome are kept.',gauges:'Choose a dial style. Speed and RPM can each use a different design.',themes:'Choose your color palette. Your widget positions are kept.',add:'37 widgets. Choose a category, add a widget, then drag it into place.',widgets:'Choose a category and a widget to move, resize, recolor or hide.',properties:'Independent width, height, alignment, layer order and widget styling.',edit:d.template==='bmw-factory'?'Drag side widgets, resize and recolor. The middle stays clear for BMW content.':'Touch and drag a widget. Use the dial buttons for precise adjustments.',style:'A different character, down to the last detail.',intro:'Choose your welcome. It plays once, then returns to your saved layout.',library:'Five personal designs, stored in your car.',phone:'Name your design and welcome, choose exact colors, import or export. Parked setup.',output:'Choose how to use your design.',assistance:'Your BMW assistance preferences. Read-only; these are not live warning indicators.',tools:'More ways to personalize your cockpit.',features:'Find the interfaces this firmware actually exposes. Read-only.',media:'Experimental video from saved phone clips. Parked use only.'}[s.page];text(subtitle,276,119,21,'#acbad0',1290);
- if(['add','widgets'].includes(s.page)){const group=M.GROUPS[s.widgetGroup||0],pages=Math.ceil(group[1].length/WIDGETS_PER_PAGE);text('Page '+(Math.min(s.widgetPage||0,pages-1)+1)+' of '+pages+'  ·  '+group[1].length+' widgets',286,506,22,'#b0bfd1',720);text('Live readings depend on vehicle support. Missing values show unavailable.',286,546,17,'#91acc8',1260);}
- if(['gallery','edit','properties','style','intro','idrive','library'].includes(s.page))T.text(r,'PREVIEW · SAMPLE READINGS',970,88,14,'#b3bdd4',300,true);
- const preview=['gallery','edit','properties','style','intro'].includes(s.page);
- if(preview){
-  const b=s.page==='gallery'?{x:274,y:153,w:976,h:256}:s.page==='properties'?{x:274,y:153,w:876,h:329}:BOX;
-  r.roundRect(b.x-2,b.y-2,b.w+4,b.h+4,12,'#2a3d55');r.fillRect(b.x,b.y,b.w,b.h,'#050910');
-  const inner=s.page==='gallery'?{x:b.x+147,y:b.y,w:682,h:256}:b;
-  if(d.template==='bmw-factory'){r.fillRect(inner.x,inner.y,inner.w,inner.h,'#181e28');T.text(r,'BMW center',inner.x+inner.w/2,inner.y+inner.h*.55,s.page==='gallery'?13:18,'#84909f',inner.w*.24,true);}
-  if(s.page==='intro')D.sequence(r,d,inner,s.previewData(),s.animationAt?Date.now()-s.animationAt:d.introDuration*.55);
-  else D.draw(r,d,inner,s.previewData(),{selected:['edit','properties'].includes(s.page)?s.selected:null,grid:['edit','properties'].includes(s.page)&&s.design.snap});
-  if(s.page==='gallery'){text(d.template&&d.template!=='standard'?d.name:M.LAYOUTS[d.preset%10],b.x+18,b.y+30,20,'#d2e1f5',240);text(d.template==='bmw-factory'?'Editable BMW style':d.template&&d.template!=='standard'?'iDrive 8 inspired':String(d.preset+1).padStart(3,'0')+' / 100',b.x+18,b.y+59,16,'#8199b5',160);}
-  if(['edit','properties'].includes(s.page))text(M.LABELS[s.selected]+' / '+Math.round(s.widget().w*100)+'% × '+Math.round(s.widget().h*100)+'%'+(s.widget().locked?' / LOCKED':'')+' / SAMPLE READINGS',284,548,18,'#a4c4e4',850);
-  else if(s.page==='intro')text('Welcome follows your output choice. Full-cluster output requires Park and fresh vehicle data.',284,544,18,'#a4c4e4',1230);
-  else text(d.template==='bmw-factory'?'BMW STYLE / editable side widgets / clear middle for native BMW content / SAMPLE READINGS':'FULL-CLUSTER DESIGN PREVIEW / sample readings / not CarPlay Ultra software',284,548,17,'#8299b4',1220);
- }else if(s.page==='idrive'){
-  M.IDRIVE_TEMPLATES.forEach((a,i)=>{const x=286+i*432;r.roundRect(x,153,410,267,12,'#101d2d');text(a[1],x+18,190,25,'#f0f5ff',374);text(a[2],x+18,219,17,'#9db5d1',374);D.draw(r,M.idrivePreset(i),{x:x+12,y:246,w:386,h:145},s.previewData());});
-  text('DESIGN PREVIEWS / SAMPLE READINGS / your units and welcome preferences are kept',286,542,17,'#91acc8',1260);
- }else if(s.page==='phone'){
-  const m=s.client.status&&s.client.status.media,url=m&&m.target==='design'&&m.urls&&m.urls[0];
-  if(url){
-   if(qrText!==url){qrText=url;qrCode=QR.QrCode.encodeText(url,QR.QrCode.Ecc.MEDIUM);}
-   const step=Math.floor(310/(qrCode.size+8)),x=310,y=164;r.fillRect(x,y,step*(qrCode.size+8),step*(qrCode.size+8),'#ffffff');
-   for(let row=0;row<qrCode.size;row++)for(let col=0;col<qrCode.size;col++)if(qrCode.getModule(col,row))r.fillRect(x+(col+4)*step,y+(row+4)*step,step,step,'#000000');
-   text('Scan with your phone',650,230,26,'#d6e1ef',350);text('Same car Wi-Fi',650,277,23,'#a4c4e4',350);text('Five-minute session',650,324,21,'#a4c4e4',350);
-  }else {text('Your design. Your name.',310,235,32,t[1],690);text('Start a phone session, then scan the code.',310,288,24,'#a4c4e4',700);}
-  text('Saves are confirmed by the car. Existing display output stays active.',286,524,21,'#a4c4e4',1250);
- }else if(s.page==='library'){
-  D.draw(r,d,{x:286,y:196,w:600,h:225},s.previewData());text('DESIGN PREVIEW / SAMPLE READINGS',286,515,17,'#8299b4',690);
-  for(let i=0;i<5;i++){const a=s.client.status&&s.client.status.slots[i];text(a?(a.name||M.LAYOUTS[a.preset%10]):'Empty design slot',1384,173+i*70,16,'#a8bbd0',185);}
+ const r=new kit.Recorder(1600,580,{textScale:scale||1}),buttons=items(s),d=s.design,status=s.client.status;
+ const text=(a,x,y,z,c,w,center)=>T.text(r,String(a||''),x,y,z,c||'#eef4ff',w||1260,!!center);
+ T.background(r);text('SOURCE CLUSTER / X4 M',248,35,15,'#9cb9db',760);text(TITLES[s.page]||'Cluster Studio',248,74,32,'#f0f5ff',760);
+ text('BMW center and warning areas kept clear. X4 M vehicle verification pending.',248,118,19,'#c4b897',1320);
+ buttons.forEach((b,i)=>T.button(r,Object.assign({},b,{label:b.theme?'':b.label}),i===focus));
+ const preview=(theme,palette,x,y,w,h)=>{r.fillRect(x,y,w,h,'#000000');const img=P.get(theme,palette);if(img)r.image(img,x,y,w,h,6);else{text('Theme picture unavailable',x+w/2,y+h/2,20,'#9eafc8',w-20,true);text('Update Cluster Studio',x+w/2,y+h/2+30,16,'#9eafc8',w-20,true);}};
+ if(s.page==='gallery'){
+  buttons.filter(b=>b.theme).forEach(b=>{preview(b.theme.id,d.palette,b.x+12,b.y+14,b.w-24,151);text(b.theme.name,b.x+20,b.y+205,28,'#ffffff',b.w-40);text(b.theme.source,b.x+20,b.y+239,17,'#aec5df',b.w-40);text(b.selected?'SELECTED':'Select theme',b.x+20,b.y+273,16,b.selected?'#83cfb6':'#bdcbe0',b.w-40);});
+  text('Page '+(s.galleryPage+1)+' of '+Math.ceil(M.THEMES.length/3)+' · '+M.THEMES.length+' source themes',756,500,20,'#b7c8e1',450);
+ }else if(s.page==='style'){
+  preview(d.theme,d.palette,270,195,625,234);text('Palette preview · sample readings',270,461,19,'#9eb6d5',620);text('Custom accents apply to the cluster.',270,491,18,'#9eb6d5',620);
+ }else if(s.page==='edit'){
+  text('Four side readings. Fuel percentage is included by default in every theme.',250,146,20,'#b8cbe2',1320);
+  text('Unknown or stale readings show --. No inferred safety or warning states.',250,528,18,'#b8cbe2',1320);
+ }else if(s.page==='intro'){
+  text('Optional needle sweep, once at startup.',280,206,30,'#edf4ff',1260);
+  text('Skipped outside Park. Leaving Park cancels the sweep and shows live readings.',280,260,21,'#b7cae3',1260);
+  text('Custom gauges themselves do not require Park.',280,304,21,'#b7cae3',1260);
  }else if(s.page==='output'){
-  const status=s.client.status;
-  text('Your saved display',286,170,27,t[1],710);
-  text(status?(status.enabled?'On · ':'Off · ')+(status.output==='parked-panel'?'Full cluster in Park':'Center layout'):'Waiting for Cluster Studio',286,215,25,'#d6e1ef',710);
-  text(status&&status.displayVisible?'Renderer reports your design is shown':status&&status.state||'Waiting for display status',286,253,21,'#a4c4e4',710);
-  text('Your layout stays saved while output waits.',286,298,21,'#d6e1ef',710);
-  text(!status?'Connect to check available displays.':status.independentPanelHud?'Separate display resources: cluster + HUD enabled.':'This renderer shares the full-cluster and HUD resource.',286,337,20,'#a4c4e4',710);
-  text('Retry keeps your layout and selected output.',286,378,21,'#d6e1ef',710);
-  text('P stays visible. BMW gauges return outside Park.',286,417,20,'#a4c4e4',710);
-  const failure=status&&status.recovery&&status.recovery.failure;
-  text(failure?'Renderer: '+failure.reason:status&&status.displayReason||status&&status.testReason||'Install Cluster Studio to check vehicle data.',286,506,19,'#a4c4e4',1250);
-  text('BMW gauges remain responsible for cruise, lane alerts and warnings.',286,532,18,'#e6ba82',1250);
- }else if(s.page==='assistance'){
-  const fresh=Date.now()-(s.client.statusAt||0)<2000;
-  const a=fresh&&s.client.status&&s.client.status.assistance;
-  text('Configured in BMW',286,168,27,t[1],1200);
-  const rows=a&&a.preferences||[
-   {label:'Lane departure warning'},{label:'Lane change warning'},
-   {label:'Forward collision warning'},{label:'Pedestrian warning'},
-   {label:'Lane departure steering intervention'},{label:'Lane change assistant'},
-   {label:'Situational distance selection'},{label:'Steering wheel light indicators'}];
-  rows.slice(0,8).forEach((p,i)=>{
-   const x=286+(i%2)*646,y=188+Math.floor(i/2)*77;
-   r.roundRect(x,y,622,65,9,'#142235');
-   text(p.label,x+16,y+23,18,'#b7c9de',590);
-   text(({on:'On in BMW settings',off:'Off in BMW settings',unavailable:'Not available'})[p.value]||'Waiting for fresh data',x+16,y+50,20,p.value==='on'?'#91c8fa':'#b7c9de',590);
-  });
-  text('Active cruise, set speed, following distance and lane alerts: use BMW gauges.',286,525,21,'#e6ba82',1270);
-  text('These preferences do not show whether assistance is currently engaged.',286,550,18,'#a4c4e4',1270);
- }else if(s.page==='tools'){
-  text('Use the phone designer for names, exact colors, import and export.',286,487,22,'#a4c4e4',1260);
+  text(status&&status.enabled?'Source cluster enabled':'BMW gauges active',280,190,32,'#edf4ff',1200);
+  text(status&&status.state||'Waiting for Cluster Studio',280,242,21,'#b7cae3',1270);
+  text('Saved themes resume when fresh vehicle readings and the renderer are ready.',280,490,20,'#b7cae3',1270);
+  text('This changes the instrument cluster only.',280,524,19,'#b7cae3',1270);
  }else if(s.page==='features'){
-  const f=s.client.status&&s.client.status.features;
-  text('Lighting, climate & playback',286,173,28,t[1],740);
-  text(f?'Lighting: '+f.lighting+' · climate: '+(f.climate||0)+' · media: '+f.media:'Run a scan while parked.',286,218,23,'#d6e1ef',740);
-  (f?f.rows:[]).slice(0,5).forEach((a,i)=>{text(a.name+(a.setter?' · setter declared':''),286,263+i*40,19,'#a4c4e4',740);});
-  text('NOT VERIFIED · A scan finds interfaces; it does not activate controls.',286,491,19,'#e6ba82',1200);
-  text('The phone report includes field types for a supported lighting adapter.',286,523,19,'#a4c4e4',1200);
+  const f=status&&status.features;text('Read-only interface scan',280,190,28,'#edf4ff',800);
+  (f&&f.rows||[]).slice(0,6).forEach((v,i)=>text(v.name+(v.setter?' · setter declared':''),280,252+i*38,20,'#b7cae3',1260));
+  text('NOT VERIFIED · An interface declaration does not prove a vehicle control works.',280,526,19,'#dec59c',1280);
+ }else if(s.page==='assistance'){
+  const fresh=status&&Date.now()-(s.client.statusAt||0)<2000,a=fresh&&status.assistance;
+  (a&&a.preferences||[{label:'Waiting for BMW assistance preferences'}]).slice(0,8).forEach((p,i)=>{const x=268+(i%2)*660,y=165+Math.floor(i/2)*84;r.roundRect(x,y,638,70,9,'#16243b');text(p.label,x+18,y+28,20,'#b7cae3',600);text(({on:'On in BMW settings',off:'Off in BMW settings',unavailable:'Unavailable'})[p.value]||'Waiting for fresh data',x+18,y+56,18,'#b7cae3',600);});
+  text('Preferences only. Live assistance and warnings remain on BMW display.',280,526,19,'#dec59c',1280);
  }else if(s.page==='media'){
-  const m=s.client.status&&s.client.status.media,url=m&&m.target!=='design'&&m.urls&&m.urls[0],fresh=Date.now()-(s.client.statusAt||0)<2000;
-  r.fillRect(286,145,720,360,'#030609');
-  if(m&&m.target==='center'&&m.playing&&fresh&&s.videoSupported){const op=videoOp(9001,286,145,720,360,0);r._grow(op.length);r.u.set(op,r.n);r.n+=op.length;}
-  else if(url){
-   if(qrText!==url){qrText=url;qrCode=QR.QrCode.encodeText(url,QR.QrCode.Ecc.MEDIUM);}
-   const step=Math.floor(310/(qrCode.size+8)),side=step*(qrCode.size+8),x=310,y=164;r.fillRect(x,y,side,side,'#ffffff');
-   for(let row=0;row<qrCode.size;row++)for(let col=0;col<qrCode.size;col++)if(qrCode.getModule(col,row))r.fillRect(x+(col+4)*step,y+(row+4)*step,step,step,'#000000');
-   text('Scan with your phone',638,222,24,'#d6e1ef',350);text('Same car Wi-Fi network',638,263,20,'#a4c4e4',350);text('Choose a saved video',638,299,20,'#a4c4e4',350);text('Session: '+m.remaining+' seconds',638,349,20,'#a4c4e4',350);
-  }else{ text(m&&m.active&&m.target==='design'?'Phone designer session is open':'Your phone supplies the picture',310,234,25,'#d6e1ef',650);text(m&&m.active&&m.target==='design'?'Stop that session here to switch to video.':'Select a display, then Start phone session.',310,279,20,'#a4c4e4',650);text('640 × 360 / up to 15 fps / no car-side audio',310,324,19,'#a4c4e4',650);}
-  text('Native YouTube / TikTok / Instagram apps are not enabled.',1040,440,18,'#e6ba82',530);
-  text(m?m.note:'Install Cluster Studio 0.1.22.',286,533,19,'#a4c4e4',1270);
+  const m=status&&status.media,url=m&&m.urls&&m.urls[0];
+  if(url){const q=QR.QrCode.encodeText(url,QR.QrCode.Ecc.MEDIUM),cell=Math.floor(300/(q.size+8)),x=280,y=170;r.fillRect(x,y,cell*(q.size+8),cell*(q.size+8),'#ffffff');for(let yy=0;yy<q.size;yy++)for(let xx=0;xx<q.size;xx++)if(q.getModule(xx,yy))r.fillRect(x+(xx+4)*cell,y+(yy+4)*cell,cell,cell,'#000000');text('Scan with the phone connected to car Wi-Fi',610,230,22,'#b7cae3',390);}
+  else{text('Saved clips and direct video links',280,215,28,'#edf4ff',740);text('Start a supervised parked session, then scan the code.',280,270,21,'#b7cae3',740);}
+  text(m&&m.note||'No video session',280,505,20,'#b7cae3',730);
+  if(s.videoFull&&m&&m.playing&&m.target==='center'&&s.videoSupported){r.fillRect(248,140,1328,375,'#000000');const op=videoOp(9001,248,140,1328,375,0);r._grow(op.length);r.u.set(op,r.n);r.n+=op.length;}
  }
- buttons.forEach((b,i)=>{
-  if(b.chrome){T.button(r,b,i===focus);return;}
-  const primary=b.id==='apply'||b.id==='page:add';
-  T.button(r,Object.assign({},b,{primary,label:b.widgetCard?'':b.label}),i===focus);
-  if(s.page==='themes'&&b.id.startsWith('pick-theme:'))r.fillRect(b.x+2,b.y+2,6,b.h-4,M.THEMES[Number(b.id.split(':')[1])][1]);
-  if(b.widgetCard){text(b.label,b.x+18,b.y+37,24,b.enabled?'#f1f6ff':'#78899e',b.w-168);text(b.badge,b.x+b.w-130,b.y+36,17,b.enabled?'#b9ceff':'#8191aa',115);}
- });
- const status=s.notice||s.editStatus()||(s.client.status?s.client.status.state:'Install Cluster Studio to save and display layouts');
- T.text(r,status,20,548,16,s.dirty?'#efc684':'#aec5df',395);T.text(r,s.client.status?'Connected':'Offline draft',20,571,14,'#879dbd',395);
+ text(s.editStatus(),248,563,17,s.dirty?'#f0c58b':'#abc5df',1310);
  return {record:r,items:buttons};
 }
-module.exports={frame,items,BOX,TITLES,WIDGETS_PER_PAGE};
+module.exports={frame,items,TITLES};

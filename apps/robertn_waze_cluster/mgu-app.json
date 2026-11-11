@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "robertn_waze_cluster",
-  "version": "0.4.154",
-  "tree": "robertn_waze_cluster@0.4.154",
+  "version": "0.4.155",
+  "tree": "robertn_waze_cluster@0.4.155",
   "modules": [
     "src/startup.js",
     "src/robertn_waze_cluster.js",
@@ -21,18 +21,17 @@
     "src/font_cluster.js",
     "src/font_cluster_square.js",
     "src/studio_model.js",
-    "src/studio_draw.js",
     "src/studio_view.js",
     "src/studio_client.js",
     "src/studio_screen.js",
-    "src/studio_intro.js",
-    "src/studio_assets.js",
     "src/qrcodegen.js",
     "src/cockpit_view.js",
     "src/cockpit_theme.js",
     "src/cockpit_car.js",
     "src/car_model.js",
-    "src/car_views.js"
+    "src/car_views.js",
+    "src/cluster_catalog.js",
+    "src/cluster_previews.js"
   ],
   "sdk": [
     "oap-sdk/src/core/OnlineApp.js",
