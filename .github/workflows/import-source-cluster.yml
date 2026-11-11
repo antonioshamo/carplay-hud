@@ -1,0 +1,74 @@
+name: Verify and publish source cluster
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.12.0
+      - name: Import tested source cluster
+        run: |
+          set -eu
+          if [ -f bmw-source-cluster-0155.bundle ]; then
+            echo 'e0aeefe26c9a510cb603b3734ab80a1f8099b971524792201e86eedf4a2d1750  bmw-source-cluster-0155.bundle' | sha256sum -c -
+            git bundle verify bmw-source-cluster-0155.bundle
+            git fetch ./bmw-source-cluster-0155.bundle HEAD:refs/remotes/import/source-cluster
+            test "$(git rev-parse refs/remotes/import/source-cluster)" = 'cf0e8c9f50fdb07edf6ec7a5c358b71012f994f5'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git merge --no-ff --no-edit refs/remotes/import/source-cluster
+            git rm bmw-source-cluster-0155.bundle
+            git commit -m 'Remove source cluster transport bundle'
+            git push origin HEAD:main
+          fi
+          git merge-base --is-ancestor cf0e8c9f50fdb07edf6ec7a5c358b71012f994f5 HEAD
+      - name: Replay menu with installed Renderer 0.6.15
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri
+          git clone --depth 1 --branch mgu-render@0.6.15 https://github.com/robertnisipeanu/mgu-store.git "$RUNNER_TEMP/menu-renderer"
+          test "$(git -C "$RUNNER_TEMP/menu-renderer" rev-parse HEAD)" = '54c656a79f08db3385393417a93b5608778fa571'
+          make -C "$RUNNER_TEMP/menu-renderer/native/mgu-render" in-build OUT=host
+          node apps/robertn_waze_cluster/tools/verify_renderer_replay.js "$RUNNER_TEMP/menu-renderer/native/mgu-render/build/host/mgu-render" "$RUNNER_TEMP/menu-replay"
+      - name: Save actual Renderer menu previews
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: source-cluster-menu-renderer-0615
+          path: ${{ runner.temp }}/menu-replay/*.png
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Verify renderer host integration
+        run: make -C native/cluster-render test
+      - name: Verify map tool integration
+        run: make -C native/waze-on-cluster test
+      - name: Verify app, source cluster and regression coverage
+        run: |
+          set -eu
+          for test in native/cluster-studio/test/*.js apps/robertn_waze_cluster/tools/test_*.js; do
+            node "$test"
+          done
+          sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
+          node native/hud-startup-diagnostics/test.js
+          node release/test/release_test.js
+      - name: Verify reproducible app and helper artifacts
+        run: node release/release.js check cluster-studio robertn_waze_cluster
+      - name: Publish CarPlay HUD 0.4.155 and Cluster Studio 0.1.32
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MGU_PUBLISH: github:${{ github.repository }}
+          MGU_PUBLISH_VISIBILITY: any
+        run: node release/release.js publish cluster-studio robertn_waze_cluster
