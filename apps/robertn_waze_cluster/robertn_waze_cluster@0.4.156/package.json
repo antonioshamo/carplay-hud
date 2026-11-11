@@ -1,7 +1,7 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.155",
-  "description": "Customizable BMW original-style default gauges, 13 dial styles, iDrive 8 templates, 37 widgets, live parked editing and saved designs.",
+  "version": "0.4.156",
+  "description": "Twelve source cluster themes with picture previews, live colors and units, four configurable readings, saved designs and fuel percentage. BMW center and warning areas retained; X4 M vehicle verification pending.",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {

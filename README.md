@@ -1,6 +1,6 @@
 # CarPlay HUD and Cluster Studio for BMW iDrive 7
 
-CarPlay HUD **0.4.155** opens the graphical dashboard directly and removes the
+CarPlay HUD **0.4.156** opens the graphical dashboard directly and removes the
 old native settings menus. Graphics recovery stays on the same dashboard host;
 a minimal Retry/Close message remains if the graphical renderer cannot present.
 The update is tested offline, not yet verified on the physical car.
@@ -23,7 +23,7 @@ rear commands remain unverified in the car. Reliable route-free Apple Maps
 startup and HUD flicker still require physical-car verification.
 
 Personal fork of [eroobeeroo/idrive-apps](https://github.com/eroobeeroo/idrive-apps).
-Current component versions: app **0.4.155**, Waze on cluster **0.7.117**,
+Current component versions: app **0.4.156**, Waze on cluster **0.7.117**,
 Cluster Studio **0.1.32**, cluster-render **0.3.105**. **MGU Renderer 0.6.11**
 comes from the official MGU Store source and draws the settings app; it is
 separate from cluster-render.
