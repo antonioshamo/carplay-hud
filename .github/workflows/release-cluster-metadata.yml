@@ -1,0 +1,54 @@
+name: Publish corrected cluster listing
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.12.0
+      - name: Import metadata correction
+        run: |
+          set -eu
+          if [ -f bmw-cluster-metadata-0156.bundle ]; then
+            echo '8932df6a9e63e378b7c151b32f89332278456bb5aa2b970b4497e6e26119222a  bmw-cluster-metadata-0156.bundle' | sha256sum -c -
+            git bundle verify bmw-cluster-metadata-0156.bundle
+            git fetch ./bmw-cluster-metadata-0156.bundle HEAD:refs/remotes/import/metadata
+            test "$(git rev-parse refs/remotes/import/metadata)" = '32ea733b08539f76f9198f7acadebad1a3c69909'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git merge --no-ff --no-edit refs/remotes/import/metadata
+            git rm bmw-cluster-metadata-0156.bundle
+            git commit -m 'Remove cluster metadata transport bundle'
+            git push origin HEAD:main
+          fi
+          git merge-base --is-ancestor 32ea733b08539f76f9198f7acadebad1a3c69909 HEAD
+      - name: Prove runtime matches full verified release
+        run: git diff --exit-code f7b37fdbb08f989e61cf5702d2481bd7c20b0eed HEAD -- native apps/robertn_waze_cluster/src apps/robertn_waze_cluster/tools release
+      - name: Verify app and head-unit runtime
+        run: |
+          set -eu
+          node apps/robertn_waze_cluster/tools/test_control.js
+          node apps/robertn_waze_cluster/tools/test_studio.js
+          node apps/robertn_waze_cluster/tools/test_menu_navigation.js
+          sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
+          node release/test/release_test.js
+      - name: Verify reproducible corrected package
+        run: node release/release.js check robertn_waze_cluster
+      - name: Publish CarPlay HUD 0.4.156
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MGU_PUBLISH: github:${{ github.repository }}
+          MGU_PUBLISH_VISIBILITY: any
+        run: node release/release.js publish robertn_waze_cluster
