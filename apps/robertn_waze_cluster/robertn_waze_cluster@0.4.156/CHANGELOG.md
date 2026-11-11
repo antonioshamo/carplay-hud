@@ -1,3 +1,8 @@
+## 0.4.156
+
+- Correct the Store description to the twelve source themes and current customization.
+- No cluster, HUD, vehicle-control or menu runtime changes from 0.4.155.
+
 ## 0.4.155
 
 Replace the retired custom-cluster editor with a source theme gallery: 12 themes, actual rendered pictures, three palettes, accent colors, units, four configurable side readings from 27 supported metrics, five saved designs and optional startup sweeps. Requires Cluster Studio 0.1.32. Migration backs up old layouts and leaves BMW gauges active until the replacement is enabled.
