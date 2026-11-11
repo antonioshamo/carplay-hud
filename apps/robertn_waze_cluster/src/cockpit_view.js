@@ -4,7 +4,7 @@ const kit=require('./kit_record.js'),T=require('./cockpit_theme.js'),Car=require
 const APPS=[
  ['open-studio','My gauges','gauge','display'],['go:layout','HUD layout','hud','display'],['go:startup','CarPlay startup','power','display'],
  ['studio:edit','Arrange widgets','widgets','display'],['studio:style','Colors & dials','sun','display'],['studio:intro','Welcome','play','display'],
- ['studio:library','My designs','save','display'],['studio:phone','Phone designer','phone','display'],['studio:output','Display output','gauge','display'],
+ ['studio:library','My designs','save','display'],['studio:gallery','Cluster themes','gauge','display'],['studio:output','Display output','gauge','display'],
  ['go:vehicle','Live vehicle','car','vehicle'],['vehicle:tires','Tire pressure','tire','vehicle'],['vehicle:journey','Fuel & journey','fuel','vehicle'],
  ['go:climate','Climate','fan','comfort'],['studio:features','Lighting & scan','sun','comfort'],['studio:assistance','Assistance settings','car','vehicle'],
  ['studio:media','Phone video','play','comfort'],['go:appearance','Map appearance','sun','display'],['go:support','Help & restore','info','vehicle']

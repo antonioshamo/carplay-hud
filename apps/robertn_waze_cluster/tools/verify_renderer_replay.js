@@ -52,6 +52,8 @@ try{
  for(let n=0;n<96;n++){const image=loadSlot(n,n%2);lastOrbit=H.frame(Object.assign({},model,{carImage:image}),'overview',0,0,1).record;orbitGpu.frame(lastOrbit);if([12,36,60,95].includes(n))inspect('car-stream-'+n,orbitFile,lastOrbit);}
  const staged=loadSlot(0,0);orbitGpu._ensureImage(staged.imageId,new Set([staged.imageId]));inspect('car-staged-next-view',orbitFile,lastOrbit);
 }finally{orbitGpu.close();slots.forEach(kit.dropImage);fs.unlinkSync(orbitFile);}
+process.env.CLUSTER_PREVIEW_DIR=path.resolve(__dirname,'../../../native/cluster-studio/assets/cluster-themes');
+model.helper.generation='source-cluster-v2';model.helper.canSelectPanel=true;
 const studio=new StudioScreen(()=>{});studio.client.status=model.helper;studio.client.statusAt=Date.now();
-try{for(const page of ['gallery','edit','add','gauges']){studio.page=page;verify('studio-'+page,studio.frame(0,1).record);}}finally{studio.close();}
+try{for(const page of ['gallery','edit','metric','style','intro','library','output']){studio.page=page;verify('studio-'+page,studio.frame(0,1).record);}}finally{studio.close();}
 fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({renderer:'0.6.15',source:'54c656a79f08db3385393417a93b5608778fa571',vehicleVerified:false,results},null,2));

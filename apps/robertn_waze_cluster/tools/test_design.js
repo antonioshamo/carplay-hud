@@ -53,17 +53,13 @@ p.on('command',m=>{const ev={target:'target-reply','hud-size':'hud-size-reply','
   for(const shortcut of ['studio:intro','studio:library']){await tap(shortcut);assert.equal(h.studio.page,shortcut.slice(7));assert(h.items[h.focus].selected,'shortcut focuses the active category, not Back');await wait(310);await tap('navigate-back');assert.equal(h.page,'apps','shortcut Back returns to the app grid');}
   await wait(310);await tap('nav:overview');await tap('open-studio');assert.equal(h.page,'studio');assert.equal(h.studio.entryPage,'gallery');
   await tap('page:edit');assert.equal(h.studio.page,'edit');await settled();
-  const sw=h.studio.widget(),sx=274+(sw.x+sw.w/2)*976,sy=153+(sw.y+sw.h/2)*366,sold=sw.y;
-  g.touch(1,sx,sy);g.touch(2,sx+60,sy+10);g.touch(3,sx+60,sy+10);await wait(30);assert(h.studio.widget().y>=sold+.01,'real touch wire drags Studio widget vertically while protecting the middle');
-  await tap('select');await tap('widget:oil');await tap('page:properties');await tap('toggle');assert(!h.studio.widget().on,'hide the default oil widget before testing Add');await wait(310);await tap('page:edit');
-  await tap('page:add');assert.equal(h.studio.page,'add');await tap('widget-group:1');await tap('add-widget:oil');assert.equal(h.studio.page,'edit');assert.equal(h.studio.selected,'oil');assert(h.studio.widget().on);
-  const added=h.studio.widget(),ax=274+(added.x+added.w/2)*976,ay=153+(added.y+added.h/2)*366,oldY=added.y;
-  g.touch(1,ax,ay);g.touch(2,ax,ay+36);g.touch(3,ax,ay+36);await wait(30);assert(h.studio.widget().y>oldY,'added widget can immediately be dragged through real input packets');
-  await wait(310);await tap('page:properties');const oilWidth=h.studio.widget().w;await tap('width-more');assert(h.studio.widget().w>oilWidth);await tap('widget-color');assert.equal(h.studio.widget().color,'#ffffff');await tap('lock');const lockedWidth=h.studio.widget().w;await tap('width-less');assert.equal(h.studio.widget().w,lockedWidth,'disabled locked controls ignore the real touch wire');
-  await wait(310);await tap('page:edit');await tap('undo');assert(!h.studio.widget().locked);await tap('redo');assert(h.studio.widget().locked);
-  console.log('ok new widget chooser, geometry, color, lock and undo/redo through actual graphical input packets');
+  await tap('widget:0');assert.equal(h.studio.page,'metric');await tap('metric:oil');assert.equal(h.studio.page,'edit');assert.equal(h.studio.design.widgets[0],'oil');
+  await tap('undo');assert.equal(h.studio.design.widgets[0],'fuel');await tap('redo');assert.equal(h.studio.design.widgets[0],'oil');
+  await tap('page:gallery');await tap('theme:sport');assert.equal(h.studio.design.theme,'sport');await tap('gallery-next');await tap('theme:classic');assert.equal(h.studio.design.theme,'classic');
+  await tap('page:style');await tap('palette');assert.equal(h.studio.design.palette,'sport');await tap('accent');assert.equal(h.studio.design.accent,'#ffffff');await tap('temperature');assert.equal(h.studio.design.temperatureUnit,'C');
+  console.log('ok source theme pictures, side-reading selection, palette, accent, units and undo/redo through actual graphical input packets');
   h.studio.page='media';h.studio.client.status={media:{target:'center',playing:true,active:true,generation:1,rect:{x:0,y:0,w:1,h:1}},slots:[]};h.studio.client.statusAt=Date.now();h.render();await settled();assert(g.count(13)>0,'media binds a real VIDEO shared-file source');const videoCount=g.count(13);h.studio.client.status.media.generation=2;h.render();await settled();assert(g.count(13)>videoCount&&g.count(14)>0,'reopened shared file rebinds after pause');h.studio.videoFull=true;h.render();await settled();assert.equal(h.items.length,4,'movie view keeps Back, live editing, Apply and Stop controls');h.studio.client.statusAt=Date.now()-3000;h.render();await settled();assert(!h.videoBound,'stale helper status removes center video');h.studio.page='edit';h.studio.client.status=null;h.render();await settled();
-  h.hostFocus(false);const hiddenX=h.studio.widget().x;g.touch(1,sx,sy);g.touch(2,sx+120,sy);g.touch(3,sx+120,sy);await wait(20);assert.equal(h.studio.widget().x,hiddenX);
+  h.hostFocus(false);const hiddenDesign=JSON.stringify(h.studio.design);g.touch(1,380,210);g.touch(3,380,210);await wait(20);assert.equal(JSON.stringify(h.studio.design),hiddenDesign);
   h.hostVisible(true);h.studio.nav=[];h.studio.page='gallery';h.render();await settled();await tap('navigate-back');assert.equal(h.page,'overview');await wait(310);await tap('go:layout');await tap('nav:support');
   assert(!h.items.some(b=>b.id==='classic'),'old menu link removed');
   console.log('ok rotary selection/press, baseline and jump handling, native-proxy fallback, disabled actions and Classic');

@@ -1,0 +1,46 @@
+{
+  "name": "robertn_waze_cluster",
+  "version": "0.4.155",
+  "description": "Customizable BMW original-style default gauges, 13 dial styles, iDrive 8 templates, 37 widgets, live parked editing and saved designs.",
+  "private": false,
+  "main": "javascript/runner.js",
+  "oapAppSettings": {
+    "maxDiskUsage": 26214400,
+    "cpuLimit": 50,
+    "memoryThresholdKB": 153600,
+    "priority": "PRIO_MEDIUM",
+    "visibility": "FOREGROUND",
+    "latencyClass": "FOREGROUND",
+    "loggingId": "WOCA",
+    "userLoginRequired": false,
+    "backgroundPriority": 150,
+    "someipManifest": "manifest.json"
+  },
+  "files": [
+    "config",
+    "rhmiData",
+    "package.json",
+    "npm-shrinkwrap.json",
+    "permissions.json",
+    "javascript",
+    "manifest.json",
+    "CHANGELOG.md",
+    "LICENSE",
+    "licenses"
+  ],
+  "dependencies": {
+    "oap-sdk": "24.10.2"
+  },
+  "engines": {
+    "node": ">=8.7.0"
+  },
+  "keywords": [
+    "node",
+    "BMW",
+    "Online",
+    "ConnectedDrive"
+  ],
+  "author": "Robert Nisipeanu",
+  "license": "GPL-3.0-or-later",
+  "mguLocalOnly": true
+}

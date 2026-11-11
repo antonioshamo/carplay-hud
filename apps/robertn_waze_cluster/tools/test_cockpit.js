@@ -3,7 +3,7 @@
 const assert=require('assert'),EventEmitter=require('events'),C=require('../src/cockpit_view.js'),M=require('../src/studio_model.js'),{HudScreen}=require('../src/hud_screen.js'),{SettingsControl}=require('../src/settings_control.js'),kit=require('../src/kit_record.js');
 const actions=require('../../../native/cluster-studio/climate_controls.js').ACTIONS;
 const controls=Object.keys(actions).map(id=>({id,label:actions[id].label,value:0,available:true,choices:actions[id].labels,choiceCount:actions[id].options.length}));
-const helper={design:M.preset(0),slots:[],climateSupported:true,climate:{controls,pending:false},data:{rpm:738,oil:90,fuel:32,range:310},parked:true};
+const helper={design:M.defaultDesign(),slots:[],climateSupported:true,climate:{controls,pending:false},data:{rpm:738,oil:90,fuel:32,range:310},parked:true};
 const pages=[['overview',{homePage:0}],['overview',{homePage:1}],['apps',{category:'all',appPage:0}],['apps',{category:'all',appPage:1}],['apps',{category:'display'}],['apps',{category:'vehicle'}],['apps',{category:'comfort'}],['vehicle',{vehicleTab:'engine'}],['vehicle',{vehicleTab:'tires'}],['vehicle',{vehicleTab:'journey'}],['climate',{climateTab:0}],['climate',{climateTab:1}],['climate',{climateTab:2}]];
 let texts=[];const original=kit.Recorder.prototype.text;kit.Recorder.prototype.text=function(v){texts.push(String(v));return original.apply(this,arguments);};
 try{
@@ -15,7 +15,7 @@ try{
 
  }
  for(const pair of [['bar','2.5 bar'],['psi','36.3 psi'],['kPa','250.0 kPa']]){
-  texts=[];C.frame({helper:{design:M.preset(0),data:{pressureFL:2.5,pressureUnit:pair[0]}},helperFresh:true,cockpit:{vehicleTab:'tires'}},'vehicle',0,1);
+  texts=[];C.frame({helper:{design:M.defaultDesign(),data:{pressureFL:2.5,pressureUnit:pair[0]}},helperFresh:true,cockpit:{vehicleTab:'tires'}},'vehicle',0,1);
   assert(texts.includes(pair[1]),'correct pressure display: '+pair[1]);
  }
  const older={helperFresh:true,helper:{climateSupported:true,climate:{controls:controls.filter(c=>!/^heat|^vent|^rear/.test(c.id))}},cockpit:{climateTab:1}};
