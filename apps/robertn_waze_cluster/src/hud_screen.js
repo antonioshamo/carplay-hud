@@ -32,20 +32,30 @@ class HudScreen extends EventEmitter {
   this.gpu.on('touch',(p,x,y)=>this._touch(p,x,y));
   this.gpu.on('ccu',e=>this._ccu(e));
   this.gpu.on('tick',()=>{this.lastAck=Date.now();this._checkPresentation();if(this.active&&this.firstFrameSent&&!this.artworkReady){this.artworkReady=true;this.dirty=true;trace.record('settings-frame-ack','after '+(Date.now()-this.openedAt)+' ms; artwork follows');}if(this.dirty||Date.now()-this.motionAt<220||(this.page==='studio'&&this.studio.page==='intro'&&Date.now()-this.studio.animationAt<this.studio.design.introDuration+150))this.render();});
-  this.timer=setInterval(()=>{if(this.presentationFailed&&this.visible&&this.focused&&this.autoRetries<3&&Date.now()>=this.retryAt){this.autoRetries++;this.retry(false);}if(this.active){this._checkPresentation();if(this.active){this.observeClimate();this.render();}}},1000);
+  this.timer=setInterval(()=>this._maintain(),1000);
   if(this.timer.unref)this.timer.unref();
  }
  connect(){this.gpu.connect();this.studio.open();}
+ _maintain(now){
+  if(this.closed)return;
+  now=now||Date.now();
+  if(this.presentationFailed&&this.visible&&this.focused&&this.autoRetries<3&&now>=this.retryAt){this.autoRetries++;this.retry(false);}
+  if(this.active){this._checkPresentation(now);if(this.active){this.observeClimate();this.render();}}
+ }
  observeClimate(){const c=this.studio.client;if(this.closed||!this.active||this.page!=='climate'||!c.status||!c.status.climateSupported||c.pending||Date.now()-(c.statusAt||0)>=2000||Date.now()-(this.climateObservedAt||0)<2000)return;this.climateObservedAt=Date.now();c.send('climate-observe').then(()=>{this.dirty=true;},e=>{this.cockpit.climateNotice=e.message;this.dirty=true;});}
  _model(loadCar){return Object.assign(view.model(this.host.control),{cockpit:this.cockpit,carImage:this.artworkReady&&Car.rect(this.page,this.cockpit)?(loadCar?this.carModel.get(this.cockpit.car.angle):this.carModel.current):null,carError:this.carModel.error,deferArtwork:!this.artworkReady,helper:this.studio.client.status,helperFresh:!!this.studio.client.status&&Date.now()-(this.studio.client.statusAt||0)<2000});}
  _ready(info){
   trace.record('graphics-ready',JSON.stringify(info));
-  this.presentation=null;this.lastAck=0;this.presentationSince=0;
+  this.presentation=null;this.lastAck=0;this.presentationSince=0;this.firstFrameSent=false;this.artworkReady=false;
   this.info=info;this.studio.videoSupported=!!(info&&info.video);
   // A legacy renderer without a foreground gate must never cover BMW screens.
   const b=info&&info.appArea;
   this.ready=!!(info&&info.frontGate&&Array.isArray(info.modes)&&info.modes.indexOf('layer')>=0&&b&&b.w>=800&&b.h>=300);
-  if(!this.ready){this.failureReason='Compatible MGU Renderer required';this.hide();this.emit('mode',false);return;}
+  if(!this.ready){
+   const reason=!info?'Renderer protocol unavailable':!info.frontGate?'Renderer foreground detection unavailable':
+    !Array.isArray(info.modes)||info.modes.indexOf('layer')<0?'Renderer dashboard mode unavailable':'Renderer dashboard area unavailable';
+   this._presentationFailed(reason);return;
+  }
   this.scale=Math.min(b.w/view.W,b.h/view.H);
   this.gpu.mode('layer');
   this.gpu.place({x:b.x,y:b.y,w:b.w,h:b.h,scale:this.scale,ox:(b.w-view.W*this.scale)/2,oy:(b.h-view.H*this.scale)/2});
@@ -84,7 +94,16 @@ class HudScreen extends EventEmitter {
   this.hide();this.emit('mode',false);
  }
  _presented(on){if(this.presented===on)return;this.presented=on;this.emit('presentation',on);}
- retry(manual){if(this.closed)return;if(manual!==false)this.autoRetries=0;this.presentationFailed=false;this.failureReason=null;this.recoveryAttempts=0;this.suspended=false;if(!this.ready&&typeof this.gpu.reconnect==='function')this.gpu.reconnect();this.updateShow();}
+ retry(manual){
+  if(this.closed)return;
+  const reconnect=this.presentationFailed||!this.ready;
+  if(manual!==false)this.autoRetries=0;
+  this.presentationFailed=false;this.failureReason=null;this.recoveryAttempts=0;this.suspended=false;
+  // A failed surface may have lost its uploaded resources. A fresh connection
+  // rebuilds this app's surface and resends its fonts/images as well as frames.
+  if(reconnect&&typeof this.gpu.reconnect==='function'){this.ready=false;this.hide();this.gpu.reconnect();this.emit('mode',false);return;}
+  this.updateShow();
+ }
  hide(){this._presented(false);this.active=false;this.presentationSince=0;if(this.studio)this.studio.drag=null;this.touch=null;this.ccu=null;this.gpu.claim([]);this.gpu.grab(false);this.gpu.show(false);}
  render(force){
   if(!this.active||!this.ready||this.closed)return;
@@ -104,7 +123,7 @@ class HudScreen extends EventEmitter {
    this.dirty=false;
   } catch(err) {
    trace.error('graphics-render-failed',err);this.host.log.warn('Settings graphics: '+err.message);
-   this.ready=false;this.hide();this.emit('mode',false);
+   this.ready=false;this._presentationFailed('Dashboard drawing failed: '+err.message);
   }
  }
  proxyFocus(i,on){if(on&&this.active&&!(this.info&&this.info.controller)){this.focus=i;this.render();}}

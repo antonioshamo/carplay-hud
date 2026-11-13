@@ -87,6 +87,14 @@ setTimeout(()=>{try{
  if(scenario==='modern-open-timeout')assert(modernOpened>0,'later tap recovers from hung open');
  if(scenario==='modern-invalid-entry')assert(modernOpened>=4,'every re-entry opens dashboard by name');
  if(scenario==='startup-budget')assert(firstGraphicsWrites.length<10,'start graphics before proxy writes');
+ if(scenario==='foreground'){
+  const writes=[];app._write=(name,method,value)=>writes.push({name,method,value});
+  app._graphicsError=null;app._design={presented:false,presentationFailed:true,failureReason:'Renderer dashboard mode unavailable',autoRetries:0,visible:true,focused:true};
+  app._renderStatus();assert(writes.some(w=>w.name==='designStatus'&&/dashboard mode unavailable.*Retrying/.test(w.value)),'native status shows exact cause while a retry is scheduled');
+  app._design.autoRetries=3;writes.length=0;app._renderStatus();
+  assert(writes.some(w=>w.name==='designStatus'&&/Select Retry dashboard/.test(w.value)&&!/Retrying/.test(w.value)),'exhausted retries do not claim automatic progress');
+  app._design.presented=true;writes.length=0;app._renderStatus();assert(writes.some(w=>w.name==='designStatus'&&w.value===''),'successful presentation clears failure text');
+ }
  assert(!logs.some(s=>s.indexOf('init failed')>=0),logs.join('\n'));
  console.log('PASS '+scenario+'; single dashboard host, no legacy fallback');
  if(linkedDir){fs.readdirSync(linkedDir).forEach(n=>fs.unlinkSync(path.join(linkedDir,n)));fs.rmdirSync(linkedDir);}process.exit(0);

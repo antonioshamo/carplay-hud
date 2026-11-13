@@ -116,7 +116,9 @@ class WazeClusterApp extends OnlineApp {
  _renderStatus(){
   if(!this._startupReady||this._shutdownPromise)return;
   const d=this._design,shown=!!(d&&d.presented),failed=this._graphicsError||d&&d.failureReason;
-  this._write('designStatus','text',shown?'':failed?'Dashboard unavailable. Retrying the graphical menu…':'Opening your dashboard…');
+  const retrying=!!(d&&d.presentationFailed&&d.autoRetries<3&&d.visible&&d.focused);
+  const message=failed?'Dashboard unavailable: '+trace.redact(failed).slice(0,150)+'. '+(retrying?'Retrying…':'Select Retry dashboard.'):'Opening your dashboard…';
+  this._write('designStatus','text',shown?'':message);
   this._write('designRetry','setVisible',!!failed&&!shown);this._write('designRetry','setEnabled',!!failed&&!shown);
   this._write('designExit','setVisible',!shown);this._write('designExit','setEnabled',!shown);
  }

@@ -7,6 +7,36 @@ const {RenderClient}=require('../src/mgu_render_client.js'),{SettingsControl}=re
 const {FakeGraphics}=require('./fake_graphics.js'),kit=require('../src/kit_record.js');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn){for(let n=0;n<250;n++){if(fn())return;await wait(10);}throw Error('presentation condition timed out');}
+async function startupRecovery(){
+ const g=new FakeGraphics('/tmp/hud-startup-recover-'+process.pid),log={warn(){},info(){}},c=new SettingsControl({log});
+ const client=new RenderClient('robertn_waze_cluster',log,{kit,socket:g.path,mode:'layer'});
+ const h=new HudScreen({control:c,log,proxies(){}},{client}),view=require('../src/hud_view.js'),frame=view.frame;
+ clearInterval(h.timer);g.modes=0;
+ try{
+  await g.listen();h.hostVisible(true);h.connect();await until(()=>h.failureReason);
+  assert(h.presentationFailed&&!h.active,'unavailable startup capability must enter scheduled recovery');
+  assert(/dashboard mode/.test(h.failureReason));assert.equal(g.count(7),0,'unsupported mode never draws');
+  const first=client.sock;g.modes=1;h._maintain(h.retryAt);
+  await until(()=>h.presented);assert.notEqual(client.sock,first);assert.equal(h.autoRetries,0);
+  const fonts=g.count(4),old=client.sock;
+  g.send(103,Buffer.from('surface resources lost'));await until(()=>h.presentationFailed);
+  h._maintain(h.retryAt);await until(()=>h.presented);
+  assert.notEqual(client.sock,old,'renderer errors recreate this app connection');
+  assert(g.count(4)>fonts,'fresh connection reuploads font resources');
+  view.frame=()=>{throw Error('test drawing failure');};h.render(true);view.frame=frame;
+  assert(h.presentationFailed&&!h.active&&/test drawing failure/.test(h.failureReason),'draw exceptions expose their cause and schedule recovery');
+  h._maintain(h.retryAt);await until(()=>h.presented);
+  g.modes=0;h._presentationFailed('test unavailable mode');h.retry();await until(()=>h.presentationFailed);
+  for(let n=0;n<3;n++){h._maintain(h.retryAt);await until(()=>h.presentationFailed);}
+  const attempts=g.count(1);h._maintain(h.retryAt+1000);await wait(30);
+  assert.equal(h.autoRetries,3);assert.equal(g.count(1),attempts,'unavailable renderer retries stop after three attempts');
+  g.modes=1;h.retry();await until(()=>h.presented);
+  h._presentationFailed('test focus pause');h.hostFocus(false);const paused=g.count(1);h._maintain(h.retryAt+1000);await wait(30);
+  assert.equal(g.count(1),paused,'automatic recovery does not reconnect behind another screen');
+  h.close();h._maintain(Date.now()+60000);assert.equal(g.count(1),paused,'closed dashboard never restarts');
+  console.log('PASS startup capability recovery, surface resource reupload, draw-error recovery, retry limits and focus/close gates');
+ }finally{view.frame=frame;if(!h.closed)h.close();c.close();await g.close();}
+}
 (async()=>{
  const g=new FakeGraphics('/tmp/hud-present-'+process.pid),log={warn(){},info(){}},c=new SettingsControl({log});
  g.onScreen=false;g.front=true;
@@ -46,4 +76,4 @@ async function until(fn){for(let n=0;n<250;n++){if(fn())return;await wait(10);}t
   assert.equal(modes[modes.length-1],false);
   console.log('PASS renderer error produces a recoverable graphical error');
  }finally{h.close();c.close();await g.close();}
-})().catch(e=>{console.error(e.stack);process.exitCode=1;});
+})().then(startupRecovery).catch(e=>{console.error(e.stack);process.exitCode=1;});
