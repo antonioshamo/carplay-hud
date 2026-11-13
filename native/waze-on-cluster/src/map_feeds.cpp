@@ -3,6 +3,10 @@
 #include "map_feeds.h"
 
 #include <algorithm>
+#include <chrono>
+#include <fstream>
+#include <sstream>
+#include <sys/stat.h>
 
 #include "log.h"
 
@@ -85,6 +89,7 @@ std::unique_ptr<MapFeed> MapFeeds::make(const std::string &target)
 {
     FeedConfig fc = base_;
     fc.target = target;
+    fc.panel_focus = focus_active_ && target == "panel";
     std::unique_ptr<MapFeed> f(new MapFeed(fc));
     f->set_picture(picture_ready_);
     f->set_stream(live_, frozen_);
@@ -106,20 +111,47 @@ bool MapFeeds::set_targets(const std::string &spec)
         }
     if (want == targets_)
         return true;
-    std::vector<std::unique_ptr<MapFeed>> next;
-    for (const std::string &t : want) {
-        std::unique_ptr<MapFeed> f;
-        for (auto &old : feeds_)
-            if (old && old->target() == t)
-                f = std::move(old);
-        next.push_back(f ? std::move(f) : make(t));
-    }
-    /* feeds left in the old list close their connections: the renderer drops
-     * their layers and lets those slots go */
-    feeds_ = std::move(next);
     log_info("targets: %s -> %s", join_targets(targets_).c_str(), join_targets(want).c_str());
     targets_ = want;
+    reconcile();
     return true;
+}
+
+// Same atomic-file heartbeat approach as Cluster Layouts map_window.js.
+// A separate filename prevents an unrelated app from opting into this mode.
+bool MapFeeds::focus_requested() const
+{
+    struct stat st;
+    if (base_.focus_file.empty() || lstat(base_.focus_file.c_str(), &st) || !S_ISREG(st.st_mode) || st.st_size > 80) return false;
+#ifdef __APPLE__
+    const double mtime = st.st_mtimespec.tv_sec * 1000.0 + st.st_mtimespec.tv_nsec / 1000000.0;
+#else
+    const double mtime = st.st_mtim.tv_sec * 1000.0 + st.st_mtim.tv_nsec / 1000000.0;
+#endif
+    const double now = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+    if (mtime > now || now - mtime > 500) return false;
+    std::ifstream f(base_.focus_file);
+    std::string target, extra; int x, y, w, h;
+    if (!(f >> target >> x >> y >> w >> h) || (f >> extra)) return false;
+    return target == "panel" && x == 0 && y == 0 && w == 1920 && h == 720;
+}
+
+void MapFeeds::reconcile()
+{
+    std::vector<std::string> want = targets_;
+    if (focus_active_) {
+        for (auto &t : want) if (t == "map") t = "panel";
+        if (std::find(want.begin(), want.end(), "panel") == want.end()) want.push_back("panel");
+    }
+    std::vector<std::unique_ptr<MapFeed>> next;
+    for (const auto &t : want) {
+        std::unique_ptr<MapFeed> keep;
+        for (auto &old : feeds_)
+            if (old && old->target() == t && old->is_focus() == (focus_active_ && t == "panel")) keep = std::move(old);
+        next.push_back(keep ? std::move(keep) : make(t));
+    }
+    // The same HUD object, socket, layer and settings survive both transitions.
+    feeds_ = std::move(next);
 }
 
 bool MapFeeds::set_hud_style(const std::string &setting, bool on)
@@ -158,6 +190,11 @@ size_t MapFeeds::poll_fds(std::vector<pollfd> *fds) const
 
 void MapFeeds::poll(int64_t now_ms)
 {
+    if (focus_checked_ < 0 || now_ms - focus_checked_ >= 50) {
+        focus_checked_ = now_ms;
+        const bool want = focus_requested();
+        if (want != focus_active_) { focus_active_ = want; reconcile(); }
+    }
     for (auto &f : feeds_)
         f->poll(now_ms);
 }
@@ -195,7 +232,7 @@ FeedStatus MapFeeds::status(const std::string &decode, const std::string &stream
     FeedStatus s = feeds_[0]->status(decode, stream);
     for (size_t i = 1; i < feeds_.size(); i++) {
         const FeedStatus o = feeds_[i]->status(decode, stream);
-        const std::string &name = targets_[i];
+        const std::string &name = feeds_[i]->target();
         if (o.state == "error" && s.state != "error") {
             s.state = "error";
             s.reason = name + ": " + o.reason;
@@ -226,7 +263,7 @@ std::string MapFeeds::report() const
 {
     std::string r;
     for (size_t i = 0; i < feeds_.size(); i++)
-        r += (feeds_.size() > 1 ? "--- " + targets_[i] + "\n" : std::string()) + feeds_[i]->report();
+        r += (feeds_.size() > 1 ? "--- " + feeds_[i]->target() + "\n" : std::string()) + feeds_[i]->report();
     return r;
 }
 

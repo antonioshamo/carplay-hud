@@ -74,6 +74,10 @@ public:
 
 private:
     std::unique_ptr<MapFeed> make(const std::string &target);
+    void reconcile();
+    bool focus_requested() const;
+    bool focus_active_ = false;
+    int64_t focus_checked_ = -1;
 
     FeedConfig base_;
     std::vector<std::string> targets_;

@@ -6,7 +6,7 @@ const EventEmitter=require('events');
 // limits or scene mappings are changed. The native renderer supports this API.
 const WIDTH=1920,HEIGHT=720,PARTS=16,MAX_MESHES=4;
 const VS='attribute vec3 a_position; attribute vec2 a_texcoord; varying vec2 v_uv; varying vec2 v_panel; void main(){v_uv=a_texcoord;v_panel=vec2((a_position.x+1.0)*960.0,(1.0-a_position.y)*360.0);gl_Position=vec4(a_position,1.0);}';
-function fragment(fs,window){
+function fragment(fs,window,fullMap){
  if(!/void\s+main\s*\(/.test(fs))throw Error('Cluster shader has no main');
  // OEM bottom strip, warning area and stock centre are never paintable by a
  // theme. This applies to every part, including imported backgrounds.
@@ -14,8 +14,8 @@ function fragment(fs,window){
  const body=fs.replace(/void\s+main\s*\(/,'void sourceMain(');
  const start=body.indexOf('precision '),end=start<0?-1:body.indexOf(';',start);
  if(end<0)throw Error('Cluster shader requires an explicit precision');
- const w=window||[416,120,1504,660];
- if(w.length!==4||w.some(v=>!Number.isInteger(v))||w[0]>711||w[1]>128||w[2]<1209||w[3]<660)throw Error('Native BMW center clearance cannot be reduced');
+ const w=fullMap?[0,0,0,0]:(window||[416,120,1504,660]);
+ if(!fullMap&&(w.length!==4||w.some(v=>!Number.isInteger(v))||w[0]>711||w[1]>128||w[2]<1209||w[3]<660))throw Error('Native BMW center clearance cannot be reduced');
  const f=v=>Number(v).toFixed(1);
  return body.slice(0,end+1)+declarations+body.slice(end+1)+'\nvoid main(){if(u_sourceVisible<0.5||u_sourceLease<0.5||v_panel.y>=660.0||(v_panel.x>='+f(w[0])+'&&v_panel.x<'+f(w[2])+'&&v_panel.y>='+f(w[1])+'&&v_panel.y<'+f(w[3])+')||(v_panel.x>=730.0&&v_panel.x<1190.0&&v_panel.y<128.0)){discard;}sourceMain();}\n';
 }
@@ -55,7 +55,7 @@ class SourceMesh extends EventEmitter {
     if(!mesh)throw Error('Cluster mesh refused');this.meshes.push(mesh);
     groups[i].forEach((n,j)=>{
      const part=j+1;n.native={mesh,part};
-     if(this.cr.part(mesh,part,{vs:VS,fs:fragment(n.opts.fs,this.o.window&&this.o.window()),depth:false,cull:'none',blend:'alpha'})===false)throw Error('Cluster part refused');
+     if(this.cr.part(mesh,part,{vs:VS,fs:fragment(n.opts.fs,this.o.window&&this.o.window(),this.o.fullMap&&this.o.fullMap()),depth:false,cull:'none',blend:'alpha'})===false)throw Error('Cluster part refused');
      if(this.cr.geometry(mesh,part,geometry(n.opts))===false)throw Error('Cluster geometry refused');
      Object.keys(n.uniforms).forEach(k=>{const u=n.uniforms[k];this.cr.uniform(mesh,k,u.values,Object.assign({},u.opts,{part}));});
      Object.keys(n.binds).forEach(k=>this.cr.bind(mesh,k,n.binds[k],part));

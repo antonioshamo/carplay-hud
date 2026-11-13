@@ -51,7 +51,8 @@ void VideoLayer::offer(const uint8_t *atlas, int64_t now_ms)
 
 bool VideoLayer::ready(int64_t now_ms) const
 {
-    return have_ && now_ms - last_frame_ms_ <= p_.stall_ms;
+    return have_ && now_ms - last_frame_ms_ <= p_.stall_ms &&
+        (!p_.panel_focus || (lease_at_ >= 0 && now_ms >= lease_at_ && now_ms - lease_at_ <= 700));
 }
 
 bool VideoLayer::attach(Graph *g, int64_t now_ms, std::string *err)
@@ -353,6 +354,8 @@ void VideoLayer::committed(bool ok, int64_t now_ms)
 
 int64_t VideoLayer::wake_in_ms(int64_t now_ms) const
 {
+    if (p_.panel_focus && lease_at_ >= 0 && now_ms <= lease_at_ + 700)
+        return std::max<int64_t>(1, std::min<int64_t>(50, lease_at_ + 701 - now_ms));
     if (!g_ || !drawn_ || !front_pending_)
         return -1;
     const int64_t w = clock_.ms_until_due(now_ms);

@@ -84,11 +84,17 @@ void MapFeed::make_layer()
     }
     /* The map area: all of the map slot's scene, the centred 1088x480 of a
      * whole-panel one, a fitted centre on the HUD. */
+    if (cfg_.panel_focus && (!client_.panel_focus_video || !client_.independent_panel_hud || tw != 1920 || th != 720)) {
+        refused_ = "full map requires updated independent panel renderer";
+        log_error("render: %s", refused_.c_str());
+        return;
+    }
     crk::QuadRect q = quad(tw, th);
     /* Shown smaller than the decoded frame: the frame is scaled to the size
      * it is shown at (a multiple of 4 wide and high, as the renderer and
      * packed motion need), drawn 1:1 centred where the quad was. */
     cr::VideoOptions vo = cfg_.video;
+    vo.panel_focus = cfg_.panel_focus;
     scaling_ = false;
     pending_ready_ = false;
     const uint32_t sw = q.w & ~3u, sh = q.h & ~3u;
@@ -107,7 +113,8 @@ void MapFeed::make_layer()
     lo_ = cr::LayerOptions();
     lo_.target = cfg_.target;
     lo_.klass = "content";
-    lo_.contend = true;   /* the map takes the slot back from the stock map */
+    lo_.contend = !cfg_.panel_focus;
+    if (cfg_.panel_focus) lo_.z = -100;   /* the map takes the slot back from the stock map */
     lo_.x = (int)q.x;
     lo_.y = (int)q.y;
     lo_.w = q.w;
@@ -130,6 +137,7 @@ void MapFeed::make_layer()
  * the scene. */
 crk::QuadRect MapFeed::quad(uint32_t tw, uint32_t th) const
 {
+    if (cfg_.panel_focus) return crk::QuadRect{0, 0, 1920, 720};
     if (cfg_.target != "hud" || !cfg_.video.w || !cfg_.video.h)
         return crk::map_quad(tw, th, cfg_.video.w, cfg_.video.h);
     crk::QuadRect q;
@@ -226,6 +234,10 @@ bool MapFeed::set_target(const std::string &name)
 void MapFeed::poll(int64_t now_ms)
 {
     client_.poll(now_ms);
+    if (cfg_.panel_focus && layer_ && client_.connected() && (last_focus_pulse_ < 0 || now_ms - last_focus_pulse_ >= 200)) {
+        client_.set(layer_, lo_); // Native expiry; never depends on incoming map frame rate.
+        last_focus_pulse_ = now_ms;
+    }
     send_pending(now_ms);
     if (connected_ && !client_.connected()) {
         connected_ = false;

@@ -17,7 +17,7 @@ function items(s){
   M.THEMES.slice(s.galleryPage*3,s.galleryPage*3+3).forEach((t,i)=>add('theme:'+t.id,t.name,248+i*446,146,426,290,true,{theme:t,selected:d.theme===t.id}));
   add('gallery-prev','Previous',248,464,220,56,s.galleryPage>0);add('gallery-next','Next',484,464,220,56,(s.galleryPage+1)*3<M.THEMES.length);add('go:output','Use this cluster',1222,464,360,56,ready);
  }else if(s.page==='edit'){
-  d.widgets.forEach((k,i)=>add('widget:'+i,(i<2?'Left ':'Right ')+(i%2+1)+' · '+M.LABELS[k],248+(i%2)*670,170+Math.floor(i/2)*114,650,90));
+  d.widgets.forEach((k,i)=>add('widget:'+i,(i<2?'Left ':'Right ')+(i%2+1)+' · '+M.LABELS[k],248+(i%2)*670,170+Math.floor(i/2)*114,650,90,d.theme!=='map_focus'));
   add('undo','Undo',248,438,210,58,s.history.length>0);add('redo','Redo',476,438,210,58,s.redo.length>0);
  }else if(s.page==='metric'){
   M.METRICS.slice((s.metricPage||0)*12,(s.metricPage||0)*12+12).forEach((k,i)=>add('metric:'+k,M.LABELS[k],248+(i%3)*446,154+Math.floor(i/3)*77,426,64,true,{selected:d.widgets[s.widgetSlot]===k}));
@@ -25,7 +25,7 @@ function items(s){
  }
  else if(s.page==='style'){
   [['palette','Palette: '+d.palette],['accent','Accent: '+(d.accent==='source'?'Original theme':d.accent)],['units','Speed & distance: '+d.units],['temperature','Temperature: °'+d.temperatureUnit]].forEach((b,i)=>add(b[0],b[1],930,158+i*83,650,66));
- }else if(s.page==='intro')add('intro-toggle','Needle sweep: '+(d.startup?'On':'Off'),280,340,900,78,true,{selected:d.startup});
+ }else if(s.page==='intro')add('intro-toggle','Needle sweep: '+(d.startup?'On':'Off'),280,340,900,78,d.theme!=='map_focus',{selected:d.startup});
  else if(s.page==='library'||s.page==='phone')for(let i=0;i<5;i++){const d=status&&status.slots&&status.slots[i],theme=d&&M.THEMES.find(t=>t.id===d.theme);add('save-slot:'+i,'Save '+(i+1),248,152+i*70,210,56,ready);add('load:'+i,theme?theme.name+' · '+d.palette:'Empty slot',480,152+i*70,1094,56,!!theme&&ready);}
  else if(s.page==='output'){
   add('enable','Enable selected source cluster',280,292,820,70,ready&&status.canSelectPanel,{primary:true});
@@ -47,7 +47,7 @@ function frame(s,focus,scale){
  const r=new kit.Recorder(1600,580,{textScale:scale||1}),buttons=items(s),d=s.design,status=s.client.status;
  const text=(a,x,y,z,c,w,center)=>T.text(r,String(a||''),x,y,z,c||'#eef4ff',w||1260,!!center);
  T.background(r);text('SOURCE CLUSTER / X4 M',248,35,15,'#9cb9db',760);text(TITLES[s.page]||'Cluster Studio',248,74,32,'#f0f5ff',760);
- text('BMW center and warning areas kept clear. X4 M vehicle verification pending.',248,118,19,'#c4b897',1320);
+ text(d.theme==='map_focus'?'Full-screen CarPlay map. Factory warning strip retained. Vehicle verification pending.':'BMW center and warning areas kept clear. X4 M vehicle verification pending.',248,118,19,'#c4b897',1320);
  buttons.forEach((b,i)=>T.button(r,Object.assign({},b,{label:b.theme?'':b.label}),i===focus));
  const preview=(theme,palette,x,y,w,h)=>{r.fillRect(x,y,w,h,'#000000');const img=P.get(theme,palette);if(img)r.image(img,x,y,w,h,6);else{text('Theme picture unavailable',x+w/2,y+h/2,20,'#9eafc8',w-20,true);text('Update Cluster Studio',x+w/2,y+h/2+30,16,'#9eafc8',w-20,true);}};
  if(s.page==='gallery'){
@@ -56,11 +56,11 @@ function frame(s,focus,scale){
  }else if(s.page==='style'){
   preview(d.theme,d.palette,270,195,625,234);text('Palette preview · sample readings',270,461,19,'#9eb6d5',620);text('Custom accents apply to the cluster.',270,491,18,'#9eb6d5',620);
  }else if(s.page==='edit'){
-  text('Four side readings. Fuel percentage is included by default in every theme.',250,146,20,'#b8cbe2',1320);
+  text(d.theme==='map_focus'?'Map layout: fuel percentage and oil temperature fixed in the bottom corners.':'Four side readings. Fuel percentage is included by default in every theme.',250,146,20,'#b8cbe2',1320);
   text('Unknown or stale readings show --. No inferred safety or warning states.',250,528,18,'#b8cbe2',1320);
  }else if(s.page==='intro'){
-  text('Optional needle sweep, once at startup.',280,206,30,'#edf4ff',1260);
-  text('Skipped outside Park. Leaving Park cancels the sweep and shows live readings.',280,260,21,'#b7cae3',1260);
+  text(d.theme==='map_focus'?'The map opens with live readings. No needle sweep.':'Optional needle sweep, once at startup.',280,206,30,'#edf4ff',1260);
+  text(d.theme==='map_focus'?'Works in Drive. Cruise control does not switch this layout.':'Skipped outside Park. Leaving Park cancels the sweep and shows live readings.',280,260,21,'#b7cae3',1260);
   text('Custom gauges themselves do not require Park.',280,304,21,'#b7cae3',1260);
  }else if(s.page==='output'){
   text(status&&status.enabled?'Source cluster enabled':'BMW gauges active',280,190,32,'#edf4ff',1200);

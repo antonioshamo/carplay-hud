@@ -14,7 +14,7 @@ function validate(d){
  if(!Number.isFinite(d.fuelCapacityLitres)||d.fuelCapacityLitres<10||d.fuelCapacityLitres>150)throw Error('Invalid fuel tank capacity');
  if(!Number.isInteger(d.rpmMax)||d.rpmMax<5000||d.rpmMax>10000||!Number.isInteger(d.redline)||d.redline<3000||d.redline>d.rpmMax)throw Error('Invalid RPM scale');
  if(!Array.isArray(d.widgets)||d.widgets.length!==4||d.widgets.some(k=>!METRICS.includes(k)))throw Error('Choose four supported widget readings');
- if(d.background!=='black'||d.center!=='bmw')throw Error('BMW warning and assistance space must remain clear');
- return {schema:2,theme:d.theme,palette:d.palette,accent:d.accent,units:d.units,temperatureUnit:d.temperatureUnit,fuelCapacityLitres:d.fuelCapacityLitres,clock24:d.clock24,name:String(d.name||'My cluster').replace(/[\x00-\x1f<>]/g,'').slice(0,28),startup:d.startup,rpmMax:d.rpmMax,redline:d.redline,widgets:d.widgets.slice(),background:'black',center:'bmw',introDuration:0};
+ if(d.background!=='black'||!['bmw','map'].includes(d.center))throw Error('BMW warning and assistance space must remain clear');
+ return {schema:2,theme:d.theme,palette:d.palette,accent:d.accent,units:d.units,temperatureUnit:d.temperatureUnit,fuelCapacityLitres:d.fuelCapacityLitres,clock24:d.clock24,name:String(d.name||'My cluster').replace(/[\x00-\x1f<>]/g,'').slice(0,28),startup:d.startup,rpmMax:d.rpmMax,redline:d.redline,widgets:d.widgets.slice(),background:'black',center:d.theme==='map_focus'?'map':'bmw',introDuration:0};
 }
 module.exports={THEMES,PALETTES,ACCENTS,METRICS,LABELS,clone,defaultDesign,validate};

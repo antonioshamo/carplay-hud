@@ -24,6 +24,8 @@
  * - the status is logged when its state, reason or target changes, not for
  *   the frame rate, the page or the upload cap. */
 #include <poll.h>
+#include <fstream>
+#include <utime.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -63,13 +65,13 @@ struct Rig {
     int64_t now = 200000;
     std::vector<uint8_t> spare;   /* the buffer handed to the feed, as the producer's */
 
-    explicit Rig(bool hud = false)
+    explicit Rig(bool hud = false, bool independent = false)
     {
         crs::TargetSpec m, p, u;
         m.name = "map"; m.slot = 0x100; m.scene_id = 0x010004f0; m.width = 1088; m.height = 480; m.linger_ms = 1500;
         m.take_over_stock = true;   /* as cluster-render.conf ships it */
         p.name = "panel"; p.slot = 0x203; p.scene_id = 0x01000400; p.width = 1920; p.height = 720; p.linger_ms = 3000;
-        u.name = "hud"; u.slot = 0x323; u.scene_id = 0x01000400; u.width = 800; u.height = 480; u.linger_ms = 3000;
+        u.name = "hud"; u.slot = 0x323; u.scene_id = independent ? 0x01000420 : 0x01000400; u.width = 800; u.height = 480; u.linger_ms = 3000;
         sc.targets = {m, p};
         if (hud)
             sc.targets.push_back(u);
@@ -133,6 +135,46 @@ static std::vector<uint8_t> atlas(int seed)
     for (size_t i = 0; i < f.size(); i++)
         f[i] = (uint8_t)(i < 1088 * 480 ? (i / 5 + seed * 17) & 0xff : 128);
     return f;
+}
+
+
+static void full_panel_map_test()
+{
+    Rig r(true, true);
+    r.feed.reset();
+    FeedConfig fc; fc.socket = r.path; fc.target = "hud"; fc.focus_file = r.path + ".focus";
+    MapFeeds feeds(fc); feeds.set_picture(true); feeds.set_stream(true, false);
+    auto frame = atlas(8);
+    const auto pump = [&](int ms) {
+        for (int t=0;t<ms;t+=5) {
+            r.now += 5;
+            if (t%65==0) { auto copy=frame; feeds.offer(&copy,r.now,r.now); }
+            for(int round=0;round<8;round++) {
+                std::vector<pollfd> fds; auto first=r.svc->poll_fds(&fds);
+                ::poll(fds.data(),fds.size(),0); r.port.tick(r.now); r.svc->after_poll(fds,first,r.now); feeds.poll(r.now);
+            }
+        }
+    };
+    const auto layer = [&](int target)->crs::Layer* { for(auto l:r.svc->compositor().layers()) if(l->target()==target)return const_cast<crs::Layer*>(l);return nullptr; };
+    pump(1200);
+    auto hud=layer(2); const auto hudId=hud?hud->id():0;
+    {std::ofstream f(fc.focus_file);f<<"panel 0 0 1920 720\n";}
+    pump(1200);
+    auto full=layer(1);
+    ok("focus: full 1920x720 map, underneath gauges, no stock-popup contention", full && full->params.rect.x==0 && full->params.rect.y==0 && full->params.rect.w==1920 && full->params.rect.h==720 && full->params.z==-100 && !full->params.contend);
+    ok("focus: existing HUD layer is retained", hudId && layer(2) && layer(2)->id()==hudId);
+    ok("focus: only two video layers", r.svc->compositor().layers().size()==2);
+    ok("focus: fresh native lease permits map",full && full->ready(r.now));
+    ok("focus: native lease expires without producer heartbeat",full && !full->ready(r.now+701));
+    if(full) {full->heartbeat(r.now+702);ok("focus: explicit heartbeat restores ready state",full->ready(r.now+702));}
+    ::unlink(fc.focus_file.c_str()); pump(150);
+    ok("focus: release removes panel without recreating HUD",!layer(1)&&layer(2)&&layer(2)->id()==hudId);
+    {std::ofstream f(fc.focus_file);f<<"panel 0 0 1920 720\n";}
+    struct utimbuf times;times.actime=1;times.modtime=1;::utime(fc.focus_file.c_str(),&times);pump(100);
+    ok("focus: stale file does not activate",!layer(1));
+    {std::ofstream f(fc.focus_file);f<<"panel 0 0 1088 480\n";}pump(100);
+    ok("focus: rejects partial or malformed requests",!layer(1));
+    ::unlink(fc.focus_file.c_str());
 }
 
 int main()
@@ -554,6 +596,7 @@ int main()
     bpump(200, &f2);
     ok("the stream not live reaches every feed: idle", feeds.status("decode").state == "idle");
 
+    full_panel_map_test();
     std::printf(failures ? "%d FAILED\n" : "all ok\n", failures);
     return failures ? 1 : 0;
 }

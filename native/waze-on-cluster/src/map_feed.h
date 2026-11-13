@@ -46,6 +46,8 @@ namespace woc {
 const unsigned kHudMaxPct = 85;
 
 struct FeedConfig {
+    bool panel_focus = false;
+    std::string focus_file = "/dev/shm/cluster-info/map_focus.txt";
     std::string socket = "/dev/shm/cluster-render/render.sock";
     std::string target = "map";
     cr::VideoOptions video;   /* w and h are the decoded frame's */
@@ -110,6 +112,7 @@ public:
      * (known once connected). */
     bool set_target(const std::string &name);
     const std::string &target() const { return cfg_.target; }
+    bool is_focus() const { return cfg_.panel_focus; }
     /* The HUD map's size (FeedConfig::hud_width_pct), applied at once to a
      * map on the HUD. */
     void set_hud_width(unsigned pct);
@@ -147,6 +150,7 @@ public:
 
 private:
     void make_layer();
+    int64_t last_focus_pulse_ = -1;
     /* The newest frame waiting to be scaled, scaled and handed over once
      * the frame rate allows (offer and poll). */
     void send_pending(int64_t now_ms);

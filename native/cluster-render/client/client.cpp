@@ -170,6 +170,8 @@ void Client::read_events()
             continue;
         const std::string ev = j["ev"];
         if (ev == "hello") {
+            independent_panel_hud = j["independent_panel_hud"] == "1";
+            panel_focus_video = j["panel_focus_video"] == "1";
             backend = j["backend"];
             targets = j["targets"];
             ready_ = true;
@@ -328,6 +330,7 @@ std::string Client::layer_json(uint32_t ref, const Layer &l) const
         kv.push_back({"dirty_threshold", num(l.vo.dirty_threshold)});
         kv.push_back({"settle_ms", num(l.vo.settle_ms)});
         kv.push_back({"pan_blocks", flag(l.vo.pan_blocks)});
+        if (l.vo.panel_focus) kv.push_back({"panel_focus", "1"});
         kv.push_back({"stall_ms", num(l.vo.stall_ms)});
     } else if (l.kind == "image") {
         kv.push_back({"iw", num(l.io.w)});

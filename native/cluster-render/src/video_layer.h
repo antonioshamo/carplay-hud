@@ -33,6 +33,7 @@
 namespace crs {
 
 struct VideoParams {
+    bool panel_focus = false;
     uint32_t w = 1088, h = 480;      /* the frame's size; the atlas is w x h*3/2 */
     uint32_t level_bits = 2;         /* round_levels (yuv_atlas.h); 0: exact */
     uint32_t dirty_threshold = 8;    /* dirty_tiles.h; 0: every difference */
@@ -61,6 +62,7 @@ public:
     void offer(const uint8_t *atlas, int64_t now_ms);
 
     bool ready(int64_t now_ms) const override;
+    void heartbeat(int64_t now_ms) override { lease_at_ = now_ms; }
     bool attach(Graph *g, int64_t now_ms, std::string *err) override;
     void detach(bool drop) override;
     void arrange(bool drawn, int32_t order) override;
@@ -103,6 +105,7 @@ private:
     void drop_objects();
 
     VideoParams p_;
+    int64_t lease_at_ = -1;
     int atlas_effect_, block_effect_;
     size_t atlas_bytes_;
     uint32_t atlas_h_;
