@@ -1,0 +1,71 @@
+name: Verify and publish dashboard recovery
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.12.0
+      - name: Import tested dashboard recovery
+        run: |
+          set -eu
+          if [ -f bmw-dashboard-recovery-0158.bundle ]; then
+            echo 'bd155ae9fbb8b4747b417dd192cc68148d0e2391cdd312df2ea928a12e31a2e7  bmw-dashboard-recovery-0158.bundle' | sha256sum -c -
+            git bundle verify bmw-dashboard-recovery-0158.bundle
+            git fetch ./bmw-dashboard-recovery-0158.bundle HEAD:refs/remotes/import/dashboard-recovery
+            test "$(git rev-parse refs/remotes/import/dashboard-recovery)" = 'b2683b1d841ca58730bdadfd98c1c821427c7edd'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git merge --no-ff --no-edit refs/remotes/import/dashboard-recovery
+            git rm bmw-dashboard-recovery-0158.bundle
+            git commit -m 'Remove dashboard transport bundle'
+            git push origin HEAD:main
+          fi
+          git merge-base --is-ancestor b2683b1d841ca58730bdadfd98c1c821427c7edd HEAD
+      - name: Replay menu with installed Renderer 0.6.15
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri
+          git clone --depth 1 --branch mgu-render@0.6.15 https://github.com/robertnisipeanu/mgu-store.git "$RUNNER_TEMP/menu-renderer"
+          test "$(git -C "$RUNNER_TEMP/menu-renderer" rev-parse HEAD)" = '54c656a79f08db3385393417a93b5608778fa571'
+          make -C "$RUNNER_TEMP/menu-renderer/native/mgu-render" in-build OUT=host
+          node apps/robertn_waze_cluster/tools/verify_renderer_replay.js "$RUNNER_TEMP/menu-renderer/native/mgu-render/build/host/mgu-render" "$RUNNER_TEMP/menu-replay"
+      - name: Save actual Renderer menu previews
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dashboard-recovery-menu-renderer-0615
+          path: ${{ runner.temp }}/menu-replay/*.png
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Verify cluster and windshield HUD are unchanged
+        run: git diff --exit-code e20e7a0181ac252f483a3308b21298c916b6ce50 HEAD -- native apps/robertn_waze_cluster/src/waze_cluster_control.js apps/robertn_waze_cluster/src/settings_control.js apps/robertn_waze_cluster/src/profile_sync.js
+      - name: Verify dashboard and app regressions
+        run: |
+          set -eu
+          for test in apps/robertn_waze_cluster/tools/test_*.js; do
+            node "$test"
+          done
+          sh apps/robertn_waze_cluster/tools/test_startup_node8.sh
+          node release/test/release_test.js
+      - name: Verify reproducible app artifact
+        run: node release/release.js check robertn_waze_cluster
+      - name: Publish CarPlay HUD 0.4.158
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MGU_PUBLISH: github:${{ github.repository }}
+          MGU_PUBLISH_VISIBILITY: any
+        run: node release/release.js publish robertn_waze_cluster
