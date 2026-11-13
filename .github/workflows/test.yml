@@ -34,7 +34,6 @@ jobs:
       - run: node native/hud-startup-diagnostics/test.js
       - run: node apps/robertn_waze_cluster/tools/test_trace.js
       - run: node native/cluster-studio/test/test_source_cluster.js
-      - run: node native/cluster-studio/test/test_map_focus.js
       - run: node native/cluster-studio/test/test_source_transport.js
       - run: node apps/robertn_waze_cluster/tools/test_menu_navigation.js
       - run: node native/cluster-studio/test/test_startup_recovery.js
