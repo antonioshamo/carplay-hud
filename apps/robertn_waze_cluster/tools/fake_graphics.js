@@ -7,7 +7,7 @@ function message(type,payload){
 }
 function words(type,values){return message(type,Buffer.from(new Uint32Array(values).buffer));}
 class FakeGraphics {
- constructor(path,caps=7){this.path=path;this.caps=caps;this.clients=new Set();this.received=[];this.ack=true;this.onScreen=true;this.front=true;}
+ constructor(path,caps=7){this.path=path;this.caps=caps;this.modes=1;this.clients=new Set();this.received=[];this.ack=true;this.onScreen=true;this.front=true;}
  listen(){
   this.server=net.createServer(s=>{
    this.clients.add(s);let input=Buffer.alloc(0),shown=false,hasFrame=false;
@@ -18,7 +18,7 @@ class FakeGraphics {
      const type=input.readUInt32LE(0),n=input.readUInt32LE(4),p=Buffer.from(input.slice(8,8+n));input=input.slice(8+n);
      this.received.push({type,payload:p});
      if(type===1){
-      s.write(words(0x4d520101,[1,1,this.caps,0,0,0,0,160,100,1600,580,2048,60000]));
+      s.write(words(0x4d520101,[1,this.modes,this.caps,0,0,0,0,160,100,1600,580,2048,60000]));
       s.write(words(101,[1,1920,720]));state();
      }
      if(type===3){shown=!!p.readUInt32LE(0);state();}

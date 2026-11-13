@@ -30,3 +30,20 @@ errors, missing graphics, proxy suppression, popup focus and recovery. These
 are offline checks, not a measurement of physical-car startup time. The actual
 cause of this car's graphics visibility failure still needs current vehicle logs
 if it persists after the update.
+
+## Dashboard recovery in 0.4.158
+
+Renderer capability failures and drawing exceptions enter the same bounded
+recovery path as presentation failures. Every retry of a failed dashboard
+creates a fresh app-owned renderer connection and reuploads its resources.
+The first frame defers car artwork on each connection. Automatic recovery is
+limited to three attempts while the dashboard is visible and focused.
+The native status includes the specific failure and distinguishes scheduled
+retries from a stopped retry sequence. No shared renderer service, cluster
+helper or HUD setting is restarted or changed.
+
+Socket-level tests cover a renderer that initially offers no layer mode,
+resource reuploads after a renderer error, drawing exceptions, retry limits,
+manual recovery and hidden/closed hosts. These reproductions establish the
+recovery defects; the photographed car failure still needs a live log or the
+new specific error text to identify its exact cause.

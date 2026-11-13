@@ -1,3 +1,10 @@
+# 0.4.158
+
+- Dashboard startup retries temporary renderer-capability failures and drawing exceptions.
+- Recovery recreates only this app's connection and reuploads its graphics resources.
+- The recovery screen shows the specific failure and stops claiming to retry when its three attempts are exhausted.
+- Full-screen CarPlay Map and independent HUD behavior are unchanged. Physical-car launch verification remains pending.
+
 ## 0.4.157
 
 - Add CarPlay Map to the theme gallery with a full-panel map, speed, RPM, fuel percentage and oil temperature. No Park or cruise-control activation requirement.
