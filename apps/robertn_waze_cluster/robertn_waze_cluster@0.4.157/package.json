@@ -1,7 +1,7 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.156",
-  "description": "Twelve source cluster themes with picture previews, live colors and units, four configurable readings, saved designs and fuel percentage. BMW center and warning areas retained; X4 M vehicle verification pending.",
+  "version": "0.4.157",
+  "description": "Full-screen CarPlay Map plus twelve source gauge themes, picture previews and live customization. Map mode includes speed, RPM, fuel percentage and oil temperature, with no Park or cruise requirement. Native warning/gear clearance retained; physical X4 M verification pending.",
   "private": false,
   "main": "javascript/runner.js",
   "oapAppSettings": {

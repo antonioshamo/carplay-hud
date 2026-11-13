@@ -1,3 +1,9 @@
+## 0.4.157
+
+- Add CarPlay Map to the theme gallery with a full-panel map, speed, RPM, fuel percentage and oil temperature. No Park or cruise-control activation requirement.
+- Preserve the independent HUD connection and factory warning/gear clearance. Stale vehicle data or controller failure releases the map.
+- Requires Cluster Studio 0.1.33, Waze on cluster 0.7.118 and Cluster renderer 0.3.106. Offline tests passed; physical X4 M verification remains pending.
+
 ## 0.4.156
 
 - Correct the Store description to the twelve source themes and current customization.

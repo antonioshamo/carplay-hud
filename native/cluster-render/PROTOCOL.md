@@ -71,6 +71,7 @@ Kind fields:
 | | `settle_ms` | 1000 | such a tile is written after this long anyway (0: never) |
 | | `pan_blocks` | 1 | fast motion as packed 4x4 blocks |
 | | `stall_ms` | 6000 | no frame for this long: the layer is stalled (not drawn) |
+| | `panel_focus` | 0 | full 1920×720 panel only: aspect-preserving map cover, native warning/gear/camera mask, and a 700 ms heartbeat lease renewed by `set`. Requires `panel_focus_video` in hello. Other video paths are unchanged. |
 | image | `iw`, `ih` | the rect | the image size, up to 1920x720 |
 | | `fps` | 30 | writes a second at most |
 | | `sampling` | `nearest` | or `bilinear` (a rect of another size than the image) |

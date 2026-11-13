@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright (C) 2026 Robert Nisipeanu */
 #include "compositor.h"
+#include "panel_focus.h"
 
 #include <time.h>
 
@@ -93,6 +94,8 @@ Compositor::~Compositor()
     for (Target &t : targets_)
         t.graph.reset();
     if (atlas_fx_) gpu_->drop_effect(atlas_fx_);
+    if (focus_atlas_fx_) gpu_->drop_effect(focus_atlas_fx_);
+    if (focus_block_fx_) gpu_->drop_effect(focus_block_fx_);
     if (block_fx_) gpu_->drop_effect(block_fx_);
     if (image_fx_) gpu_->drop_effect(image_fx_);
 }
@@ -210,13 +213,22 @@ uint32_t Compositor::add_video(uint64_t owner, int target, const LayerParams &lp
         *err = "too many video layers";
         return 0;
     }
+    if (vp.panel_focus) {
+        if (target < 0 || target >= (int)slots_->targets().size() || slots_->targets()[target].name != "panel" || slots_->targets()[target].width != 1920 || slots_->targets()[target].height != 720 ||
+            lp.rect.x != 0 || lp.rect.y != 0 || lp.rect.w != 1920 || lp.rect.h != 720) {
+            *err = "panel_focus requires the full 1920x720 panel"; return 0;
+        }
+        if (!focus_atlas_fx_) focus_atlas_fx_ = gpu_->effect(kQuadVertexShader, panel_focus_shader(crk::kAtlasFragmentShader).c_str(), err);
+        if (!focus_block_fx_) focus_block_fx_ = gpu_->effect(kQuadVertexShader, panel_focus_shader(crk::kBlockFragmentShader).c_str(), err);
+        if (!focus_atlas_fx_ || !focus_block_fx_) return 0;
+    }
     const size_t atlas = (size_t)vp.w * crk::atlas_height(vp.h);
     const size_t bytes = atlas * 4 + (vp.pan_blocks ? crk::block_bytes(vp.w, vp.h) : 0);
     const uint32_t id = admit(owner, target, bytes, err);
     if (!id)
         return 0;
     Entry &e = layers_[id];
-    e.layer.reset(new VideoLayer(id, target, ++seq_, pacer_, atlas_fx_, block_fx_, vp, now_ms));
+    e.layer.reset(new VideoLayer(id, target, ++seq_, pacer_, vp.panel_focus ? focus_atlas_fx_ : atlas_fx_, vp.panel_focus ? focus_block_fx_ : block_fx_, vp, now_ms));
     e.layer->params = lp;
     e.owner = owner;
     e.pixel_bytes = bytes;

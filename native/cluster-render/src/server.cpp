@@ -489,6 +489,9 @@ void Server::op_layer(Client &c, const cr::Json &j, int64_t now_ms)
     double v;
     if (kind == "video") {
         VideoParams vp;
+        double focus = 0;
+        if (!num(j, "panel_focus", 0, 1, &focus, &err)) { error(c, "layer", ref, err); return; }
+        vp.panel_focus = focus != 0;
         struct { const char *key; double lo, hi; double cur; } k[] = {
             {"vw", 64, 1920, (double)vp.w},           {"vh", 32, 720, (double)vp.h},
             {"fps", 0, 60, (double)vp.fps},           {"level_bits", 0, 3, (double)vp.level_bits},
@@ -585,7 +588,7 @@ void Server::on_json(Client &c, const std::string &body, int64_t now_ms)
                                  {"proto", std::to_string(cr::kProtocolVersion)},
                                  {"backend", cr::json_quote(backend_)},
                                  {"targets", cr::json_quote(targets)},
-                                 {"independent_panel_hud", independent ? "true" : "false"}}));
+                                 {"independent_panel_hud", independent ? "true" : "false"}, {"panel_focus_video", "true"}}));
         c.target_sent.clear();
         log_info("client %llu: %s", (unsigned long long)c.id, c.app.c_str());
         return;
@@ -636,7 +639,7 @@ void Server::on_json(Client &c, const std::string &body, int64_t now_ms)
         c.frame_error.erase(ref);
         return;
     }
-    op_on_layer(c, op, ref, l, j);
+    op_on_layer(c, op, ref, l, j, now_ms);
 }
 
 void Server::op_asset(Client &c, const cr::Json &j)
@@ -685,7 +688,7 @@ void Server::op_asset(Client &c, const cr::Json &j)
              slots_->targets()[target].name.c_str(), format ? "r8" : "rgba8", ap.w, ap.h);
 }
 
-void Server::op_on_layer(Client &c, const std::string &op, uint32_t ref, Layer *l, const cr::Json &j)
+void Server::op_on_layer(Client &c, const std::string &op, uint32_t ref, Layer *l, const cr::Json &j, int64_t now_ms)
 {
     std::string err;
     double part_d = 0;
@@ -698,6 +701,7 @@ void Server::op_on_layer(Client &c, const std::string &op, uint32_t ref, Layer *
     if (op == "set") {
         if (!apply(l, j, &err))
             error(c, op, ref, err);
+        else l->heartbeat(now_ms);
     } else if (op == "uniform") {
         op_uniform(c, ref, l, j);
     } else if (op == "bind") {

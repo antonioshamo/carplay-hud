@@ -58,6 +58,7 @@ struct LayerOptions {
 /* 4:2:0 frames as one atlas: Y (w x h), then U and V side by side (w/2
  * each) in h/2 rows; frame_bytes() long. */
 struct VideoOptions {
+    bool panel_focus = false;
     unsigned w = 1088, h = 480;
     unsigned fps = 30;
     unsigned level_bits = 2, dirty_threshold = 8, settle_ms = 1000;
@@ -213,6 +214,7 @@ public:
     void request_status();
     /* The service's hello: its backend ("id7", "id8") and targets ("map:1088x480,..."). */
     std::string backend, targets;
+    bool independent_panel_hud = false, panel_focus_video = false;
 
 private:
     struct Part {

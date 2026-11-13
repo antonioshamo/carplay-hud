@@ -15,7 +15,7 @@ async function main(){
  assert.throws(()=>M.validate(legacy.design),/retired/);assert.throws(()=>Store.validate(legacy));
  fs.writeFileSync(file,'{broken');assert.throws(()=>Store.load(file),/original file kept/);assert.equal(fs.readFileSync(file,'utf8'),'{broken');
  let now=100000,rawData=sample();const clock=Date.now;Date.now=()=>now;
- const r=new RecordingRenderer(),t={snapshot:()=>rawData,parked:()=>rawData.gear==='P'&&rawData.speed===0},e=new Engine(r,t,{now:()=>now});
+ const r=new RecordingRenderer(),t={snapshot:()=>rawData,parked:()=>rawData.gear==='P'&&rawData.speed===0},e=new Engine(r,t,{now:()=>now,mapRequest:{update(){},release(){}}});
  async function tick(n){for(let i=0;i<n;i++){now+=20;e.tick();if(e.source)e.source._tick();await immediate();}}
  try{
   e.configure(M.defaultDesign(),true,'panel');await tick(50);assert(r.scene().parts.length>0,'Drive creates source gauges');
@@ -29,6 +29,6 @@ async function main(){
   r.independentPanelHud=true;await tick(40);assert(e.adapter.meshes.length>0,'independent resources recover');
   const retired=e.adapter.meshes[0];e.configure(e.design,false,'panel');await tick(2);r.emit('refused','part',retired,'late old response');assert.equal(e.failures,0);assert.equal(r.layers.size,0,'off removes every cluster resource');
  }finally{e.close();Date.now=clock;}
- console.log('ok 36 source theme/palette scenes, exact legacy backup and retirement, 3 switch passes, 7 gear states, no bitmap streaming, stale data, shared HUD yielding, independent recovery, resource budgets and complete off');
+ console.log('ok source theme/palette scenes, exact legacy backup and retirement, 3 switch passes, 7 gear states, no bitmap streaming, stale data, shared HUD yielding, independent recovery, resource budgets and complete off');
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;});

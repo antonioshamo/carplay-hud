@@ -74,7 +74,7 @@ private:
     void op_layer(Client &c, const cr::Json &j, int64_t now_ms);
     void op_asset(Client &c, const cr::Json &j);
     /* set, uniform, bind, part, transform, animate and stop. */
-    void op_on_layer(Client &c, const std::string &op, uint32_t ref, Layer *l, const cr::Json &j);
+    void op_on_layer(Client &c, const std::string &op, uint32_t ref, Layer *l, const cr::Json &j, int64_t now_ms);
     void op_uniform(Client &c, uint32_t ref, Layer *l, const cr::Json &j);
     bool apply(Layer *l, const cr::Json &j, std::string *err);
 

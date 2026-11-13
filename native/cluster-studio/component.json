@@ -1,13 +1,14 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
-  "description": "Source-based cluster themes, visual previews and shared customization; native BMW center and warning strip retained.",
+  "description": "Source cluster themes and full-screen CarPlay Map with live speed, RPM, fuel percentage and oil temperature. Factory warning strip retained.",
   "requires": {
     "mgu-deploy": "0.7.0",
-    "cluster-render": "0.3.105"
+    "cluster-render": "0.3.106",
+    "waze-on-cluster": "0.7.118"
   },
   "uninstallable": true,
   "mguHmi": [
@@ -1181,6 +1182,26 @@
     },
     {
       "path": "SOURCE-INTEGRATION.md",
+      "mode": "0644"
+    },
+    {
+      "path": "map_focus.js",
+      "mode": "0644"
+    },
+    {
+      "path": "map_request.js",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/map_focus-comfort.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/map_focus-sport.rgba.z",
+      "mode": "0644"
+    },
+    {
+      "path": "assets/cluster-themes/map_focus-efficient.rgba.z",
       "mode": "0644"
     }
   ],

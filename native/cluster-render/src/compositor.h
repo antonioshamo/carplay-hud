@@ -210,6 +210,7 @@ private:
     int64_t second_ms_ = 0;
     int64_t (*clock_us_)() = nullptr;
     int atlas_fx_ = 0, block_fx_ = 0, image_fx_ = 0;
+    int focus_atlas_fx_ = 0, focus_block_fx_ = 0;
     std::map<uint32_t, Entry> layers_;
     std::map<uint32_t, AssetEntry> assets_;
     std::vector<Target> targets_;

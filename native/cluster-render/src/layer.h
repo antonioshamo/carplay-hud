@@ -119,6 +119,7 @@ public:
 
     /* Has content to draw. */
     virtual bool ready(int64_t now_ms) const = 0;
+    virtual void heartbeat(int64_t) {}
     /* Builds the layer's objects in a published scene, hidden. False: the
      * renderer refused one; *err says which. */
     virtual bool attach(Graph *g, int64_t now_ms, std::string *err) = 0;
