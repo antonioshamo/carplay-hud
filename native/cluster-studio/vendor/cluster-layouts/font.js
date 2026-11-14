@@ -19,7 +19,7 @@ class Canvas { constructor() { throw new Error('Required cluster font atlas miss
 const BAKED = {};
 let bakedMeta = {};
 try { bakedMeta = require('./font_baked'); } catch (e) { /* not baked */ }
-['bold', 'light', 'wide', 'orb'].forEach((f) => {
+['bold', 'light', 'wide', 'orb', 'ui'].forEach((f) => {
     try {
         const meta = bakedMeta[f];
         const px = fs.readFileSync(path.join(__dirname, 'font_' + f + '.wad'));
@@ -36,7 +36,7 @@ const SIZE = CELL_H * 0.98;          // the font size a glyph is drawn at, in at
 /* digits and their signs from the kit's numeric face, letters from its bold one (the numeric face has none) */
 /* the kit's faces for digits and signs, and for letters, per family: 'bold' (strong numerals, bold capitals) or
  * 'light' (thin numerals, regular capitals); 'wide' (Michroma, baked only: without its atlas, the bold faces) */
-const FAMILIES = { bold: { digits: 'num', letters: 'bold' }, light: { digits: 'light', letters: 'label' }, wide: { digits: 'num', letters: 'bold' }, orb: { digits: 'num', letters: 'bold' } };
+const FAMILIES = { ui: { digits: 'num', letters: 'bold' }, bold: { digits: 'num', letters: 'bold' }, light: { digits: 'light', letters: 'label' }, wide: { digits: 'num', letters: 'bold' }, orb: { digits: 'num', letters: 'bold' } };
 const fontOf = (ch, fam) => { const f = FAMILIES[fam] || FAMILIES.bold; return /[0-9\-°.:\/ %+,]/.test(ch) && !(fam === 'light' && /[,]/.test(ch)) ? f.digits : f.letters; };
 
 /** Squared distance transform of one line (Felzenszwalb & Huttenlocher). f: 0 on a feature, big off it. */

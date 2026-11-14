@@ -35,6 +35,12 @@ async function main(){
  assert.equal(pieces.find(p=>p.key==='map-rpm-card').y,486);
  assert.equal(pieces.find(p=>p.key==='map-rpm').text({rpm:725}),'725');
  assert.equal(pieces.find(p=>p.key==='map-rpm').text({rpm:null}),'--');
+ const palette=layout.palette('comfort'),rpm=pieces.find(p=>p.key==='map-rpm'),rpmBar=pieces.find(p=>p.key==='map-rpm-bar');
+ for(const [reading,color] of [[6699,palette.text],[6700,'#ffd60a'],[7100,'#ffd60a'],[7101,'#ff453a'],[8000,'#ff453a'],[null,palette.text]]){
+  assert.equal(rpm.colors(palette,{rpm:reading}).color[0],color,'RPM number '+reading);
+  assert.equal(rpmBar.colors(palette,{rpm:reading}).fill0,color,'RPM bar '+reading);
+ }
+ assert.equal(rpmBar.value({rpm:8000}),1);assert.equal(rpmBar.value({rpm:9000}),1);assert.equal(rpmBar.value({rpm:-20}),0);
  const out=await scene('map_focus','comfort');assert(out.stats.meshes<=2);assert(out.parts.length>=9);assert.deepEqual(out.reservedWindow,[0,0,0,0]);
  console.log('ok full-panel request, Drive gears, cruise independence, old renderer, stale readings, switch/off cleanup, native scene budget');
 }

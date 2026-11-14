@@ -1,3 +1,10 @@
+# 0.4.160
+
+- Replace the rejected dark map cards with clear refractive capsules, curved highlights, local softening and Inter typography. Updated previews use the actual material and glyph renderer over a sample map.
+- RPM number and bar are yellow from 6700 through 7100 inclusive, red above 7100, and capped at 8000 on the bar.
+- Requires Cluster Studio 0.1.36 and Cluster renderer 0.3.108. Retains full map behind the top sensor and the same-size gear opening moved 32 pixels right. HUD unchanged.
+- Offline checks do not establish physical GPU performance, gear alignment, or a fix for the reported intermittent top-right rectangle.
+
 # 0.4.159
 
 - CarPlay Map uses translucent glass-style gauge cards; RPM replaces fuel at bottom left, with oil bottom right. Theme pictures match the new layout.
