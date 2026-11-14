@@ -1,13 +1,13 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.34",
+  "version": "0.1.35",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
-  "description": "Source cluster themes and full-screen CarPlay Map with live speed, RPM, fuel percentage and oil temperature. Factory warning strip retained.",
+  "description": "Source cluster themes and full-screen CarPlay Map with glass-style speed, bottom-left RPM and oil temperature. Factory warning strip retained.",
   "requires": {
     "mgu-deploy": "0.7.0",
-    "cluster-render": "0.3.106",
+    "cluster-render": "0.3.107",
     "waze-on-cluster": "0.7.118"
   },
   "uninstallable": true,
