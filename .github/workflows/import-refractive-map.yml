@@ -1,0 +1,65 @@
+name: Verify and publish refractive map glass
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.12.0
+      - name: Import tested glass map gauges
+        run: |
+          set -eu
+          if [ -f bmw-refractive-map-0160.bundle ]; then
+            echo '125581c08d7a4d775ff5db28e820c16c76cc29f5e6baa4d79582a18b52b2416b  bmw-refractive-map-0160.bundle' | sha256sum -c -
+            git bundle verify bmw-refractive-map-0160.bundle
+            git fetch ./bmw-refractive-map-0160.bundle HEAD:refs/remotes/import/refractive-map
+            test "$(git rev-parse refs/remotes/import/refractive-map)" = '6b47b6bc338b062c8b64b635cab3b3f6d199cfa9'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git merge --no-ff --no-edit refs/remotes/import/refractive-map
+            git rm bmw-refractive-map-0160.bundle
+            git commit -m 'Remove glass map transport bundle'
+            git push origin HEAD:main
+          fi
+          git merge-base --is-ancestor 6b47b6bc338b062c8b64b635cab3b3f6d199cfa9 HEAD
+      - name: Verify independent HUD and map producer unchanged
+        run: git diff --exit-code a3debf22ea706ae5de9ee17a87ac07314a71781d HEAD -- native/waze-on-cluster native/hud-startup-diagnostics
+      - name: Verify renderer host and head-unit builds
+        run: |
+          make -C native/cluster-render -j2 test
+          make -C native/cluster-render test-x86 target
+      - name: Test cross-account map handoff and cluster lifecycle
+        run: |
+          set -eu
+          sudo "$(command -v node)" native/cluster-studio/test/test_map_request.js
+          node native/cluster-studio/test/test_map_focus.js
+          node native/cluster-studio/test/test_source_cluster.js
+          make -C native/cluster-render build/host/host_service
+          node native/cluster-studio/test/test_source_transport.js
+          node release/test/release_test.js
+          node apps/robertn_waze_cluster/tools/test_studio.js
+          node apps/robertn_waze_cluster/tools/test_session_conflicts.js
+          node apps/robertn_waze_cluster/tools/test_menu_navigation.js
+          node release/release.js check cluster-render cluster-studio robertn_waze_cluster
+          curl --fail --silent --show-error --location --max-time 90 https://nodejs.org/download/release/v8.17.0/node-v8.17.0-linux-x64.tar.gz -o "$RUNNER_TEMP/node8.tar.gz"
+          echo "8b2c9e1f84317c4b02736c4c50db4dd2cd6c4f0ba910fa81f887c8c9294af596  $RUNNER_TEMP/node8.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/node8.tar.gz" -C "$RUNNER_TEMP"
+          sudo "$RUNNER_TEMP/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_map_request.js
+      - name: Publish glass map packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MGU_PUBLISH: github:${{ github.repository }}
+          MGU_PUBLISH_VISIBILITY: any
+        run: node release/release.js publish cluster-render cluster-studio robertn_waze_cluster
