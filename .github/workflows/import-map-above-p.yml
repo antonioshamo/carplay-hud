@@ -1,0 +1,65 @@
+name: Verify and publish map above P
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.12.0
+      - name: Import tested map coverage correction
+        run: |
+          set -eu
+          if [ -f bmw-map-above-p-0161.bundle ]; then
+            echo '1ff87cf8705cea85d4a3bba63979929e3bad01d8cd5d6c1c778dd0b5725f640c  bmw-map-above-p-0161.bundle' | sha256sum -c -
+            git bundle verify bmw-map-above-p-0161.bundle
+            git fetch ./bmw-map-above-p-0161.bundle HEAD:refs/remotes/import/map-above-p
+            test "$(git rev-parse refs/remotes/import/map-above-p)" = '3400e09e38da6d2f5a7699038aed56c5cd6b5f40'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git merge --no-ff --no-edit refs/remotes/import/map-above-p
+            git rm bmw-map-above-p-0161.bundle
+            git commit -m 'Remove map coverage transport bundle'
+            git push origin HEAD:main
+          fi
+          git merge-base --is-ancestor 3400e09e38da6d2f5a7699038aed56c5cd6b5f40 HEAD
+      - name: Verify independent HUD and map producer unchanged
+        run: git diff --exit-code 5726c2e61bd8b5016d910a5cc886b9ce789b3e3f HEAD -- native/waze-on-cluster native/hud-startup-diagnostics
+      - name: Verify renderer host and head-unit builds
+        run: |
+          make -C native/cluster-render -j2 test
+          make -C native/cluster-render test-x86 target
+      - name: Test cross-account map handoff and cluster lifecycle
+        run: |
+          set -eu
+          sudo "$(command -v node)" native/cluster-studio/test/test_map_request.js
+          node native/cluster-studio/test/test_map_focus.js
+          node native/cluster-studio/test/test_source_cluster.js
+          make -C native/cluster-render build/host/host_service
+          node native/cluster-studio/test/test_source_transport.js
+          node release/test/release_test.js
+          node apps/robertn_waze_cluster/tools/test_studio.js
+          node apps/robertn_waze_cluster/tools/test_session_conflicts.js
+          node apps/robertn_waze_cluster/tools/test_menu_navigation.js
+          node release/release.js check cluster-render cluster-studio robertn_waze_cluster
+          curl --fail --silent --show-error --location --max-time 90 https://nodejs.org/download/release/v8.17.0/node-v8.17.0-linux-x64.tar.gz -o "$RUNNER_TEMP/node8.tar.gz"
+          echo "8b2c9e1f84317c4b02736c4c50db4dd2cd6c4f0ba910fa81f887c8c9294af596  $RUNNER_TEMP/node8.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/node8.tar.gz" -C "$RUNNER_TEMP"
+          sudo "$RUNNER_TEMP/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_map_request.js
+      - name: Publish map coverage packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MGU_PUBLISH: github:${{ github.repository }}
+          MGU_PUBLISH_VISIBILITY: any
+        run: node release/release.js publish cluster-render cluster-studio robertn_waze_cluster
