@@ -12,8 +12,8 @@ function readable(){
  assert(fs.statSync(req.file).mode&0o004,'map helper must read heartbeat written under service UMask=0027');
  assert.equal(fs.statSync(req.file).mode&0o777,0o644);
  if(process.platform==='linux'&&process.getuid()===0){
-  const r=cp.spawnSync(process.execPath,['-e',"process.stdout.write(require('fs').readFileSync(process.argv[1],'utf8'))",req.file],{uid:65534,gid:65534,encoding:'utf8'});
-  assert.equal(r.status,0,r.stderr);assert.equal(r.stdout,'panel 0 0 1920 720\n');
+  const r=cp.spawnSync('/bin/cat',[req.file],{uid:65534,gid:65534,encoding:'utf8'});
+  assert.equal(r.status,0,String(r.error||r.stderr));assert.equal(r.stdout,'panel 0 0 1920 720\n');
  }
 }
 try{
