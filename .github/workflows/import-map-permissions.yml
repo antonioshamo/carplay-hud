@@ -1,0 +1,59 @@
+name: Verify and publish map request permissions
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.12.0
+      - name: Import tested map request fix
+        run: |
+          set -eu
+          if [ -f bmw-map-permissions-0134.bundle ]; then
+            echo '1b2646d4b7ea50bb6a3b7b71e9782c8fe320dc441548c0a20f15c4f4e4272303  bmw-map-permissions-0134.bundle' | sha256sum -c -
+            git bundle verify bmw-map-permissions-0134.bundle
+            git fetch ./bmw-map-permissions-0134.bundle HEAD:refs/remotes/import/map-permissions
+            test "$(git rev-parse refs/remotes/import/map-permissions)" = '85910fc737bff95bd4ac6811142337f9427f8691'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git merge --no-ff --no-edit refs/remotes/import/map-permissions
+            git rm bmw-map-permissions-0134.bundle
+            git commit -m 'Remove map permissions transport bundle'
+            git push origin HEAD:main
+          fi
+          git merge-base --is-ancestor 85910fc737bff95bd4ac6811142337f9427f8691 HEAD
+      - name: Verify app, map producer and renderers are unchanged
+        run: |
+          git diff --exit-code 44ffffe71e980d10372730777567481ac62411fc HEAD -- apps native/hud-startup-diagnostics native/cluster-render native/waze-on-cluster
+      - name: Test cross-account map handoff and cluster lifecycle
+        run: |
+          set -eu
+          sudo "$(command -v node)" native/cluster-studio/test/test_map_request.js
+          node native/cluster-studio/test/test_map_focus.js
+          node native/cluster-studio/test/test_source_cluster.js
+          make -C native/cluster-render build/host/host_service
+          node native/cluster-studio/test/test_source_transport.js
+          node release/test/release_test.js
+          node release/release.js check cluster-studio
+          curl --fail --silent --show-error --location --max-time 90 https://nodejs.org/download/release/v8.17.0/node-v8.17.0-linux-x64.tar.gz -o "$RUNNER_TEMP/node8.tar.gz"
+          echo "8b2c9e1f84317c4b02736c4c50db4dd2cd6c4f0ba910fa81f887c8c9294af596  $RUNNER_TEMP/node8.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/node8.tar.gz" -C "$RUNNER_TEMP"
+          sudo "$RUNNER_TEMP/node-v8.17.0-linux-x64/bin/node" native/cluster-studio/test/test_map_request.js
+      - name: Publish Cluster Studio 0.1.34
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MGU_PUBLISH: github:${{ github.repository }}
+          MGU_PUBLISH_VISIBILITY: any
+        run: node release/release.js publish cluster-studio
