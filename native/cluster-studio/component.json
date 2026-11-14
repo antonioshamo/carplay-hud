@@ -1,7 +1,7 @@
 {
   "id": "cluster-studio",
   "kind": "tool",
-  "version": "0.1.33",
+  "version": "0.1.34",
   "license": "GPL-3.0-or-later",
   "title": "Cluster Studio",
   "description": "Source cluster themes and full-screen CarPlay Map with live speed, RPM, fuel percentage and oil temperature. Factory warning strip retained.",

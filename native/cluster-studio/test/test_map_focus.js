@@ -19,6 +19,14 @@ async function main(){
   raw=sample();await tick(45);assert(fs.existsSync(file));
   e.configure(M.defaultDesign(),true,'panel');assert(!fs.existsSync(file),'switching themes immediately gives map back');
   e.configure(d,true,'panel');await tick(45);e.configure(d,false,'panel');assert(!fs.existsSync(file),'off removes map');
+  // Restore BMW gauges, then enable the saved map theme while already in Drive.
+  raw=Object.assign(sample(),{gear:'D'});
+  for(let i=0;i<3;i++){
+   e.configure(d,true,'panel');await tick(70);
+   assert(e.adapter.meshes.length>0,'re-enable restores gauge meshes in Drive');
+   assert(fs.existsSync(file),'re-enable restores full-panel heartbeat in Drive');
+   e.configure(d,false,'panel');assert(!fs.existsSync(file));
+  }
  }finally{e.close();Date.now=oldNow;fs.rmSync(dir,{recursive:true,force:true});}
  const layout=require('../map_focus');const speed=layout.pieces({speedUnit:'mph'}).find(p=>p.key==='map-speed');assert.equal(speed.text(sample()),'62','speed uses live data object');assert.equal(layout.pieces({speedUnit:'kmh'}).find(p=>p.key==='map-speed').text({speed:100}),'100');
  const out=await scene('map_focus','comfort');assert(out.stats.meshes<=2);assert(out.parts.length>=10);assert.deepEqual(out.reservedWindow,[0,0,0,0]);
