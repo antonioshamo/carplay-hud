@@ -1,0 +1,55 @@
+name: Verify and publish renderer visibility diagnostics
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.12.0
+      - name: Import tested read-only collector
+        run: |
+          set -eu
+          if [ -f bmw-visibility-diagnostics-012.bundle ]; then
+            echo 'bdcbd3c84bf831fdcc55c22a20b9b1c23517ae20aa1909724a1fafd77cd6d1cd  bmw-visibility-diagnostics-012.bundle' | sha256sum -c -
+            git bundle verify bmw-visibility-diagnostics-012.bundle
+            git fetch ./bmw-visibility-diagnostics-012.bundle HEAD:refs/remotes/import/visibility-diagnostics
+            test "$(git rev-parse refs/remotes/import/visibility-diagnostics)" = '5e2e20c95fe9fbd6e84fc1ffa7cd043957351708'
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git merge --no-ff --no-edit refs/remotes/import/visibility-diagnostics
+            git rm bmw-visibility-diagnostics-012.bundle
+            git commit -m 'Remove diagnostics transport bundle'
+            git push origin HEAD:main
+          fi
+          git merge-base --is-ancestor 5e2e20c95fe9fbd6e84fc1ffa7cd043957351708 HEAD
+      - name: Verify all vehicle runtime packages are unchanged
+        run: |
+          git diff --exit-code c9d942eeee01835aa29796260c4f9f65ab3a5e43 HEAD -- apps native/cluster-studio native/cluster-render native/waze-on-cluster
+      - name: Test collector and reproducible artifact
+        run: |
+          set -eu
+          node native/hud-startup-diagnostics/test.js
+          node release/test/release_test.js
+          node release/release.js check hud-startup-diagnostics
+          curl --fail --silent --show-error --location --max-time 90 https://nodejs.org/download/release/v8.17.0/node-v8.17.0-linux-x64.tar.gz -o "$RUNNER_TEMP/node8.tar.gz"
+          echo "8b2c9e1f84317c4b02736c4c50db4dd2cd6c4f0ba910fa81f887c8c9294af596  $RUNNER_TEMP/node8.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/node8.tar.gz" -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/node-v8.17.0-linux-x64/bin/node" native/hud-startup-diagnostics/test.js
+      - name: Publish read-only diagnostics 0.1.2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MGU_PUBLISH: github:${{ github.repository }}
+          MGU_PUBLISH_VISIBILITY: any
+        run: node release/release.js publish hud-startup-diagnostics
