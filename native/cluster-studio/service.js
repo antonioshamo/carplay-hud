@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
-const VERSION = '0.1.35';
+const VERSION = '0.1.36';
 const fs=require('fs'),path=require('path'),net=require('net');
 const M=require('./shared/studio_model.js');
 const Store=require('./cluster_store.js');

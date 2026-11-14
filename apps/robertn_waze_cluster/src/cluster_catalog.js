@@ -3,7 +3,7 @@
 // Source identities are stable save keys. Colour variants are settings, not
 // hundreds of duplicate themes. Previews come from the actual imported scene.
 const THEMES=[
- ['map_focus','CarPlay Map','Cluster Layouts + CarPlay','bold'],
+ ['map_focus','CarPlay Map','Cluster Layouts + CarPlay','ui'],
  ['m','M','Bimmer-lab / Cluster Layouts','orb'],
  ['sport','Sport','Bimmer-lab / Cluster Layouts','wide'],
  ['gt3','GT3','Bimmer-lab / Cluster Layouts','bold'],
