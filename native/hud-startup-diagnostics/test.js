@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 'use strict';
 const assert=require('assert'),fs=require('fs'),os=require('os'),path=require('path'),cp=require('child_process'),EventEmitter=require('events'),PassThrough=require('stream').PassThrough;
-const {collect,redact,dltSample,safeMain}=require('./collect.js');
+const {collect,redact,dltSample,safeMain,rendererEvidence,configEvidence}=require('./collect.js');
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'hud-diag-test-'));
 function mkdir(p){if(fs.existsSync(p))return;mkdir(path.dirname(p));fs.mkdirSync(p);}
 function write(p,v){const dest=path.join(temp,p);mkdir(path.dirname(dest));fs.writeFileSync(dest,typeof v==='object'?JSON.stringify(v):v);}
@@ -17,11 +17,26 @@ write(source+'/rhmiData/uiDescriptions/ID7/uiDescription.json',{containers:{1:{}
 write('proc/100/status','Name:\tnode\nState:\tS (sleeping)\nUid:\t12226 12226 12226 12226\nVmRSS:\t42000 kB\n');
 write('proc/101/status','Name:\tnode\nUid:\t999 999 999 999\n');
 write(home+'/data/hud-startup.log','2026-11-05T00:00:00Z startup bundle-entered\n2026-11-05T00:00:01Z startup start-failed: Error: trace fixture token=PRIVATE\n');
+write('var/opt/mgu-render/current/mgu-render.conf','yield_surfaces = 0x197, 0x198, 0x19d, 0x19f\napp_area = auto\npassword = CONFIG_SECRET\n');
+write('var/opt/mgu-render/mgu-render.local.conf','screen_id = 0\nsecret = LOCAL_SECRET\n');
 let calls=[];
 function run(file,args){
  calls.push([file,args]);
  if(file===process.execPath){assert.equal(args[0],'--check');return cp.spawnSync(file,args,{encoding:'utf8'});}
+ if(file==='systemctl'){
+  assert.deepEqual(args,['show','mgu-render.service','--property=ActiveState','--property=SubState','--property=NRestarts','--property=ExecMainStatus']);
+  return {status:0,stdout:'ActiveState=active\nSubState=running\nNRestarts=0\nExecMainStatus=0\nEnvironment=SYSTEM_SECRET\n'};
+ }
  assert.equal(file,'journalctl');assert(args.includes('-b'));assert(args.includes('--no-pager'));
+ if(args.includes('mgu-render.service'))return {status:0,stdout:[
+  '[  1.000] mgu-render: surface 0x198 visible, buffer 0x0',
+  '[  2.000] mgu-render: surface 0x198 shows a picture: layer apps yield the screen',
+  '[  3.000] mgu-render: surface 0x198 shows no picture: layer apps may show',
+  '[  4.000] mgu-render: robertn_waze_cluster: connected (uid 12226, mgu-render/1)',
+  '[  5.000] mgu-render: robertn_waze_cluster: no frames for 3 s - hidden token=PRIVATE',
+  '[  6.000] mgu-render: robertn_other_app: surface 0x198 secret=OTHER_APP_SECRET',
+  '[  7.000] mgu-render: controller unrelated CONTROLLER_SECRET'
+ ].join('\n')};
  return {status:0,stdout:args.includes('_UID=12226')?'TypeError: screen initialization failed token=PRIVATE lat=42.123 longitude=-83.123 vin=WBA12345678901234\nunrelated ordinary status\n':
   'robertn_other_app startup secret=OTHER_APP_SECRET\nrobertn_waze_cluster failed at init email=a@example.com https://example.com/private\n'};
 }
@@ -36,6 +51,21 @@ async function main(){
  assert(report.includes('rhmiLoadingEnabled: true'));assert(report.includes('HUD STARTUP REPORT END'));
  assert(report.includes('Persisted startup: 2026-11-05T00:00:01Z startup start-failed'));
  assert.equal(calls.filter(x=>x[0]===process.execPath).length,2);
+ assert(report.includes('Renderer evidence lines: 5'));
+ assert(report.includes('[ 1.000] mgu-render: surface 0x198 visible, buffer 0x0'));
+ assert(report.includes('layer apps may show'));assert(report.includes('no frames for 3 s - hidden'));
+ assert(report.includes('Renderer service: ActiveState=active'));
+ assert(report.includes('Renderer shipped config: yield_surfaces = 0x197'));
+ assert(report.includes('Renderer local config: screen_id = 0'));
+ assert(report.includes('historical evidence, not proof of the current cause'));
+ for(const secret of ['CONFIG_SECRET','LOCAL_SECRET','SYSTEM_SECRET','CONTROLLER_SECRET'])assert(!report.includes(secret),secret);
+ assert.equal(rendererEvidence(Array(70).fill('surface 0x198 visible').join('\n')).length,40);
+ assert.deepEqual(configEvidence('# yield_surfaces = 0x198\ninvalid = secret\napp_area = auto # secret'),['app_area = auto']);
+ const unavailable=await collect({root:temp,run:(file,args)=>file==='systemctl'||args.includes('mgu-render.service')?{status:1,stdout:'surface 0x198 FAILED_COMMAND_OUTPUT'}:run(file,args),sample});
+ assert(unavailable.join('\n').includes('Renderer journal read: unavailable'));
+ assert(unavailable.join('\n').includes('Renderer service read: unavailable'));
+ assert(!unavailable.join('\n').includes('FAILED_COMMAND_OUTPUT'));
+ console.log('PASS bounded renderer evidence, monotonic timestamps, display config allowlist, read-only service status and unavailable journal');
  console.log('PASS installed package, UID process isolation, syntax-only commands, relevant logs and redaction');
 
  write(source+'/javascript/app.js','const = broken;');

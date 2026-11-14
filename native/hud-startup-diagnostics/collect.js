@@ -45,11 +45,23 @@ function dltSample(onLine,spawn,milliseconds){
   });
  });
 }
+function rendererEvidence(text){
+ // Only this app and renderer-wide display diagnostics; other apps' messages
+ // and controller activity are outside the report.
+ return String(text).split('\n').filter(line=>{
+  if(/\brobertn_[A-Za-z0-9_]+\b/.test(line)&&line.indexOf(ID)<0)return false;
+  return line.indexOf(ID)>=0||/surface 0x(?:197|198|19d|19f)\b|layer apps (?:yield|may show)|compositor:|cannot connect to the compositor|compositor lacks|\bEGL\b|gfx_init:|foreground gate|gate:.*(?:unavailable|failed|error)/i.test(line);
+ }).slice(-40);
+}
+function configEvidence(text){
+ // These are known display-only settings, never arbitrary configuration.
+ return String(text).split('\n').map(l=>l.split('#')[0].trim()).filter(l=>/^(?:wayland_display|screen_id|app_area|yield_surfaces|embed|foreground_gate|local_conf)\s*=/.test(l)).slice(-16);
+}
 async function collect(options){
  const o=options||{},root=o.root||'',exec=o.run||run,output=[];
  const at=p=>path.join(root,p),put=(k,v)=>output.push(k+': '+redact(v).replace(/\s+/g,' ').slice(0,700));
  const attempt=(name,fn)=>{try{return fn();}catch(e){put(name,e.code||e.message);return null;}};
- output.push('=== HUD STARTUP REPORT 0.1.1 BEGIN ===');put('Captured',new Date().toISOString());put('Collector Node',process.version);
+ output.push('=== HUD STARTUP REPORT 0.1.2 BEGIN ===');put('Captured',new Date().toISOString());put('Collector Node',process.version);
  const reg=attempt('Registry',()=>json(at('/var/opt/public/oap/oap_12201/data/apps/'+ID+'.json')));
  const uid=reg&&Number(reg.userId);
  if(!Number.isInteger(uid)||uid<12202||uid>65534){put('App','No valid registered UID; no app directories or app logs inspected');output.push('=== HUD STARTUP REPORT END ===');return output;}
@@ -102,6 +114,21 @@ async function collect(options){
  // This file is optional: this app currently uses SDK logging; some runners
  // also retain a local log. Never read the rest of the app's private data.
  try{log('App file log',read(at(home+'/data/'+ID+'.log'),LIMIT).toString('utf8'),true);}catch(e){put('App file log','not available');}
+ // Renderer visibility is separate from app startup. Keep timestamps so a
+ // historical camera handoff cannot be mistaken for the current blocker.
+ const renderer=exec('journalctl',['-b','-u','mgu-render.service','-n','500','--no-pager','-o','short-monotonic']);
+ put('Renderer journal read',renderer.status===0?'OK':renderer.error||'unavailable');
+ const rendererLines=renderer.status===0?rendererEvidence(renderer.stdout):[];
+ rendererLines.forEach(line=>put('Renderer evidence',line));
+ put('Renderer evidence lines',rendererLines.length);
+ const state=exec('systemctl',['show','mgu-render.service','--property=ActiveState','--property=SubState','--property=NRestarts','--property=ExecMainStatus']);
+ put('Renderer service read',state.status===0?'OK':state.error||'unavailable');
+ if(state.status===0)String(state.stdout).split('\n').filter(l=>/^(ActiveState|SubState|NRestarts|ExecMainStatus)=/.test(l)).forEach(l=>put('Renderer service',l));
+ for(const item of [['Renderer shipped config','/var/opt/mgu-render/current/mgu-render.conf'],['Renderer local config','/var/opt/mgu-render/mgu-render.local.conf']]){
+  const value=attempt(item[0],()=>read(at(item[1]),65536).toString('utf8'));
+  if(value!==null)configEvidence(value).forEach(line=>put(item[0],line));
+ }
+ put('Visibility interpretation','Renderer lines are historical evidence, not proof of the current cause. Missing lines do not rule out a surface or frame failure. Config files are snapshots; a running process may have loaded earlier values.');
  const dlt=await(o.sample||((fn)=>dltSample(fn,cp.spawn,4000)))(line=>{put('App DLT',line);errors++;});put('DLT',dlt.reason+'; '+dlt.matched+' matching lines');if(dlt.detail)put('DLT receiver detail',dlt.detail);
  put('Startup lines collected',errors);put('Result',errors?'Startup evidence collected; diagnosis still required':'No matching startup lines found; this is not evidence of a successful launch');
  output.push('=== HUD STARTUP REPORT END ===');return output;
@@ -111,4 +138,4 @@ if(require.main===module){
   console.log('HUD diagnostics could not finish: '+redact(e.message));console.log(JSON.stringify({status:'Diagnostics incomplete; app unchanged. See Store updater log.'}));
  });
 }
-module.exports={collect,redact,dltSample,safeMain};
+module.exports={collect,redact,dltSample,safeMain,rendererEvidence,configEvidence};
