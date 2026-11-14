@@ -54,13 +54,10 @@ vec4 glassMap(vec2 p) {
 }
 void main() {
     vec2 p = v_uv * vec2(1920.0,720.0);
-    // Map extends behind the physical sensor; retain the factory warning strip.
+    // Fill above the gear, including the old RPM-label area. Keep the bottom
+    // factory gear/warning strip and the clearance beside the gear uncovered.
     if (p.y >= 660.0) discard;
     gl_FragColor=glassMap(p);
-    if (p.y >= 612.0 && p.x >= 1352.0 && p.x < 1542.0) {
-        float edge = max(1.0-smoothstep(1352.0,1390.0,p.x),smoothstep(1504.0,1542.0,p.x));
-        gl_FragColor.a *= edge;
-    }
 })";
 }
 }
