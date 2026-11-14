@@ -1,3 +1,9 @@
+## 0.4.161
+
+- Fill the CarPlay map directly above the factory P to cover the old RPM label. Keep the bottom factory gear/warning strip and space beside P uncovered.
+- Refresh the map theme pictures to match the corrected coverage. Preserve the approved glass gauges and RPM color thresholds.
+- Requires Cluster Studio 0.1.37 and Cluster renderer 0.3.109. The native upper-right PARK flashing remains unverified in the vehicle; this update does not suppress that indicator.
+
 # 0.4.160
 
 - Replace the rejected dark map cards with clear refractive capsules, curved highlights, local softening and Inter typography. Updated previews use the actual material and glyph renderer over a sample map.

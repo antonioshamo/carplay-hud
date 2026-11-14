@@ -1,6 +1,6 @@
 {
   "name": "robertn_waze_cluster",
-  "version": "0.4.160",
+  "version": "0.4.161",
   "description": "Full-screen CarPlay Map plus twelve source gauge themes, picture previews and live customization. Map mode includes speed, RPM, fuel percentage and oil temperature, with no Park or cruise requirement. Native warning/gear clearance retained; physical X4 M verification pending.",
   "private": false,
   "main": "javascript/runner.js",
