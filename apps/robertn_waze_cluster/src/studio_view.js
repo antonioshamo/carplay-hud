@@ -56,7 +56,7 @@ function frame(s,focus,scale){
  }else if(s.page==='style'){
   preview(d.theme,d.palette,270,195,625,234);text('Palette preview · sample readings',270,461,19,'#9eb6d5',620);text('Custom accents apply to the cluster.',270,491,18,'#9eb6d5',620);
  }else if(s.page==='edit'){
-  text(d.theme==='map_focus'?'Map layout: fuel percentage and oil temperature fixed in the bottom corners.':'Four side readings. Fuel percentage is included by default in every theme.',250,146,20,'#b8cbe2',1320);
+  text(d.theme==='map_focus'?'Map layout: RPM bottom left, oil temperature bottom right.':'Four side readings. Fuel percentage is included by default in every theme.',250,146,20,'#b8cbe2',1320);
   text('Unknown or stale readings show --. No inferred safety or warning states.',250,528,18,'#b8cbe2',1320);
  }else if(s.page==='intro'){
   text(d.theme==='map_focus'?'The map opens with live readings. No needle sweep.':'Optional needle sweep, once at startup.',280,206,30,'#edf4ff',1260);

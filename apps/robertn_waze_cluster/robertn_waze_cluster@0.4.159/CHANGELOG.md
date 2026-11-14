@@ -1,3 +1,9 @@
+# 0.4.159
+
+- CarPlay Map uses translucent glass-style gauge cards; RPM replaces fuel at bottom left, with oil bottom right. Theme pictures match the new layout.
+- Requires Cluster Studio 0.1.35 and its Cluster renderer 0.3.107 dependency: map fills the top; the factory gear opening moves 32 pixels right without resizing.
+- Independent HUD unchanged. Offline validation does not establish physical alignment or resolve the reported intermittent top-right black rectangle.
+
 # 0.4.158
 
 - Dashboard startup retries temporary renderer-capability failures and drawing exceptions.

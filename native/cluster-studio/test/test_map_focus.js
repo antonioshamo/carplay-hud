@@ -29,7 +29,13 @@ async function main(){
   }
  }finally{e.close();Date.now=oldNow;fs.rmSync(dir,{recursive:true,force:true});}
  const layout=require('../map_focus');const speed=layout.pieces({speedUnit:'mph'}).find(p=>p.key==='map-speed');assert.equal(speed.text(sample()),'62','speed uses live data object');assert.equal(layout.pieces({speedUnit:'kmh'}).find(p=>p.key==='map-speed').text({speed:100}),'100');
- const out=await scene('map_focus','comfort');assert(out.stats.meshes<=2);assert(out.parts.length>=10);assert.deepEqual(out.reservedWindow,[0,0,0,0]);
+ const pieces=layout.pieces({rpmMax:8000});
+ assert(!pieces.some(p=>p.key.indexOf('map-fuel')===0),'map layout has no fuel card');
+ assert.equal(pieces.find(p=>p.key==='map-rpm-card').x,44);
+ assert.equal(pieces.find(p=>p.key==='map-rpm-card').y,486);
+ assert.equal(pieces.find(p=>p.key==='map-rpm').text({rpm:725}),'725');
+ assert.equal(pieces.find(p=>p.key==='map-rpm').text({rpm:null}),'--');
+ const out=await scene('map_focus','comfort');assert(out.stats.meshes<=2);assert(out.parts.length>=9);assert.deepEqual(out.reservedWindow,[0,0,0,0]);
  console.log('ok full-panel request, Drive gears, cruise independence, old renderer, stale readings, switch/off cleanup, native scene budget');
 }
 main().catch(e=>{console.error(e.stack);process.exit(1);});
